@@ -4,7 +4,6 @@ from pathlib import Path
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 BASE_PATH = Path(__file__).resolve().parent.parent.parent
 
 
@@ -12,19 +11,25 @@ class RunConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8000
 
+
 class LoggerConfig(BaseModel):
     lvl: int = logging.INFO
     logs_path: Path = BASE_PATH / "logs" / "app_logs.log"
-    log_format: str = "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+    log_format: str = (
+        "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+    )
     max_bytes: int = 5 * 1024 * 1024
     backup_count: int = 3
+
 
 class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
 
+
 class ApiPrefix(BaseModel):
     prefix: str = "/api"
     v1: ApiV1Prefix = ApiV1Prefix()
+
 
 class DbConfig(BaseModel):
     host: str = "localhost"
@@ -45,6 +50,12 @@ class DbConfig(BaseModel):
     def url_async(self):
         return f"postgresql+asyncpg://{self.user}:{self.passwd}@{self.host}:{self.port}/{self.name}"
 
+
+class OpenRouterConfig(BaseModel):
+    base_url: str = "https://openrouter.ai/api/v1"
+    api_key: str = "API_KEY_HERE"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=BASE_PATH / ".env",
@@ -56,6 +67,7 @@ class Settings(BaseSettings):
     api: ApiPrefix = ApiPrefix()
     run: RunConfig = RunConfig()
     db: DbConfig
+    openrouter: OpenRouterConfig
 
 
 settings = Settings()

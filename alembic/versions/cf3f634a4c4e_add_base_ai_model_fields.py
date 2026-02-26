@@ -1,8 +1,8 @@
 """add base ai model fields
 
-Revision ID: c670ee5412ac
+Revision ID: cf3f634a4c4e
 Revises:
-Create Date: 2026-02-25 17:22:07.792405
+Create Date: 2026-02-26 01:20:21.168127
 
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision: str = "c670ee5412ac"
+revision: str = "cf3f634a4c4e"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,11 +27,6 @@ def upgrade() -> None:
         sa.Column(
             "model_type",
             sa.Enum("LLM", "IMAGE", "VIDEO", name="model_type_enum"),
-            nullable=False,
-        ),
-        sa.Column(
-            "provider",
-            sa.Enum("OPENROUTER", "WAVESPEED", name="provider_type_enum"),
             nullable=False,
         ),
         sa.Column("provider_key", sa.String(), nullable=False),
@@ -51,7 +46,8 @@ def upgrade() -> None:
     )
     op.create_table(
         "users",
-        sa.Column("token_balances", sa.Float(), nullable=False),
+        sa.Column("tokens_balance", sa.Float(), nullable=False),
+        sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
             "created_at",
@@ -137,6 +133,9 @@ def upgrade() -> None:
             name=op.f("fk_image_prices_ai_model_id_ai_models"),
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_image_prices")),
+        sa.UniqueConstraint(
+            "ai_model_id", name=op.f("uq_image_prices_ai_model_id")
+        ),
     )
     op.create_table(
         "llm_prices",
@@ -166,6 +165,9 @@ def upgrade() -> None:
             name=op.f("fk_llm_prices_ai_model_id_ai_models"),
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_llm_prices")),
+        sa.UniqueConstraint(
+            "ai_model_id", name=op.f("uq_llm_prices_ai_model_id")
+        ),
     )
     op.create_table(
         "video_prices",
@@ -196,6 +198,9 @@ def upgrade() -> None:
             name=op.f("fk_video_prices_ai_model_id_ai_models"),
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_video_prices")),
+        sa.UniqueConstraint(
+            "ai_model_id", name=op.f("uq_video_prices_ai_model_id")
+        ),
     )
     # ### end Alembic commands ###
 

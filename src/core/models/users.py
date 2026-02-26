@@ -7,10 +7,15 @@ from .mixins import CreatedAtMixin, UUIDPKMixin
 
 if TYPE_CHECKING:
     from .ai_generations import AIGeneration
+    from .user_balances import UserBalance
 
 
 class User(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "users"
 
-    token_balances: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+
+    balance: Mapped["UserBalance | None"] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
     generations: Mapped[list["AIGeneration"]] = relationship(back_populates="user")

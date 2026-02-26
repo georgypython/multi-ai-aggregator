@@ -16,12 +16,15 @@ if TYPE_CHECKING:
 class AIGeneration(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "ai_generations"
 
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
     ai_model_id: Mapped[UUID] = mapped_column(
         ForeignKey("ai_models.id"), nullable=False, index=True
     )
     status: Mapped[GenerationStatus] = mapped_column(
-        Enum(GenerationStatus, name="generation_status_enum"), nullable=False)
+        Enum(GenerationStatus, name="generation_status_enum"), nullable=False
+    )
     charged_tokens: Mapped[float] = mapped_column(nullable=False, default=0.0)
 
     user: Mapped["User"] = relationship("User", back_populates="generations")
