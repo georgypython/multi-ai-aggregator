@@ -1,6 +1,16 @@
-from dishka import Provider, Scope, provide
+from dishka import (
+    Provider, 
+    Scope, 
+    provide
+)
+from redis.asyncio import Redis
 
-from src.repositories import UserRepository, AIModelRepository
+from src.repositories import (
+    UserRepository,
+    LLMRepository,
+    GenerationRepository,
+    ChatMemoryRepository,
+)
 
 
 class RepositoriesProvider(Provider):
@@ -11,7 +21,20 @@ class RepositoriesProvider(Provider):
         return UserRepository()
 
     @provide(scope=Scope.APP)
-    def get_ai_model_repository(
+    def get_llm_repository(
         self,
-    ) -> AIModelRepository:
-        return AIModelRepository()
+    ) -> LLMRepository:
+        return LLMRepository()
+
+    @provide(scope=Scope.APP)
+    def get_generation_repository(
+        self,
+    ) -> GenerationRepository:
+        return GenerationRepository()
+
+    @provide(scope=Scope.APP)
+    def get_chat_memory_repository(
+        self,
+        redis_client: Redis,
+    ) -> ChatMemoryRepository:
+        return ChatMemoryRepository(redis_client=redis_client)

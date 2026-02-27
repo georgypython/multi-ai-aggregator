@@ -56,6 +56,20 @@ class OpenRouterConfig(BaseModel):
     api_key: str = "API_KEY_HERE"
 
 
+class RedisConfig(BaseModel):
+    host: str = "localhost"
+    port: int = 6379
+    db: int = 0
+    password: str | None = None
+    chat_history_ttl_seconds: int = 7 * 24 * 60 * 60
+    chat_history_limit: int = 15
+
+    @property
+    def url(self) -> str:
+        auth = f":{self.password}@" if self.password else ""
+        return f"redis://{auth}{self.host}:{self.port}/{self.db}"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=BASE_PATH / ".env",
@@ -68,6 +82,7 @@ class Settings(BaseSettings):
     run: RunConfig = RunConfig()
     db: DbConfig
     openrouter: OpenRouterConfig
+    redis: RedisConfig = RedisConfig()
 
 
 settings = Settings()

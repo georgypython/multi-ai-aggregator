@@ -1,9 +1,13 @@
 from .abstract_repo import AbstractRepository
 from .users import UserRepository
-from .ai_models import AIModelRepository
+from .llm import LLMRepository
+from .generation import GenerationRepository
+from .chat_memory import ChatMemoryRepository
 
 __all__ = (
     "AbstractRepository",
     "UserRepository",
-    "AIModelRepository",
+    "LLMRepository",
+    "GenerationRepository",
+    "ChatMemoryRepository",
 )

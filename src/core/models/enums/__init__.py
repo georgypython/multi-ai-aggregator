@@ -1,3 +1,3 @@
-from .ai import AIModelType, GenerationStatus
+from .ai import GenerationStatus, LLMConfigurationType
 
-__all__ = ("AIModelType", "GenerationStatus")
+__all__ = ("GenerationStatus", "LLMConfigurationType")

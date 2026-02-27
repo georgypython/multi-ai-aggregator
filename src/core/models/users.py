@@ -7,6 +7,7 @@ from .mixins import CreatedAtMixin, UUIDPKMixin
 
 if TYPE_CHECKING:
     from .ai_generations import AIGeneration
+    from .llm_configurations import LLMConfiguration
     from .user_balances import UserBalance
 
 
@@ -17,5 +18,8 @@ class User(Base, UUIDPKMixin, CreatedAtMixin):
 
     balance: Mapped["UserBalance | None"] = relationship(
         back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
+    llm_configurations: Mapped[list["LLMConfiguration"]] = relationship(
+        back_populates="user"
     )
     generations: Mapped[list["AIGeneration"]] = relationship(back_populates="user")

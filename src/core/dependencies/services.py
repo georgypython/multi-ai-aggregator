@@ -6,7 +6,7 @@ from dishka import Provider, Scope, provide
 from src.core.config import settings
 from src.services.llm import LLMService
 from src.services.openrouter import OpenRouterService
-from src.repositories import UserRepository, AIModelRepository
+from src.repositories import UserRepository, LLMRepository, GenerationRepository
 
 
 class ServicesProvider(Provider):
@@ -27,11 +27,13 @@ class ServicesProvider(Provider):
         session: AsyncSession,
         llm_client: OpenRouterService,
         user_repo: UserRepository,
-        ai_model_repo: AIModelRepository,
+        llm_repo: LLMRepository,
+        generation_repo: GenerationRepository,
     ) -> LLMService:
         return LLMService(
             session=session,
             llm_client=llm_client,
             user_repo=user_repo,
-            ai_model_repo=ai_model_repo,
+            llm_repo=llm_repo,
+            generation_repo=generation_repo,
         )
