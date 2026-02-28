@@ -20,7 +20,7 @@ def setup_logger(
     formatter = logging.Formatter(log_format)
 
     file_handler = RotatingFileHandler(
-        settings.logger_config.logger_path,
+        logs_path,
         maxBytes=max_bytes,
         backupCount=backup_count,
         encoding="utf-8",

@@ -6,8 +6,13 @@ from dishka import Provider, Scope, provide
 from src.core.config import settings
 from src.services.llm import LLMService
 from src.services.openrouter import OpenRouterService
-from src.repositories import UserRepository, LLMRepository, GenerationRepository
-
+from src.repositories import (
+    UserRepository, 
+    LLMRepository, 
+    GenerationRepository, 
+    ChatMemoryRepository, 
+    TokenPriceRepository
+)
 
 class ServicesProvider(Provider):
     @provide(scope=Scope.APP)
@@ -29,6 +34,8 @@ class ServicesProvider(Provider):
         user_repo: UserRepository,
         llm_repo: LLMRepository,
         generation_repo: GenerationRepository,
+        chat_memory_repo: ChatMemoryRepository,
+        token_price_repo: TokenPriceRepository,
     ) -> LLMService:
         return LLMService(
             session=session,
@@ -36,4 +43,6 @@ class ServicesProvider(Provider):
             user_repo=user_repo,
             llm_repo=llm_repo,
             generation_repo=generation_repo,
+            chat_memory_repo=chat_memory_repo,
+            token_price_repo=token_price_repo,
         )

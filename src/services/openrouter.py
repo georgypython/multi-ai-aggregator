@@ -1,6 +1,12 @@
-from httpx import AsyncClient
+from httpx import AsyncClient, HTTPStatusError, RequestError, TimeoutException
 
-from src.core.schemas.ai import LLMProviderResponseSchema
+from src.core.exceptions.llm import (
+    ProviderHTTPError,
+    ProviderNetworkError,
+    ProviderResponseFormatError,
+    ProviderTimeoutError,
+)
+from src.core.schemas.ai import LLMProviderResponseSchema, LLMRequestDataSchema
 
 
 class OpenRouterService:
@@ -20,15 +26,12 @@ class OpenRouterService:
 
     async def get_llm_response(
         self,
-        *,
-        provider_model_key: str,
-        prompt: str,
-        instruction: str | None = None,
+        data: LLMRequestDataSchema,
         chat_history: list[dict[str, str]] | None = None,
     ) -> LLMProviderResponseSchema:
         messages: list[dict[str, str]] = []
-        if instruction:
-            messages.append({"role": "system", "content": instruction})
+        if data.instructions:
+            messages.append({"role": "system", "content": data.instructions})
 
         if chat_history:
             for item in chat_history:
@@ -37,30 +40,70 @@ class OpenRouterService:
                 if role in {"system", "user", "assistant"} and isinstance(content, str):
                     messages.append({"role": role, "content": content})
 
-        messages.append({"role": "user", "content": prompt})
+        messages.append({"role": "user", "content": data.prompt})
 
         payload = {
-            "model": provider_model_key,
+            "model": data.provider_model_key,
             "messages": messages,
         }
-        response = await self.client.post(
-            f"{self._base_url}/chat/completions",
-            headers=self._base_headers,
-            json=payload,
-        )
-        response.raise_for_status()
+        if data.temperature is not None:
+            payload["temperature"] = data.temperature
 
-        data = response.json()
-        choices = data.get("choices", [])
-        first_choice = choices[0] if choices else {}
-        message = first_choice.get("message", {})
-        usage = data.get("usage", {})
+        try:
+            response = await self.client.post(
+                f"{self._base_url}/chat/completions",
+                headers=self._base_headers,
+                json=payload,
+            )
+            response.raise_for_status()
+        except TimeoutException:
+            raise ProviderTimeoutError("Provider request timeout")
+        except HTTPStatusError as exc:
+            raise ProviderHTTPError(
+                status_code=exc.response.status_code,
+                message=f"Provider HTTP error: status_code={exc.response.status_code}",
+            )
+        except RequestError:
+            raise ProviderNetworkError("Provider network error")
+
+        try:
+            response_data = response.json()
+        except ValueError:
+            raise ProviderResponseFormatError("Provider returned non-JSON response")
+
+        if not isinstance(response_data, dict):
+            raise ProviderResponseFormatError(
+                "Provider response has invalid JSON format"
+            )
+
+        choices = response_data.get("choices") or []
+        if not choices:
+            raise ProviderResponseFormatError(
+                "Provider response missing non-empty 'choices'"
+            )
+
+        try:
+            message = choices[0].get("message")
+        except (IndexError, AttributeError, TypeError):
+            raise ProviderResponseFormatError(
+                "Provider response has invalid 'choices[0].message' format"
+            )
+
+        text_content = message.get("content") if isinstance(message, dict) else None
+        if not isinstance(text_content, str):
+            raise ProviderResponseFormatError(
+                "Provider response missing text 'message.content'"
+            )
+
+        usage = response_data.get("usage", {})
+        if not isinstance(usage, dict):
+            usage = {}
 
         return LLMProviderResponseSchema(
-            text=message.get("content", ""),
-            model=data.get("model", provider_model_key),
+            text=text_content,
+            model=response_data.get("model", data.provider_model_key),
             input_tokens=usage.get("prompt_tokens", 0),
             output_tokens=usage.get("completion_tokens", 0),
             total_tokens=usage.get("total_tokens", 0),
-            raw=data,
+            raw=response_data,
         )

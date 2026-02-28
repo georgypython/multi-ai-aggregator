@@ -11,3 +11,9 @@ class GenerationStatus(StrEnum):
 class LLMConfigurationType(StrEnum):
     USER = "user"
     TEMPLATE = "template"
+
+
+class PriceType(StrEnum):
+    SUBSCRIPTION = "subscription"
+    ONE_TIME = "one_time"
+    USAGE = "usage"

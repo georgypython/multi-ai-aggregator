@@ -19,7 +19,5 @@ class User(Base, UUIDPKMixin, CreatedAtMixin):
     balance: Mapped["UserBalance | None"] = relationship(
         back_populates="user", cascade="all, delete-orphan", uselist=False
     )
-    llm_configurations: Mapped[list["LLMConfiguration"]] = relationship(
-        back_populates="user"
-    )
+    llm_configuration: Mapped["LLMConfiguration"] = relationship(back_populates="user")
     generations: Mapped[list["AIGeneration"]] = relationship(back_populates="user")

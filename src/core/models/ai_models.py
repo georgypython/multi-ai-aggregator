@@ -40,14 +40,15 @@ class LLMModel(Base, UUIDPKMixin, CreatedAtMixin, ModelPricingMixin):
     )
     input_price_per_million_usd: Mapped[float] = mapped_column(nullable=False)
     output_price_per_million_usd: Mapped[float] = mapped_column(nullable=False)
+    free_requests_limit: Mapped[int] = mapped_column(default=0, nullable=False)
     min_charge_tokens: Mapped[int] = mapped_column(default=0, nullable=False)
-
-    ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="llm_model")
-    llm_configurations: Mapped[list["LLMConfiguration"]] = relationship(
-        "LLMConfiguration",
-        back_populates="llm_model",
-        cascade="all, delete-orphan",
+    is_temperature_support: Mapped[bool | None] = mapped_column(
+        nullable=True, default=False
     )
+    # TODO можно добавить поле free_requests_limit: int (default=0), для беспл. моделей типа GPT 4o mini
+    # и если у юзера не будет хватить минимально токенов - пускать его (паралельно считать кол-во его генераций)
+    # и если будет больше лимита - не пускать.
+    ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="llm_model")
 
 
 class ImageModel(Base, UUIDPKMixin, CreatedAtMixin, ModelPricingMixin):
@@ -73,6 +74,8 @@ class VideoModel(Base, UUIDPKMixin, CreatedAtMixin, ModelPricingMixin):
     resolution: Mapped[str] = mapped_column(nullable=False)
     fps: Mapped[int | None] = mapped_column(nullable=True, default=None)
     price_per_second_usd: Mapped[float] = mapped_column(nullable=False)
-    max_duration_seconds: Mapped[int | None] = mapped_column(nullable=True, default=None)
+    max_duration_seconds: Mapped[int | None] = mapped_column(
+        nullable=True, default=None
+    )
 
     ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="video_model")

@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
+from datetime import datetime
 
-from sqlalchemy import Enum, ForeignKey
+from sqlalchemy import Enum, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -26,6 +27,9 @@ class AIGeneration(Base, UUIDPKMixin, CreatedAtMixin):
         Enum(GenerationStatus, name="generation_status_enum"), nullable=False
     )
     charged_tokens: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="generations")
     ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="generations")

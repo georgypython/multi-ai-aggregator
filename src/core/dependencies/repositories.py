@@ -1,8 +1,4 @@
-from dishka import (
-    Provider, 
-    Scope, 
-    provide
-)
+from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 
 from src.repositories import (
@@ -10,6 +6,7 @@ from src.repositories import (
     LLMRepository,
     GenerationRepository,
     ChatMemoryRepository,
+    TokenPriceRepository,
 )
 
 
@@ -38,3 +35,9 @@ class RepositoriesProvider(Provider):
         redis_client: Redis,
     ) -> ChatMemoryRepository:
         return ChatMemoryRepository(redis_client=redis_client)
+
+    @provide(scope=Scope.APP)
+    def get_token_price_repository(
+        self,
+    ) -> TokenPriceRepository:
+        return TokenPriceRepository()

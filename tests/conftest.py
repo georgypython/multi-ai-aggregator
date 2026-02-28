@@ -12,11 +12,10 @@ from src.main import app
 from src.services.openrouter import OpenRouterService
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture()
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with db_helper.session_factory() as session:
         yield session
-        await session.rollback()
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -25,6 +24,7 @@ async def clean_db() -> AsyncGenerator[None, None]:
     async with db_helper.engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             await conn.execute(table.delete())
+        await db_helper.dispose()  # Ensure the engine is disposed after cleanup
 
 
 @pytest_asyncio.fixture

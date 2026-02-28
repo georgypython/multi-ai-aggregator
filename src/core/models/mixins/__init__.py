@@ -4,8 +4,8 @@ from .model_pricing_mixin import ModelPricingMixin
 from .uuid_pk_mixin import UUIDPKMixin
 
 __all__ = (
-	"UUIDPKMixin",
-	"CreatedAtMixin",
-	"AIPriceBaseMixin",
-	"ModelPricingMixin",
+    "UUIDPKMixin",
+    "CreatedAtMixin",
+    "AIPriceBaseMixin",
+    "ModelPricingMixin",
 )

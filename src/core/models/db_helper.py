@@ -14,7 +14,7 @@ class DbHelper:
         url: str,
         echo: bool = False,
         echo_pool: bool = False,
-        pool_pre_ping: bool = True,
+        pool_pre_ping: bool = False,
         pool_size: int = 5,
         max_overflow: int = 10,
     ) -> None:

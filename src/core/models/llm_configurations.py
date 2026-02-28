@@ -9,7 +9,6 @@ from .enums import LLMConfigurationType
 from .mixins import CreatedAtMixin, UUIDPKMixin
 
 if TYPE_CHECKING:
-    from .ai_models import LLMModel
     from .users import User
 
 
@@ -17,9 +16,6 @@ class LLMConfiguration(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "llm_configurations"
 
     name: Mapped[str | None] = mapped_column(nullable=True, default=None)
-    llm_model_id: Mapped[UUID] = mapped_column(
-        ForeignKey("llm_models.id"), nullable=False, index=True
-    )
     user_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("users.id"), nullable=True, index=True
     )
@@ -29,5 +25,6 @@ class LLMConfiguration(Base, UUIDPKMixin, CreatedAtMixin):
     temperature: Mapped[float | None] = mapped_column(nullable=True, default=None)
     instructions: Mapped[str | None] = mapped_column(nullable=True, default=None)
 
-    llm_model: Mapped["LLMModel"] = relationship("LLMModel", back_populates="llm_configurations")
-    user: Mapped["User | None"] = relationship("User", back_populates="llm_configurations")
+    user: Mapped["User | None"] = relationship(
+        "User", back_populates="llm_configuration"
+    )
