@@ -21,6 +21,7 @@ from src.services.llm_generation import LLMGenerationService
 
 
 router = APIRouter(
+    prefix="/llm",
     route_class=DishkaRoute,
     dependencies=[Depends(require_api_key)],
 )

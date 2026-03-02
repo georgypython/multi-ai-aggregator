@@ -47,9 +47,7 @@ class LLMModel(Base, UUIDPKMixin, CreatedAtMixin, ModelPricingMixin):
     is_temperature_support: Mapped[bool | None] = mapped_column(
         nullable=True, default=False
     )
-    # TODO можно добавить поле free_requests_limit: int (default=0), для беспл. моделей типа GPT 4o mini
-    # и если у юзера не будет хватить минимально токенов - пускать его (паралельно считать кол-во его генераций)
-    # и если будет больше лимита - не пускать.
+
     ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="llm_model")
 
 
@@ -61,8 +59,6 @@ class ImageModel(Base, UUIDPKMixin, CreatedAtMixin, ModelPricingMixin):
     )
     size: Mapped[str] = mapped_column(nullable=False)
     quality: Mapped[str] = mapped_column(nullable=False)
-    style: Mapped[str | None] = mapped_column(nullable=True, default=None)
-    images_count: Mapped[int] = mapped_column(default=1, nullable=False)
 
     ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="image_model")
 

@@ -1,28 +1,17 @@
 from uuid import UUID
 
-from fastapi import Header, HTTPException, Query, status
+from fastapi import HTTPException, Query, Security, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.core.config import settings
 from src.core.models.db_helper import db_helper
 from src.repositories import UserRepository
 
 
-def _extract_api_key(
-    authorization: str | None,
-    x_api_key: str | None,
-) -> str | None:
-    if x_api_key:
-        return x_api_key
-
-    if authorization and authorization.lower().startswith("bearer "):
-        return authorization.split(" ", maxsplit=1)[1].strip()
-
-    return None
-
+bearer_scheme = HTTPBearer(auto_error=False)
 
 async def require_api_key(
-    authorization: str | None = Header(default=None),
-    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+    credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
 ) -> None:
     expected_api_key = settings.api.api_key
     if not expected_api_key or expected_api_key == "YOUR_API_KEY":
@@ -31,7 +20,7 @@ async def require_api_key(
             detail="Server API key is not configured",
         )
 
-    api_key = _extract_api_key(authorization=authorization, x_api_key=x_api_key)
+    api_key = credentials.credentials if credentials else None
     if api_key != expected_api_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
