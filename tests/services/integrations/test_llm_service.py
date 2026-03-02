@@ -7,11 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.models import AIModel, LLMConfiguration, LLMModel, User, UserBalance, AIGeneration
 from src.core.models.enums import GenerationStatus, LLMConfigurationType, ModelType
-from src.core.schemas.ai import LLMRequestDataSchema
+from src.core.schemas.ai import GenerationRequestSchema
 from src.repositories.generation import GenerationRepository
 from src.repositories.llm import LLMRepository
 from src.repositories.users import UserRepository
-from src.services.llm import LLMService
+from src.repositories import TokenPriceRepository
+from src.services.generation_billing import GenerationBillingService
+from src.services.llm_generation import LLMGenerationService
 
 pytestmark = pytest.mark.asyncio
 
@@ -59,16 +61,20 @@ async def test_create_and_validate_request_llm_data_uses_user_llm_configuration(
     await db_session.flush()
     await db_session.commit()
 
-    llm_service = LLMService(
+    generation_billing = GenerationBillingService(
+        session=db_session,
+        user_repo=UserRepository(),
+        generation_repo=GenerationRepository(),
+        token_price_repo=TokenPriceRepository(),
+    )
+
+    llm_service = LLMGenerationService(
         session=db_session,
         llm_client=AsyncMock(),
-        ai_model_repo=AsyncMock(),
         user_repo=UserRepository(),
         llm_repo=LLMRepository(),
-        llm_configuration_repo=AsyncMock(),
-        generation_repo=GenerationRepository(),
         chat_memory_repo=AsyncMock(),
-        token_price_repo=AsyncMock(),
+        generation_billing_service=generation_billing,
     )
 
     data = await llm_service._create_and_validate_request_llm_data(
@@ -117,29 +123,30 @@ async def test_prepare_generation_and_freeze_user_tokens_creates_processing_gene
     await db_session.flush()
     await db_session.commit()
 
-    llm_service = LLMService(
+    generation_billing = GenerationBillingService(
+        session=db_session,
+        user_repo=UserRepository(),
+        generation_repo=GenerationRepository(),
+        token_price_repo=TokenPriceRepository(),
+    )
+
+    llm_service = LLMGenerationService(
         session=db_session,
         llm_client=AsyncMock(),
-        ai_model_repo=AsyncMock(),
         user_repo=UserRepository(),
         llm_repo=LLMRepository(),
-        llm_configuration_repo=AsyncMock(),
-        generation_repo=GenerationRepository(),
         chat_memory_repo=AsyncMock(),
-        token_price_repo=AsyncMock(),
+        generation_billing_service=generation_billing,
     )
 
-    data = LLMRequestDataSchema(
+    data = GenerationRequestSchema(
         user_id=user.id,
         ai_model_id=llm_model.ai_model_id,
-        provider_model_key=provider_key,
-        prompt="test",
         min_charge_tokens=15,
-        temperature=None,
-        instructions=None,
+        free_requests_limit=0,
     )
 
-    result = await llm_service._prepare_generation_and_freeze_user_tokens(data=data)
+    result = await generation_billing.prepare_generation_and_freeze_user_tokens(data=data)
 
     assert isinstance(result, AIGeneration)
     assert result.user_id == user.id

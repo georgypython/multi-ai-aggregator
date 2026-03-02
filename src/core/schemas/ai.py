@@ -20,6 +20,34 @@ class LLMRequestDataSchema(BaseModel):
     instructions: str | None
 
 
+class GenerationRequestSchema(BaseModel):
+    user_id: UUID
+    ai_model_id: UUID
+    min_charge_tokens: float
+    free_requests_limit: int = 0
+
+
+class GenerationResultSchema(BaseModel):
+    user_id: UUID
+    generation_id: UUID
+    hold_amount: float
+    provider_cost: float
+
+
+class GenerationRequestSchema(BaseModel):
+    user_id: UUID
+    ai_model_id: UUID
+    min_charge_tokens: float
+    free_requests_limit: int = 0
+
+
+class GenerationResultSchema(BaseModel):
+    user_id: UUID
+    generation_id: UUID
+    hold_amount: float
+    provider_cost: float
+
+
 class LLMProviderResponseSchema(BaseModel):
     text: str
     model: str

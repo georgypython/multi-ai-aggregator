@@ -13,11 +13,11 @@ from src.core.exceptions.llm import (
     ProviderTimeoutError,
     UserBalanceNotConfiguredError,
 )
-from src.core.schemas.ai import AIModelListItemResponseSchema, LLMResultResponseSchema
+from src.core.schemas.ai import LLMResultResponseSchema
 from src.core.schemas.ai import LLMConfigCreateRequestSchema, LLMConfigResponseSchema
 from src.core.logger_setup import logger
-from src.services.llm import LLMService
-from src.core.models.enums.ai import ModelType
+from src.services.llm_configuration import LLMConfigurationService
+from src.services.llm_generation import LLMGenerationService
 
 
 router = APIRouter(
@@ -26,11 +26,55 @@ router = APIRouter(
 )
 
 
-@router.post("/generations/llm", response_model=LLMResultResponseSchema)
+@router.post("/configs", response_model=LLMConfigResponseSchema)
+async def create_or_update_llm_config(
+    payload: LLMConfigCreateRequestSchema,
+    service: FromDishka[LLMConfigurationService],
+    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+) -> LLMConfigResponseSchema:
+    try:
+        return await service.create_or_update_user_llm_config(
+            user_id=user_id,
+            payload=payload,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        )
+    except Exception as exc:
+        logger.exception("Unhandled error in /llm/configs POST")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {exc}",
+        )
+
+
+@router.get("/configs", response_model=LLMConfigResponseSchema)
+async def get_llm_config(
+    service: FromDishka[LLMConfigurationService],
+    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+) -> LLMConfigResponseSchema:
+    try:
+        return await service.get_user_llm_config(user_id=user_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        )
+    except Exception as exc:
+        logger.exception("Unhandled error in /llm/configs GET")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {exc}",
+        )
+    
+
+@router.post("/generations", response_model=LLMResultResponseSchema)
 async def generate_llm_response(
     model_id: UUID,
     prompt: str,
-    service: FromDishka[LLMService],
+    service: FromDishka[LLMGenerationService],
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ) -> LLMResultResponseSchema:
     """
@@ -113,72 +157,3 @@ async def generate_llm_response(
             detail=f"Internal server error: {exc}",
         )
 
-
-@router.get("/models", response_model=list[AIModelListItemResponseSchema])
-async def get_ai_models_list(
-    service: FromDishka[LLMService],
-    model_type: ModelType | None = None,
-    active_only: bool = True,
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
-) -> list[AIModelListItemResponseSchema]:
-    try:
-        return await service.get_ai_models_list(
-            user_id=user_id,
-            model_type=model_type,
-            active_only=active_only,
-        )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        )
-    except Exception as exc:
-        logger.exception("Unhandled error in /models")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {exc}",
-        )
-
-
-@router.post("/llm/configs", response_model=LLMConfigResponseSchema)
-async def create_or_update_llm_config(
-    payload: LLMConfigCreateRequestSchema,
-    service: FromDishka[LLMService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
-) -> LLMConfigResponseSchema:
-    try:
-        return await service.create_or_update_user_llm_config(
-            user_id=user_id,
-            payload=payload,
-        )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        )
-    except Exception as exc:
-        logger.exception("Unhandled error in /llm/configs POST")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {exc}",
-        )
-
-
-@router.get("/llm/configs", response_model=LLMConfigResponseSchema)
-async def get_llm_config(
-    service: FromDishka[LLMService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
-) -> LLMConfigResponseSchema:
-    try:
-        return await service.get_user_llm_config(user_id=user_id)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        )
-    except Exception as exc:
-        logger.exception("Unhandled error in /llm/configs GET")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {exc}",
-        )
