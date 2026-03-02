@@ -26,7 +26,8 @@ class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
 
 
-class ApiPrefix(BaseModel):
+class ApiConfig(BaseModel):
+    api_key: str = "YOUR_API_KEY"
     prefix: str = "/api"
     v1: ApiV1Prefix = ApiV1Prefix()
 
@@ -70,6 +71,10 @@ class RedisConfig(BaseModel):
         return f"redis://{auth}{self.host}:{self.port}/{self.db}"
 
 
+class AILogicConfig(BaseModel):
+    new_user_free_tokens: float = 10
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=BASE_PATH / ".env",
@@ -77,12 +82,14 @@ class Settings(BaseSettings):
         env_nested_delimiter="__",
         env_prefix="APP_CONFIG__",
     )
+
     logger: LoggerConfig = LoggerConfig()
-    api: ApiPrefix = ApiPrefix()
+    api: ApiConfig = ApiConfig()
     run: RunConfig = RunConfig()
     db: DbConfig
     openrouter: OpenRouterConfig
     redis: RedisConfig = RedisConfig()
-
+    ai_logic: AILogicConfig = AILogicConfig()
+    
 
 settings = Settings()

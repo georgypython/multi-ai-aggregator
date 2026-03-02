@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import BigInteger
 
 from .base import Base
 from .mixins import CreatedAtMixin, UUIDPKMixin
@@ -14,6 +16,7 @@ if TYPE_CHECKING:
 class User(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "users"
 
+    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     balance: Mapped["UserBalance | None"] = relationship(

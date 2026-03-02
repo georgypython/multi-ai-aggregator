@@ -8,12 +8,21 @@ from src.core.exceptions.llm import (
     UserBalanceNotConfiguredError,
     ProviderError,
 )
-from src.core.models import AIGeneration
-from src.core.models.enums import PriceType
-from src.core.schemas.ai import LLMRequestDataSchema, LLMProviderResponseSchema, LLMResultResponseSchema
+from src.core.models import AIGeneration, LLMConfiguration
+from src.core.models.enums import PriceType, ModelType, LLMConfigurationType
+from src.core.schemas.ai import (
+    AIModelListItemResponseSchema,
+    LLMConfigCreateRequestSchema,
+    LLMConfigResponseSchema,
+    LLMRequestDataSchema,
+    LLMProviderResponseSchema,
+    LLMResultResponseSchema,
+)
 from src.repositories import (
+    AIModelRepository,
     UserRepository,
     LLMRepository,
+    LLMConfigurationRepository,
     GenerationRepository,
     ChatMemoryRepository,
     TokenPriceRepository,
@@ -27,22 +36,135 @@ class LLMService:
         self,
         session: AsyncSession,
         llm_client: OpenRouterService,
+        ai_model_repo: AIModelRepository,
         user_repo: UserRepository,
         llm_repo: LLMRepository,
+        llm_configuration_repo: LLMConfigurationRepository,
         generation_repo: GenerationRepository,
         chat_memory_repo: ChatMemoryRepository,
         token_price_repo: TokenPriceRepository,
     ) -> None:
         self.session = session
         self.llm_client = llm_client
+        self.ai_model_repo = ai_model_repo
         self.user_repo = user_repo
         self.llm_repo = llm_repo
+        self.llm_configuration_repo = llm_configuration_repo
         self.generation_repo = generation_repo
         self.chat_memory_repo = chat_memory_repo
         self.token_price_repo = token_price_repo
 
+    def _build_llm_config_response(self, config: LLMConfiguration) -> LLMConfigResponseSchema:
+        return LLMConfigResponseSchema(
+            id=config.id,
+            user_id=config.user_id,
+            name=config.name,
+            configuration_type=config.configuration_type,
+            temperature=config.temperature,
+            instructions=config.instructions,
+            created_at=config.created_at,
+        )
+
+    async def create_or_update_user_llm_config(
+        self,
+        user_id: UUID,
+        payload: LLMConfigCreateRequestSchema,
+    ) -> LLMConfigResponseSchema:
+        user = await self.user_repo.get_one(
+            session=self.session,
+            id=user_id,
+            is_active=True,
+        )
+        if not user:
+            raise ValueError(f"Active user not found for user_id={user_id}")
+
+        llm_config = await self.llm_configuration_repo.get_one(
+            session=self.session,
+            user_id=user_id,
+            configuration_type=LLMConfigurationType.USER,
+        )
+
+        payload_data = payload.model_dump(exclude_unset=True)
+        if not llm_config:
+            llm_config = self.llm_configuration_repo.add_user_config(
+                session=self.session,
+                user_id=user_id,
+                data=payload_data,
+            )
+        else:
+            for key, value in payload_data.items():
+                setattr(llm_config, key, value)
+
+        await self.session.commit()
+        await self.session.refresh(llm_config)
+
+        return self._build_llm_config_response(llm_config)
+
+    async def get_user_llm_config(
+        self,
+        user_id: UUID,
+    ) -> LLMConfigResponseSchema:
+        user = await self.user_repo.get_one(
+            session=self.session,
+            id=user_id,
+            is_active=True,
+        )
+        if not user:
+            raise ValueError(f"Active user not found for user_id={user_id}")
+
+        config = await self.llm_configuration_repo.get_one(
+            session=self.session,
+            user_id=user_id,
+            configuration_type=LLMConfigurationType.USER,
+        )
+        if not config:
+            raise ValueError(f"LLMConfiguration not found for user_id={user_id}")
+
+        return self._build_llm_config_response(config=config)
+
+    async def get_ai_models_list(
+        self,
+        user_id: UUID,
+        model_type: ModelType | None = None,
+        active_only: bool = True,
+    ) -> list[AIModelListItemResponseSchema]:
+        async with self.session.begin():
+            user = await self.user_repo.get_one(
+                session=self.session,
+                id=user_id,
+                is_active=True,
+            )
+            if not user:
+                raise ValueError(f"Active user not found for user_id={user_id}")
+
+            filters: dict[str, object] = {}
+            if model_type is not None:
+                filters["model_type"] = model_type
+            if active_only:
+                filters["is_active"] = True
+
+            ai_models = await self.ai_model_repo.get_all(session=self.session, **filters)
+
+        result: list[AIModelListItemResponseSchema] = []
+        for ai_model in ai_models:
+            result.append(
+                AIModelListItemResponseSchema(
+                    id=ai_model.id,
+                    name=ai_model.name,
+                    provider_key=ai_model.provider_key,
+                    is_active=ai_model.is_active,
+                    description=ai_model.description,
+                    model_type=ai_model.model_type,
+                    created_at=ai_model.created_at,
+                )
+            )
+        return result
+
     async def _create_and_validate_request_llm_data(
-        self, user_id: UUID, model_id: UUID, prompt: str
+        self,
+        user_id: UUID,
+        model_id: UUID,
+        prompt: str,
     ) -> LLMRequestDataSchema:
         async with self.session.begin():
             user = await self.user_repo.get_one_with_balance_and_llm_configuration(
@@ -241,9 +363,16 @@ class LLMService:
             tokens_cost=final_tokens_cost,
         )
 
-    async def generate_llm_response(self, user_id: UUID, model_id: UUID, prompt: str):
+    async def generate_llm_response(
+        self,
+        user_id: UUID,
+        model_id: UUID,
+        prompt: str,
+    ):
         llm_request_data = await self._create_and_validate_request_llm_data(
-            user_id=user_id, model_id=model_id, prompt=prompt
+            user_id=user_id,
+            model_id=model_id,
+            prompt=prompt,
         )
 
         chat_history = await self.chat_memory_repo.get_chat_history(user_id=user_id)

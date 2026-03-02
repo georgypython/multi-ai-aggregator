@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.core.config import settings
 from src.core.models.user_balances import UserBalance
 from src.core.models.users import User
 from src.core.exceptions.llm import InsufficientBalanceError
@@ -12,6 +13,38 @@ from .abstract_repo import AbstractRepository
 
 class UserRepository(AbstractRepository[User]):
     model = User
+
+    async def get_or_create_by_telegram_id(
+        self,
+        session: AsyncSession,
+        available_tokens: float = 0,
+        *,
+        telegram_id: int,
+    ) -> User:
+        user = await self.get_one(
+            session=session,
+            telegram_id=telegram_id,
+            is_active=True,
+        )
+        if not user:
+            user = User(telegram_id=telegram_id, is_active=True)
+            session.add(user)
+            await session.flush()
+
+        balance_stmt = select(UserBalance).where(UserBalance.user_id == user.id)
+        balance_result = await session.execute(balance_stmt)
+        balance = balance_result.scalar_one_or_none()
+        if not balance:
+            session.add(
+                UserBalance(
+                    user_id=user.id,
+                    available_tokens=available_tokens,
+                    hold_tokens=0.0,
+                )
+            )
+            await session.flush()
+
+        return user
 
     async def get_one_with_balance_and_llm_configuration(
         self,

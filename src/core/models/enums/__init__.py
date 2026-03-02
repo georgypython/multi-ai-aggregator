@@ -1,3 +1,3 @@
-from .ai import GenerationStatus, LLMConfigurationType, PriceType
+from .ai import GenerationStatus, LLMConfigurationType, PriceType, ModelType
 
-__all__ = ("GenerationStatus", "LLMConfigurationType", "PriceType")
+__all__ = ("GenerationStatus", "LLMConfigurationType", "PriceType", "ModelType")

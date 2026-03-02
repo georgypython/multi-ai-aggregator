@@ -2,8 +2,10 @@ from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 
 from src.repositories import (
+    AIModelRepository,
     UserRepository,
     LLMRepository,
+    LLMConfigurationRepository,
     GenerationRepository,
     ChatMemoryRepository,
     TokenPriceRepository,
@@ -11,6 +13,12 @@ from src.repositories import (
 
 
 class RepositoriesProvider(Provider):
+    @provide(scope=Scope.APP)
+    def get_ai_model_repository(
+        self,
+    ) -> AIModelRepository:
+        return AIModelRepository()
+
     @provide(scope=Scope.APP)
     def get_user_repository(
         self,
@@ -22,6 +30,12 @@ class RepositoriesProvider(Provider):
         self,
     ) -> LLMRepository:
         return LLMRepository()
+
+    @provide(scope=Scope.APP)
+    def get_llm_configuration_repository(
+        self,
+    ) -> LLMConfigurationRepository:
+        return LLMConfigurationRepository()
 
     @provide(scope=Scope.APP)
     def get_generation_repository(

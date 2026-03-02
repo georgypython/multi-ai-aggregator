@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.models import AIModel, LLMConfiguration, LLMModel, User, UserBalance, AIGeneration
-from src.core.models.enums import GenerationStatus, LLMConfigurationType
+from src.core.models.enums import GenerationStatus, LLMConfigurationType, ModelType
 from src.core.schemas.ai import LLMRequestDataSchema
 from src.repositories.generation import GenerationRepository
 from src.repositories.llm import LLMRepository
@@ -22,7 +22,12 @@ async def test_create_and_validate_request_llm_data_uses_user_llm_configuration(
 ) -> None:
     provider_key = f"openai/gpt-4o-mini-{uuid4()}"
 
-    ai_model = AIModel(name="GPT-4o mini", provider_key=provider_key, is_active=True)
+    ai_model = AIModel(
+        name="GPT-4o mini",
+        provider_key=provider_key,
+        is_active=True,
+        model_type=ModelType.LLM,
+    )
     db_session.add(ai_model)
     await db_session.flush()
 
@@ -32,14 +37,11 @@ async def test_create_and_validate_request_llm_data_uses_user_llm_configuration(
         output_price_per_million_usd=0.60,
         min_charge_tokens=10,
         is_temperature_support=True,
-        provider_price_usd=0.001,
-        our_price_tokens=10,
-        min_req_tokens=1,
     )
     db_session.add(llm_model)
     await db_session.flush()
 
-    user = User(is_active=True)
+    user = User(telegram_id=10_000_001, is_active=True)
     db_session.add(user)
     await db_session.flush()
 
@@ -55,12 +57,15 @@ async def test_create_and_validate_request_llm_data_uses_user_llm_configuration(
         ]
     )
     await db_session.flush()
+    await db_session.commit()
 
     llm_service = LLMService(
         session=db_session,
         llm_client=AsyncMock(),
+        ai_model_repo=AsyncMock(),
         user_repo=UserRepository(),
         llm_repo=LLMRepository(),
+        llm_configuration_repo=AsyncMock(),
         generation_repo=GenerationRepository(),
         chat_memory_repo=AsyncMock(),
         token_price_repo=AsyncMock(),
@@ -85,7 +90,12 @@ async def test_prepare_generation_and_freeze_user_tokens_creates_processing_gene
 ) -> None:
     provider_key = f"openai/gpt-4o-mini-{uuid4()}"
 
-    ai_model = AIModel(name="GPT-4o mini", provider_key=provider_key, is_active=True)
+    ai_model = AIModel(
+        name="GPT-4o mini",
+        provider_key=provider_key,
+        is_active=True,
+        model_type=ModelType.LLM,
+    )
     db_session.add(ai_model)
     await db_session.flush()
 
@@ -95,14 +105,11 @@ async def test_prepare_generation_and_freeze_user_tokens_creates_processing_gene
         output_price_per_million_usd=0.60,
         min_charge_tokens=15,
         is_temperature_support=True,
-        provider_price_usd=0.001,
-        our_price_tokens=10,
-        min_req_tokens=1,
     )
     db_session.add(llm_model)
     await db_session.flush()
 
-    user = User(is_active=True)
+    user = User(telegram_id=10_000_002, is_active=True)
     db_session.add(user)
     await db_session.flush()
 
@@ -113,8 +120,10 @@ async def test_prepare_generation_and_freeze_user_tokens_creates_processing_gene
     llm_service = LLMService(
         session=db_session,
         llm_client=AsyncMock(),
+        ai_model_repo=AsyncMock(),
         user_repo=UserRepository(),
         llm_repo=LLMRepository(),
+        llm_configuration_repo=AsyncMock(),
         generation_repo=GenerationRepository(),
         chat_memory_repo=AsyncMock(),
         token_price_repo=AsyncMock(),

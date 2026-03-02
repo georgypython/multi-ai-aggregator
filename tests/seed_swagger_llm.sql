@@ -6,13 +6,50 @@
 BEGIN;
 
 -- Stable IDs for manual testing
--- User:            11111111-1111-1111-1111-111111111111
--- Free AI Model:   22222222-2222-2222-2222-222222222221 (openai/gpt-4o-mini)
--- Paid AI Model:   22222222-2222-2222-2222-222222222222 (openai/gpt-5.2)
--- Free LLM Model:  33333333-3333-3333-3333-333333333331
--- Paid LLM Model:  33333333-3333-3333-3333-333333333332
+-- User:          11111111-1111-1111-1111-111111111111
+-- TG user id:    100500
+-- AI models:     22222222-2222-2222-2222-222222222221 .. 22222222-2222-2222-2222-222222222232
+-- LLM models:    33333333-3333-3333-3333-333333333331 .. 33333333-3333-3333-3333-333333333336
+-- Image models:  33333333-3333-3333-3333-333333333341 .. 33333333-3333-3333-3333-333333333342
+-- Video models:  33333333-3333-3333-3333-333333333351 .. 33333333-3333-3333-3333-333333333352
+
+-- Providers used in this seed:
+-- LLM:   openai/gpt-4o-mini, openai/gpt-5.2, openai/gpt-5.1, openai/gpt-4, x-ai/grok-4, anthropic/claude-sonnet-4.5
+-- Image: openai/dall-e, openai/nano-banana
+-- Video: openai/sora-2, google/veo-3
 
 -- Clean previous seed (idempotent)
+DELETE FROM ai_generations
+WHERE user_id = '11111111-1111-1111-1111-111111111111'
+   OR ai_model_id IN (
+       '22222222-2222-2222-2222-222222222221',
+       '22222222-2222-2222-2222-222222222222',
+       '22222222-2222-2222-2222-222222222223',
+       '22222222-2222-2222-2222-222222222224',
+       '22222222-2222-2222-2222-222222222225',
+       '22222222-2222-2222-2222-222222222226',
+       '22222222-2222-2222-2222-222222222227',
+       '22222222-2222-2222-2222-222222222228',
+       '22222222-2222-2222-2222-222222222231',
+       '22222222-2222-2222-2222-222222222232'
+   )
+   OR ai_model_id IN (
+       SELECT id
+       FROM ai_models
+       WHERE provider_key IN (
+           'openai/gpt-4o-mini',
+           'openai/gpt-5.2',
+           'openai/gpt-5.1',
+           'openai/gpt-4',
+           'x-ai/grok-4',
+           'anthropic/claude-sonnet-4.5',
+           'openai/dall-e',
+           'openai/nano-banana',
+           'openai/sora-2',
+           'google/veo-3'
+       )
+   );
+
 DELETE FROM llm_configurations
 WHERE user_id = '11111111-1111-1111-1111-111111111111';
 
@@ -22,24 +59,80 @@ WHERE user_id = '11111111-1111-1111-1111-111111111111';
 DELETE FROM llm_models
 WHERE ai_model_id IN (
     '22222222-2222-2222-2222-222222222221',
-    '22222222-2222-2222-2222-222222222222'
+    '22222222-2222-2222-2222-222222222222',
+    '22222222-2222-2222-2222-222222222223',
+    '22222222-2222-2222-2222-222222222224',
+    '22222222-2222-2222-2222-222222222225',
+    '22222222-2222-2222-2222-222222222226'
+);
+
+DELETE FROM image_models
+WHERE ai_model_id IN (
+    '22222222-2222-2222-2222-222222222231',
+    '22222222-2222-2222-2222-222222222232'
+);
+
+DELETE FROM video_models
+WHERE ai_model_id IN (
+    '22222222-2222-2222-2222-222222222227',
+    '22222222-2222-2222-2222-222222222228'
 );
 
 DELETE FROM llm_models
 WHERE ai_model_id IN (
     SELECT id
     FROM ai_models
-    WHERE provider_key IN ('openai/gpt-4o-mini', 'openai/gpt-5.2')
+    WHERE provider_key IN (
+        'openai/gpt-4o-mini',
+        'openai/gpt-5.2',
+        'openai/gpt-5.1',
+        'openai/gpt-4',
+        'x-ai/grok-4',
+        'anthropic/claude-sonnet-4.5'
+    )
+);
+
+DELETE FROM image_models
+WHERE ai_model_id IN (
+    SELECT id
+    FROM ai_models
+    WHERE provider_key IN ('openai/dall-e', 'openai/nano-banana')
+);
+
+DELETE FROM video_models
+WHERE ai_model_id IN (
+    SELECT id
+    FROM ai_models
+    WHERE provider_key IN ('openai/sora-2', 'google/veo-3')
 );
 
 DELETE FROM ai_models
 WHERE id IN (
     '22222222-2222-2222-2222-222222222221',
-    '22222222-2222-2222-2222-222222222222'
+    '22222222-2222-2222-2222-222222222222',
+    '22222222-2222-2222-2222-222222222223',
+    '22222222-2222-2222-2222-222222222224',
+    '22222222-2222-2222-2222-222222222225',
+    '22222222-2222-2222-2222-222222222226',
+    '22222222-2222-2222-2222-222222222227',
+    '22222222-2222-2222-2222-222222222228',
+    '22222222-2222-2222-2222-222222222231',
+    '22222222-2222-2222-2222-222222222232'
 );
 
 DELETE FROM ai_models
-WHERE provider_key IN ('openai/gpt-4o-mini', 'openai/gpt-5.2');
+WHERE provider_key IN (
+    'openai/gpt-4o-mini',
+    'openai/gpt-5.2',
+    'openai/gpt-5.1',
+    'openai/gpt-4',
+    'x-ai/grok-4',
+    'anthropic/claude-sonnet-4.5',
+    'openai/dall-e',
+    'openai/nano-banana',
+    'openai/sora-2',
+    'google/veo-3'
+);
 
 DELETE FROM token_prices
 WHERE id IN (
@@ -53,11 +146,12 @@ SET is_active = FALSE
 WHERE price_type = 'USAGE';
 
 DELETE FROM users
-WHERE id = '11111111-1111-1111-1111-111111111111';
+WHERE id = '11111111-1111-1111-1111-111111111111'
+    OR telegram_id = 100500;
 
 -- User + balance
-INSERT INTO users (id, is_active)
-VALUES ('11111111-1111-1111-1111-111111111111', TRUE);
+INSERT INTO users (id, telegram_id, is_active)
+VALUES ('11111111-1111-1111-1111-111111111111', 100500, TRUE);
 
 INSERT INTO user_balances (id, user_id, available_tokens, hold_tokens)
 VALUES (
@@ -79,21 +173,87 @@ VALUES (
 );
 
 -- AI Models
-INSERT INTO ai_models (id, name, provider_key, is_active, description)
+INSERT INTO ai_models (id, name, provider_key, is_active, description, model_type)
 VALUES
     (
         '22222222-2222-2222-2222-222222222221',
-        'GPT-4o mini (free tier)',
+        'GPT-4o mini (FREE)',
         'openai/gpt-4o-mini',
         TRUE,
-        'Free test model: first 3 requests are free.'
+        'БЕСПЛАТНАЯ быстрая модель для простых задач.',
+        'LLM'
     ),
     (
         '22222222-2222-2222-2222-222222222222',
-        'GPT-5.2 (paid)',
+        'GPT-5.2',
         'openai/gpt-5.2',
         TRUE,
-        'Paid test model.'
+        'Самая продвинутая модель ChatGPT.',
+        'LLM'
+    ),
+    (
+        '22222222-2222-2222-2222-222222222223',
+        'GPT-5.1',
+        'openai/gpt-5.1',
+        TRUE,
+        NULL,
+        'LLM'
+    ),
+    (
+        '22222222-2222-2222-2222-222222222224',
+        'GPT-4',
+        'openai/gpt-4',
+        TRUE,
+        'Старая надежная модель OpenAI.',
+        'LLM'
+    ),
+    (
+        '22222222-2222-2222-2222-222222222225',
+        'Grok 4',
+        'x-ai/grok-4',
+        TRUE,
+        'Модель от Илона Маска.',
+        'LLM'
+    ),
+    (
+        '22222222-2222-2222-2222-222222222226',
+        'Claude Sonnet 4.5',
+        'anthropic/claude-sonnet-4.5',
+        TRUE,
+        'Отлично справляется с анализом и творчеством.',
+        'LLM'
+    ),
+    (
+        '22222222-2222-2222-2222-222222222227',
+        'Sora 2',
+        'openai/sora-2',
+        TRUE,
+        'Видео-генерация высокого качества.',
+        'VIDEO'
+    ),
+    (
+        '22222222-2222-2222-2222-222222222228',
+        'Veo 3',
+        'google/veo-3',
+        TRUE,
+        'Кинематографичная видео-генерация.',
+        'VIDEO'
+    ),
+    (
+        '22222222-2222-2222-2222-222222222231',
+        'Nano-banana',
+        'openai/nano-banana',
+        TRUE,
+        'Быстрая и дешевая генерация изображений.',
+        'IMAGE'
+    ),
+    (
+        '22222222-2222-2222-2222-222222222232',
+        'DALLE E',
+        'openai/dall-e',
+        TRUE,
+        'Качественная генерация изображений.',
+        'IMAGE'
     );
 
 -- LLM model settings + provider pricing per 1M tokens
@@ -104,10 +264,7 @@ INSERT INTO llm_models (
     output_price_per_million_usd,
     free_requests_limit,
     min_charge_tokens,
-    is_temperature_support,
-    provider_price_usd,
-    our_price_tokens,
-    min_req_tokens
+    is_temperature_support
 )
 VALUES
     (
@@ -115,23 +272,119 @@ VALUES
         '22222222-2222-2222-2222-222222222221',
         0.15,
         0.60,
-        3,
-        20,
-        TRUE,
-        0.0,
-        0,
-        0
+        10,
+        10,
+        TRUE
     ),
     (
         '33333333-3333-3333-3333-333333333332',
         '22222222-2222-2222-2222-222222222222',
         1.25,
         10.00,
+        10,
+        10,
+        TRUE
+    ),
+    (
+        '33333333-3333-3333-3333-333333333333',
+        '22222222-2222-2222-2222-222222222223',
+        0.90,
+        7.00,
         0,
-        50,
-        TRUE,
-        0.0,
+        45,
+        TRUE
+    ),
+    (
+        '33333333-3333-3333-3333-333333333334',
+        '22222222-2222-2222-2222-222222222224',
+        0.50,
+        2.50,
         0,
+        30,
+        TRUE
+    ),
+    (
+        '33333333-3333-3333-3333-333333333335',
+        '22222222-2222-2222-2222-222222222225',
+        1.10,
+        8.50,
+        10,
+        10,
+        TRUE
+    ),
+    (
+        '33333333-3333-3333-3333-333333333336',
+        '22222222-2222-2222-2222-222222222226',
+        1.00,
+        7.50,
+        0,
+        40,
+        TRUE
+    );
+
+-- Image model settings
+INSERT INTO image_models (
+    id,
+    ai_model_id,
+    size,
+    quality,
+    style,
+    images_count,
+    min_charge_tokens,
+    free_requests_limit
+)
+VALUES
+    (
+        '33333333-3333-3333-3333-333333333341',
+        '22222222-2222-2222-2222-222222222231',
+        '1024x1024',
+        'standard',
+        'vivid',
+        1,
+        30,
+        0
+    ),
+    (
+        '33333333-3333-3333-3333-333333333342',
+        '22222222-2222-2222-2222-222222222232',
+        '1024x1024',
+        'hd',
+        'natural',
+        1,
+        40,
+        0
+    );
+
+-- Video model settings
+INSERT INTO video_models (
+    id,
+    ai_model_id,
+    resolution,
+    fps,
+    price_per_second_usd,
+    max_duration_seconds,
+    min_charge_tokens,
+    free_requests_limit
+)
+VALUES
+    (
+        '33333333-3333-3333-3333-333333333351',
+        '22222222-2222-2222-2222-222222222227',
+        '1080p',
+        24,
+        0.30,
+        15,
+        120,
+        0
+    ),
+    (
+        '33333333-3333-3333-3333-333333333352',
+        '22222222-2222-2222-2222-222222222228',
+        '1080p',
+        30,
+        0.45,
+        12,
+        150,
         0
     );
 
@@ -174,6 +427,9 @@ VALUES
 COMMIT;
 
 -- Quick reference for Swagger tests:
--- user_id (same for all):   11111111-1111-1111-1111-111111111111
--- free model_id (3 free):   22222222-2222-2222-2222-222222222221
--- paid model_id:            22222222-2222-2222-2222-222222222222
+-- tg_user_id:               100500
+-- resolved user_id:         11111111-1111-1111-1111-111111111111
+-- free llm model_id:        22222222-2222-2222-2222-222222222221
+-- paid llm model_id:        22222222-2222-2222-2222-222222222222
+-- video model examples:     22222222-2222-2222-2222-222222222227, 22222222-2222-2222-2222-222222222228
+-- image model examples:     22222222-2222-2222-2222-222222222231, 22222222-2222-2222-2222-222222222232

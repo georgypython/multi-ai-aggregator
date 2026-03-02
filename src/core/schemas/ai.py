@@ -1,7 +1,10 @@
+from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
+
+from src.core.models.enums import LLMConfigurationType, ModelType
 
 
 class LLMRequestDataSchema(BaseModel):
@@ -33,3 +36,29 @@ class LLMResultResponseSchema(BaseModel):
     user_id: UUID
     generation_id: UUID
     tokens_cost: float
+
+
+class AIModelListItemResponseSchema(BaseModel):
+    id: UUID
+    name: str
+    provider_key: str
+    is_active: bool
+    description: str | None
+    model_type: ModelType
+    created_at: datetime
+
+
+class LLMConfigCreateRequestSchema(BaseModel):
+    name: str | None = None
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    instructions: str | None = None
+
+
+class LLMConfigResponseSchema(BaseModel):
+    id: UUID
+    user_id: UUID | None
+    name: str | None
+    configuration_type: LLMConfigurationType
+    temperature: float | None
+    instructions: str | None
+    created_at: datetime

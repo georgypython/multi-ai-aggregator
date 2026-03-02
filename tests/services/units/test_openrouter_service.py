@@ -65,7 +65,9 @@ async def test_get_llm_response_success_builds_payload_and_parses_response() -> 
     _, kwargs = client.post.call_args
     assert kwargs["json"]["model"] == "openai/gpt-4o-mini"
     assert kwargs["json"]["temperature"] == 0.3
-    assert kwargs["json"]["messages"][0] == {"role": "system", "content": "Be concise"}
+    assert kwargs["json"]["messages"][0]["role"] == "system"
+    assert "Дополнительные предпочтения пользователя" in kwargs["json"]["messages"][0]["content"]
+    assert "Be concise" in kwargs["json"]["messages"][0]["content"]
 
 
 @pytest.mark.asyncio

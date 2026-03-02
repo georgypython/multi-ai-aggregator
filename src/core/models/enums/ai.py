@@ -17,3 +17,10 @@ class PriceType(StrEnum):
     SUBSCRIPTION = "subscription"
     ONE_TIME = "one_time"
     USAGE = "usage"
+
+
+class ModelType(StrEnum):
+    LLM = "llm"
+    IMAGE = "image"
+    VIDEO = "video"
+    

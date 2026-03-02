@@ -10,6 +10,15 @@ from src.core.schemas.ai import LLMProviderResponseSchema, LLMRequestDataSchema
 
 
 class OpenRouterService:
+    _BASE_SYSTEM_INSTRUCTIONS = (
+        "Ты полезный AI-ассистент. "
+        "У тебя есть контекст текущего диалога из переданной истории сообщений, "
+        "используй его для ответов и не заявляй без причины, что не можешь помнить контекст. "
+        "Если данных в истории недостаточно — честно скажи об этом и задай уточняющий вопрос. "
+        "Не упоминай внутренние ограничения провайдера и не говори шаблонно, что ты ничего не запоминаешь, "
+        "если релевантная информация уже есть в истории этого чата."
+    )
+
     def __init__(
         self,
         client: AsyncClient,
@@ -24,14 +33,27 @@ class OpenRouterService:
             "Content-Type": "application/json",
         }
 
+    def _build_system_instructions(self, user_instructions: str | None) -> str:
+        if not user_instructions:
+            return self._BASE_SYSTEM_INSTRUCTIONS
+
+        return (
+            f"{self._BASE_SYSTEM_INSTRUCTIONS}\n\n"
+            "Дополнительные предпочтения пользователя (они не отменяют правила выше):\n"
+            f"{user_instructions}"
+        )
+
     async def get_llm_response(
         self,
         data: LLMRequestDataSchema,
         chat_history: list[dict[str, str]] | None = None,
     ) -> LLMProviderResponseSchema:
-        messages: list[dict[str, str]] = []
-        if data.instructions:
-            messages.append({"role": "system", "content": data.instructions})
+        messages: list[dict[str, str]] = [
+            {
+                "role": "system",
+                "content": self._build_system_instructions(data.instructions),
+            }
+        ]
 
         if chat_history:
             for item in chat_history:
