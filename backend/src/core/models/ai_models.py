@@ -5,12 +5,11 @@ from sqlalchemy import ForeignKey, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .enums import ModelType
-from .mixins import UUIDPKMixin, CreatedAtMixin, ModelPricingMixin
+from .mixins import UUIDPKMixin, CreatedAtMixin
 from .base import Base
 
 if TYPE_CHECKING:
     from .ai_generations import AIGeneration
-    from .llm_configurations import LLMConfiguration
 
 
 class AIModel(Base, UUIDPKMixin, CreatedAtMixin):
@@ -23,6 +22,8 @@ class AIModel(Base, UUIDPKMixin, CreatedAtMixin):
     model_type: Mapped[ModelType] = mapped_column(
         Enum(ModelType, name="model_type_enum"), nullable=False
     )
+    min_charge_tokens: Mapped[int] = mapped_column(default=0, nullable=False)
+    free_requests_limit: Mapped[int] = mapped_column(default=0, nullable=False)
 
     llm_model: Mapped["LLMModel | None"] = relationship(
         back_populates="ai_model", cascade="all, delete-orphan", uselist=False
@@ -36,7 +37,7 @@ class AIModel(Base, UUIDPKMixin, CreatedAtMixin):
     generations: Mapped[list["AIGeneration"]] = relationship(back_populates="ai_model")
 
 
-class LLMModel(Base, UUIDPKMixin, CreatedAtMixin, ModelPricingMixin):
+class LLMModel(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "llm_models"
 
     ai_model_id: Mapped[UUID] = mapped_column(
@@ -51,29 +52,21 @@ class LLMModel(Base, UUIDPKMixin, CreatedAtMixin, ModelPricingMixin):
     ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="llm_model")
 
 
-class ImageModel(Base, UUIDPKMixin, CreatedAtMixin, ModelPricingMixin):
+class ImageModel(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "image_models"
 
     ai_model_id: Mapped[UUID] = mapped_column(
         ForeignKey("ai_models.id"), nullable=False, unique=True, index=True
     )
-    size: Mapped[str] = mapped_column(nullable=False)
-    quality: Mapped[str] = mapped_column(nullable=False)
-
+    
     ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="image_model")
 
 
-class VideoModel(Base, UUIDPKMixin, CreatedAtMixin, ModelPricingMixin):
+class VideoModel(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "video_models"
 
     ai_model_id: Mapped[UUID] = mapped_column(
         ForeignKey("ai_models.id"), nullable=False, unique=True, index=True
-    )
-    resolution: Mapped[str] = mapped_column(nullable=False)
-    fps: Mapped[int | None] = mapped_column(nullable=True, default=None)
-    price_per_second_usd: Mapped[float] = mapped_column(nullable=False)
-    max_duration_seconds: Mapped[int | None] = mapped_column(
-        nullable=True, default=None
     )
 
     ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="video_model")

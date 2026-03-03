@@ -29,6 +29,8 @@ async def test_create_and_validate_request_llm_data_uses_user_llm_configuration(
         provider_key=provider_key,
         is_active=True,
         model_type=ModelType.LLM,
+        min_charge_tokens=10,
+        free_requests_limit=0,
     )
     db_session.add(ai_model)
     await db_session.flush()
@@ -37,7 +39,6 @@ async def test_create_and_validate_request_llm_data_uses_user_llm_configuration(
         ai_model_id=ai_model.id,
         input_price_per_million_usd=0.15,
         output_price_per_million_usd=0.60,
-        min_charge_tokens=10,
         is_temperature_support=True,
     )
     db_session.add(llm_model)
@@ -101,6 +102,8 @@ async def test_prepare_generation_and_freeze_user_tokens_creates_processing_gene
         provider_key=provider_key,
         is_active=True,
         model_type=ModelType.LLM,
+        min_charge_tokens=15,
+        free_requests_limit=0,
     )
     db_session.add(ai_model)
     await db_session.flush()
@@ -109,7 +112,6 @@ async def test_prepare_generation_and_freeze_user_tokens_creates_processing_gene
         ai_model_id=ai_model.id,
         input_price_per_million_usd=0.15,
         output_price_per_million_usd=0.60,
-        min_charge_tokens=15,
         is_temperature_support=True,
     )
     db_session.add(llm_model)

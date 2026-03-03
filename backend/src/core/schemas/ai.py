@@ -20,6 +20,20 @@ class LLMRequestDataSchema(BaseModel):
     instructions: str | None
 
 
+class ImageModelConfigDataSchema(BaseModel):
+    sizes: list[str]
+    qualities: list[str]
+    provider_prices: dict[str, Any]
+
+
+class ImageRequestDataSchema(ImageModelConfigDataSchema):
+    user_id: UUID
+    ai_model_id: UUID
+    provider_model_key: str
+    prompt: str
+    min_charge_tokens: float
+    free_requests_limit: int = 0
+
 class GenerationRequestSchema(BaseModel):
     user_id: UUID
     ai_model_id: UUID

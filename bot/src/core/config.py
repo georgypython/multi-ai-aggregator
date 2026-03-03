@@ -9,7 +9,7 @@ BASE_PATH = Path(__file__).resolve().parent.parent.parent.parent
 
 class LoggerConfig(BaseModel):
     log_lvl: int = 20
-    logger_path: Path = BASE_PATH / "logs" / "app_logs.log"
+    logger_path: Path = BASE_PATH / "logs" / "bot_logs.log"
 
 
 class TgConfig(BaseModel):

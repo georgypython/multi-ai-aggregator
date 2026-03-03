@@ -6,6 +6,7 @@ from dishka import Provider, Scope, provide
 from src.core.config import settings
 from src.services.ai_models import AIModelsService
 from src.services.generation_billing import GenerationBillingService
+from src.services.image_generation import ImageGenerationService
 from src.services.llm_configuration import LLMConfigurationService
 from src.services.llm_generation import LLMGenerationService
 from src.services.openrouter import OpenRouterService
@@ -76,6 +77,21 @@ class ServicesProvider(Provider):
             session=session,
             ai_model_repo=ai_model_repo,
             user_repo=user_repo,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_image_generation_service(
+        self,
+        session: AsyncSession,
+        user_repo: UserRepository,
+        ai_model_repo: AIModelRepository,
+        generation_billing_service: GenerationBillingService,
+    ) -> ImageGenerationService:
+        return ImageGenerationService(
+            session=session,
+            user_repo=user_repo,
+            ai_model_repo=ai_model_repo,
+            generation_billing_service=generation_billing_service,
         )
 
     @provide(scope=Scope.REQUEST)

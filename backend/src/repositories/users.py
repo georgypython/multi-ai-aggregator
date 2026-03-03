@@ -14,6 +14,21 @@ from .abstract_repo import AbstractRepository
 class UserRepository(AbstractRepository[User]):
     model = User
 
+    async def get_one_with_balance(
+        self,
+        session: AsyncSession,
+        **filters,
+    ) -> User | None:
+        stmt = (
+            select(self.model)
+            .options(
+                selectinload(self.model.balance),
+            )
+            .filter_by(**filters)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_or_create_by_telegram_id(
         self,
         session: AsyncSession,
