@@ -1,25 +1,42 @@
-# FastAPI Application Template
+# AI App (Monorepo)
 
-Minimal FastAPI backend template I use to quickly start new services and prototypes.
+В этом репозитории 2 сервиса:
 
-The goal of this template is to minimize setup time and provide a clean, predictable base for small microservices and MVPs.
-It reflects my personal approach to how a Python backend should look at the early stage:
-explicit dependency injection, clear boundaries, and simple but robust structure.
+- `backend/` — FastAPI API
+- `bot/` — Telegram-бот
 
-This is not a tutorial or showcase project — it is a practical production-oriented template.
+## Общий конфиг (вынесен в root)
 
-## Tech focus
-- FastAPI
-- explicit DI (Dishka)
-- clear scopes and lifetimes
-- structured configuration and startup flow
-- async-first approach
-- Domain layered architecture
+- `./.env` — единый env для backend + bot
+- `./docker-compose.yml` — общие инфраструктурные сервисы (PostgreSQL, Redis)
+- `./pyproject.toml` — `uv` workspace
 
-## Run locally
+Скопируй шаблон:
 
 ```bash
-uv sync
+cp .env.example .env
+```
+
+## Запуск
+
+1) Инфраструктура:
+
+```bash
 docker compose up -d
-uv run uvicorn main:app --reload
+```
+
+2) Backend:
+
+```bash
+cd backend
+uv sync
+uv run uvicorn src.main:app --reload
+```
+
+3) Bot:
+
+```bash
+cd bot
+uv sync
+uv run python -m src.main
 ```
