@@ -15,7 +15,7 @@ BEGIN;
 
 -- Providers used in this seed:
 -- LLM:   openai/gpt-4o-mini, openai/gpt-5.2, openai/gpt-5.1, openai/gpt-4, x-ai/grok-4, anthropic/claude-sonnet-4.5
--- Image: openai/dall-e, openai/nano-banana
+-- Image: openai/dall-e-3, google/nano-banana-2/text-to-image
 -- Video: openai/sora-2, google/veo-3
 
 -- Clean previous seed (idempotent)
@@ -43,8 +43,8 @@ WHERE user_id = '11111111-1111-1111-1111-111111111111'
            'openai/gpt-4',
            'x-ai/grok-4',
            'anthropic/claude-sonnet-4.5',
-           'openai/dall-e',
-           'openai/nano-banana',
+           'openai/dall-e-3',
+           'google/nano-banana-2/text-to-image',
            'openai/sora-2',
            'google/veo-3'
        )
@@ -96,7 +96,7 @@ DELETE FROM image_models
 WHERE ai_model_id IN (
     SELECT id
     FROM ai_models
-    WHERE provider_key IN ('openai/dall-e', 'openai/nano-banana')
+    WHERE provider_key IN ('openai/dall-e-3', 'google/nano-banana-2/text-to-image')
 );
 
 DELETE FROM video_models
@@ -128,8 +128,8 @@ WHERE provider_key IN (
     'openai/gpt-4',
     'x-ai/grok-4',
     'anthropic/claude-sonnet-4.5',
-    'openai/dall-e',
-    'openai/nano-banana',
+    'openai/dall-e-3',
+    'google/nano-banana-2/text-to-image',
     'openai/sora-2',
     'google/veo-3'
 );
@@ -173,7 +173,16 @@ VALUES (
 );
 
 -- AI Models
-INSERT INTO ai_models (id, name, provider_key, is_active, description, model_type)
+INSERT INTO ai_models (
+    id,
+    name,
+    provider_key,
+    is_active,
+    description,
+    model_type,
+    min_charge_tokens,
+    free_requests_limit
+)
 VALUES
     (
         '22222222-2222-2222-2222-222222222221',
@@ -181,7 +190,9 @@ VALUES
         'openai/gpt-4o-mini',
         TRUE,
         'БЕСПЛАТНАЯ быстрая модель для простых задач.',
-        'LLM'
+        'LLM',
+        10,
+        10
     ),
     (
         '22222222-2222-2222-2222-222222222222',
@@ -189,7 +200,9 @@ VALUES
         'openai/gpt-5.2',
         TRUE,
         'Самая продвинутая модель ChatGPT.',
-        'LLM'
+        'LLM',
+        10,
+        10
     ),
     (
         '22222222-2222-2222-2222-222222222223',
@@ -197,7 +210,9 @@ VALUES
         'openai/gpt-5.1',
         TRUE,
         NULL,
-        'LLM'
+        'LLM',
+        45,
+        0
     ),
     (
         '22222222-2222-2222-2222-222222222224',
@@ -205,7 +220,9 @@ VALUES
         'openai/gpt-4',
         TRUE,
         'Старая надежная модель OpenAI.',
-        'LLM'
+        'LLM',
+        30,
+        0
     ),
     (
         '22222222-2222-2222-2222-222222222225',
@@ -213,7 +230,9 @@ VALUES
         'x-ai/grok-4',
         TRUE,
         'Модель от Илона Маска.',
-        'LLM'
+        'LLM',
+        10,
+        10
     ),
     (
         '22222222-2222-2222-2222-222222222226',
@@ -221,7 +240,9 @@ VALUES
         'anthropic/claude-sonnet-4.5',
         TRUE,
         'Отлично справляется с анализом и творчеством.',
-        'LLM'
+        'LLM',
+        40,
+        0
     ),
     (
         '22222222-2222-2222-2222-222222222227',
@@ -229,7 +250,9 @@ VALUES
         'openai/sora-2',
         TRUE,
         'Видео-генерация высокого качества.',
-        'VIDEO'
+        'VIDEO',
+        120,
+        0
     ),
     (
         '22222222-2222-2222-2222-222222222228',
@@ -237,23 +260,29 @@ VALUES
         'google/veo-3',
         TRUE,
         'Кинематографичная видео-генерация.',
-        'VIDEO'
+        'VIDEO',
+        150,
+        0
     ),
     (
         '22222222-2222-2222-2222-222222222231',
         'Nano-banana',
-        'openai/nano-banana',
+        'google/nano-banana-2/text-to-image',
         TRUE,
         'Быстрая и дешевая генерация изображений.',
-        'IMAGE'
+        'IMAGE',
+        30,
+        0
     ),
     (
         '22222222-2222-2222-2222-222222222232',
         'DALLE E',
-        'openai/dall-e',
+        'openai/dall-e-3',
         TRUE,
         'Качественная генерация изображений.',
-        'IMAGE'
+        'IMAGE',
+        40,
+        0
     );
 
 -- LLM model settings + provider pricing per 1M tokens
@@ -262,8 +291,6 @@ INSERT INTO llm_models (
     ai_model_id,
     input_price_per_million_usd,
     output_price_per_million_usd,
-    free_requests_limit,
-    min_charge_tokens,
     is_temperature_support
 )
 VALUES
@@ -272,8 +299,6 @@ VALUES
         '22222222-2222-2222-2222-222222222221',
         0.15,
         0.60,
-        10,
-        10,
         TRUE
     ),
     (
@@ -281,8 +306,6 @@ VALUES
         '22222222-2222-2222-2222-222222222222',
         1.25,
         10.00,
-        10,
-        10,
         TRUE
     ),
     (
@@ -290,8 +313,6 @@ VALUES
         '22222222-2222-2222-2222-222222222223',
         0.90,
         7.00,
-        0,
-        45,
         TRUE
     ),
     (
@@ -299,8 +320,6 @@ VALUES
         '22222222-2222-2222-2222-222222222224',
         0.50,
         2.50,
-        0,
-        30,
         TRUE
     ),
     (
@@ -308,8 +327,6 @@ VALUES
         '22222222-2222-2222-2222-222222222225',
         1.10,
         8.50,
-        10,
-        10,
         TRUE
     ),
     (
@@ -317,75 +334,37 @@ VALUES
         '22222222-2222-2222-2222-222222222226',
         1.00,
         7.50,
-        0,
-        40,
         TRUE
     );
 
 -- Image model settings
 INSERT INTO image_models (
     id,
-    ai_model_id,
-    size,
-    quality,
-    style,
-    images_count,
-    min_charge_tokens,
-    free_requests_limit
+    ai_model_id
 )
 VALUES
     (
         '33333333-3333-3333-3333-333333333341',
-        '22222222-2222-2222-2222-222222222231',
-        '1024x1024',
-        'standard',
-        'vivid',
-        1,
-        30,
-        0
+        '22222222-2222-2222-2222-222222222231'
     ),
     (
         '33333333-3333-3333-3333-333333333342',
-        '22222222-2222-2222-2222-222222222232',
-        '1024x1024',
-        'hd',
-        'natural',
-        1,
-        40,
-        0
+        '22222222-2222-2222-2222-222222222232'
     );
 
 -- Video model settings
 INSERT INTO video_models (
     id,
-    ai_model_id,
-    resolution,
-    fps,
-    price_per_second_usd,
-    max_duration_seconds,
-    min_charge_tokens,
-    free_requests_limit
+    ai_model_id
 )
 VALUES
     (
         '33333333-3333-3333-3333-333333333351',
-        '22222222-2222-2222-2222-222222222227',
-        '1080p',
-        24,
-        0.30,
-        15,
-        120,
-        0
+        '22222222-2222-2222-2222-222222222227'
     ),
     (
         '33333333-3333-3333-3333-333333333352',
-        '22222222-2222-2222-2222-222222222228',
-        '1080p',
-        30,
-        0.45,
-        12,
-        150,
-        0
+        '22222222-2222-2222-2222-222222222228'
     );
 
 -- Token pricing (used by billing finalization)
