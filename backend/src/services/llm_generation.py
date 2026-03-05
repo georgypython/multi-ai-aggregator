@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.models.enums import GenerationType
 from src.core.exceptions.llm import (
     InactiveModelError,
     UserBalanceNotConfiguredError,
@@ -156,6 +157,7 @@ class LLMGenerationService:
         billing_request_data = GenerationRequestSchema(
             user_id=llm_request_data.user_id,
             ai_model_id=llm_request_data.ai_model_id,
+            generation_type=GenerationType.LLM,
             min_charge_tokens=llm_request_data.min_charge_tokens,
             free_requests_limit=llm_request_data.free_requests_limit,
         )

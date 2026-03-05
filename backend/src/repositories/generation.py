@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.models.enums import GenerationStatus
+from src.core.models.enums import GenerationStatus, GenerationType
 from .abstract_repo import AbstractRepository
 
 
@@ -20,14 +20,31 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
         *,
         user_id: UUID,
         ai_model_id: UUID,
+        generation_type: GenerationType,
     ) -> AIGeneration:
         generation = AIGeneration(
             user_id=user_id,
             ai_model_id=ai_model_id,
             status=GenerationStatus.PROCESSING,
+            generation_type=generation_type,
             charged_tokens=0.0,
         )
         session.add(generation)
+        await session.flush()
+        return generation
+
+    async def set_task_id(
+        self,
+        session: AsyncSession,
+        *,
+        generation_id: UUID,
+        task_id: str,
+    ) -> AIGeneration | None:
+        generation = await session.get(AIGeneration, generation_id)
+        if not generation:
+            return None
+
+        generation.task_id = task_id
         await session.flush()
         return generation
 

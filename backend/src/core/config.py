@@ -57,6 +57,13 @@ class OpenRouterConfig(BaseModel):
     api_key: str = "API_KEY_HERE"
 
 
+class WaveSpeedConfig(BaseModel):
+    base_url: str = "https://api.wavespeed.ai"
+    api_key: str = "API_KEY_HERE"
+    poll_interval_seconds: int = 5
+    poll_max_attempts: int = 120
+
+
 class RedisConfig(BaseModel):
     host: str = "localhost"
     port: int = 6379
@@ -89,8 +96,8 @@ class Settings(BaseSettings):
     run: RunConfig = RunConfig()
     db: DbConfig
     openrouter: OpenRouterConfig
+    wavespeed: WaveSpeedConfig
     redis: RedisConfig = RedisConfig()
     ai_logic: AILogicConfig = AILogicConfig()
-    
 
 settings = Settings()

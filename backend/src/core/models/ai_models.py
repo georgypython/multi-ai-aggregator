@@ -28,12 +28,6 @@ class AIModel(Base, UUIDPKMixin, CreatedAtMixin):
     llm_model: Mapped["LLMModel | None"] = relationship(
         back_populates="ai_model", cascade="all, delete-orphan", uselist=False
     )
-    image_model: Mapped["ImageModel | None"] = relationship(
-        back_populates="ai_model", cascade="all, delete-orphan", uselist=False
-    )
-    video_model: Mapped["VideoModel | None"] = relationship(
-        back_populates="ai_model", cascade="all, delete-orphan", uselist=False
-    )
     generations: Mapped[list["AIGeneration"]] = relationship(back_populates="ai_model")
 
 
@@ -50,23 +44,3 @@ class LLMModel(Base, UUIDPKMixin, CreatedAtMixin):
     )
 
     ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="llm_model")
-
-
-class ImageModel(Base, UUIDPKMixin, CreatedAtMixin):
-    __tablename__ = "image_models"
-
-    ai_model_id: Mapped[UUID] = mapped_column(
-        ForeignKey("ai_models.id"), nullable=False, unique=True, index=True
-    )
-    
-    ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="image_model")
-
-
-class VideoModel(Base, UUIDPKMixin, CreatedAtMixin):
-    __tablename__ = "video_models"
-
-    ai_model_id: Mapped[UUID] = mapped_column(
-        ForeignKey("ai_models.id"), nullable=False, unique=True, index=True
-    )
-
-    ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="video_model")

@@ -6,7 +6,7 @@ from sqlalchemy import Enum, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-from .enums import GenerationStatus
+from .enums import GenerationStatus, GenerationType
 from .mixins import CreatedAtMixin, UUIDPKMixin
 
 if TYPE_CHECKING:
@@ -26,6 +26,10 @@ class AIGeneration(Base, UUIDPKMixin, CreatedAtMixin):
     status: Mapped[GenerationStatus] = mapped_column(
         Enum(GenerationStatus, name="generation_status_enum"), nullable=False
     )
+    generation_type: Mapped[GenerationType] = mapped_column(
+        Enum(GenerationType, name="generation_type_enum"), nullable=False
+    )
+    task_id: Mapped[str | None] = mapped_column(nullable=True)
     charged_tokens: Mapped[float] = mapped_column(nullable=False, default=0.0)
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

@@ -1,5 +1,5 @@
 from .ai_generations import AIGeneration
-from .ai_models import AIModel, ImageModel, LLMModel, VideoModel
+from .ai_models import AIModel, LLMModel
 from .llm_configurations import LLMConfiguration
 from .token_prices import TokenPrice
 from .user_balances import UserBalance
@@ -9,8 +9,6 @@ __all__ = (
     "AIModel",
     "LLMModel",
     "LLMConfiguration",
-    "ImageModel",
-    "VideoModel",
     "TokenPrice",
     "User",
     "UserBalance",

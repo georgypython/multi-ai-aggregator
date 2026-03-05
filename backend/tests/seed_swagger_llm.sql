@@ -8,14 +8,12 @@ BEGIN;
 -- Stable IDs for manual testing
 -- User:          11111111-1111-1111-1111-111111111111
 -- TG user id:    100500
--- AI models:     22222222-2222-2222-2222-222222222221 .. 22222222-2222-2222-2222-222222222232
+-- AI models:     22222222-2222-2222-2222-222222222221 .. 22222222-2222-2222-2222-222222222233
 -- LLM models:    33333333-3333-3333-3333-333333333331 .. 33333333-3333-3333-3333-333333333336
--- Image models:  33333333-3333-3333-3333-333333333341 .. 33333333-3333-3333-3333-333333333342
--- Video models:  33333333-3333-3333-3333-333333333351 .. 33333333-3333-3333-3333-333333333352
 
 -- Providers used in this seed:
 -- LLM:   openai/gpt-4o-mini, openai/gpt-5.2, openai/gpt-5.1, openai/gpt-4, x-ai/grok-4, anthropic/claude-sonnet-4.5
--- Image: openai/dall-e-3, google/nano-banana-2/text-to-image
+-- Image: openai/dall-e-3, openai/gpt-image-1.5/text-to-image, google/nano-banana-2/text-to-image
 -- Video: openai/sora-2, google/veo-3
 
 -- Clean previous seed (idempotent)
@@ -31,7 +29,8 @@ WHERE user_id = '11111111-1111-1111-1111-111111111111'
        '22222222-2222-2222-2222-222222222227',
        '22222222-2222-2222-2222-222222222228',
        '22222222-2222-2222-2222-222222222231',
-       '22222222-2222-2222-2222-222222222232'
+       '22222222-2222-2222-2222-222222222232',
+       '22222222-2222-2222-2222-222222222233'
    )
    OR ai_model_id IN (
        SELECT id
@@ -44,6 +43,7 @@ WHERE user_id = '11111111-1111-1111-1111-111111111111'
            'x-ai/grok-4',
            'anthropic/claude-sonnet-4.5',
            'openai/dall-e-3',
+           'openai/gpt-image-1.5/text-to-image',
            'google/nano-banana-2/text-to-image',
            'openai/sora-2',
            'google/veo-3'
@@ -66,18 +66,6 @@ WHERE ai_model_id IN (
     '22222222-2222-2222-2222-222222222226'
 );
 
-DELETE FROM image_models
-WHERE ai_model_id IN (
-    '22222222-2222-2222-2222-222222222231',
-    '22222222-2222-2222-2222-222222222232'
-);
-
-DELETE FROM video_models
-WHERE ai_model_id IN (
-    '22222222-2222-2222-2222-222222222227',
-    '22222222-2222-2222-2222-222222222228'
-);
-
 DELETE FROM llm_models
 WHERE ai_model_id IN (
     SELECT id
@@ -92,20 +80,6 @@ WHERE ai_model_id IN (
     )
 );
 
-DELETE FROM image_models
-WHERE ai_model_id IN (
-    SELECT id
-    FROM ai_models
-    WHERE provider_key IN ('openai/dall-e-3', 'google/nano-banana-2/text-to-image')
-);
-
-DELETE FROM video_models
-WHERE ai_model_id IN (
-    SELECT id
-    FROM ai_models
-    WHERE provider_key IN ('openai/sora-2', 'google/veo-3')
-);
-
 DELETE FROM ai_models
 WHERE id IN (
     '22222222-2222-2222-2222-222222222221',
@@ -117,7 +91,8 @@ WHERE id IN (
     '22222222-2222-2222-2222-222222222227',
     '22222222-2222-2222-2222-222222222228',
     '22222222-2222-2222-2222-222222222231',
-    '22222222-2222-2222-2222-222222222232'
+    '22222222-2222-2222-2222-222222222232',
+    '22222222-2222-2222-2222-222222222233'
 );
 
 DELETE FROM ai_models
@@ -129,6 +104,7 @@ WHERE provider_key IN (
     'x-ai/grok-4',
     'anthropic/claude-sonnet-4.5',
     'openai/dall-e-3',
+    'openai/gpt-image-1.5/text-to-image',
     'google/nano-banana-2/text-to-image',
     'openai/sora-2',
     'google/veo-3'
@@ -283,6 +259,16 @@ VALUES
         'IMAGE',
         40,
         0
+    ),
+    (
+        '22222222-2222-2222-2222-222222222233',
+        'GPT Image 1.5',
+        'openai/gpt-image-1.5/text-to-image',
+        TRUE,
+        'Гибкая генерация изображений от OpenAI.',
+        'IMAGE',
+        10,
+        0
     );
 
 -- LLM model settings + provider pricing per 1M tokens
@@ -337,36 +323,6 @@ VALUES
         TRUE
     );
 
--- Image model settings
-INSERT INTO image_models (
-    id,
-    ai_model_id
-)
-VALUES
-    (
-        '33333333-3333-3333-3333-333333333341',
-        '22222222-2222-2222-2222-222222222231'
-    ),
-    (
-        '33333333-3333-3333-3333-333333333342',
-        '22222222-2222-2222-2222-222222222232'
-    );
-
--- Video model settings
-INSERT INTO video_models (
-    id,
-    ai_model_id
-)
-VALUES
-    (
-        '33333333-3333-3333-3333-333333333351',
-        '22222222-2222-2222-2222-222222222227'
-    ),
-    (
-        '33333333-3333-3333-3333-333333333352',
-        '22222222-2222-2222-2222-222222222228'
-    );
-
 -- Token pricing (used by billing finalization)
 -- IMPORTANT: exactly one active USAGE row should exist.
 INSERT INTO token_prices (
@@ -411,4 +367,4 @@ COMMIT;
 -- free llm model_id:        22222222-2222-2222-2222-222222222221
 -- paid llm model_id:        22222222-2222-2222-2222-222222222222
 -- video model examples:     22222222-2222-2222-2222-222222222227, 22222222-2222-2222-2222-222222222228
--- image model examples:     22222222-2222-2222-2222-222222222231, 22222222-2222-2222-2222-222222222232
+-- image model examples:     22222222-2222-2222-2222-222222222231, 22222222-2222-2222-2222-222222222232, 22222222-2222-2222-2222-222222222233

@@ -1,5 +1,6 @@
 IMAGE_MODEL_CONFIGS: dict[str, dict] = {
 	"openai/dall-e-3": {
+        "provider": "openai",
 		"sizes": ["1024*1024", "1024*1792", "1792*1024"],
 		"qualities": ["standard", "hd"],
 		"prices_usd": {
@@ -16,6 +17,7 @@ IMAGE_MODEL_CONFIGS: dict[str, dict] = {
 		},
 	},
 	"openai/gpt-image-1.5/text-to-image": {
+        "provider": "openai",
 		"sizes": ["1024*1024", "1024*1536", "1536*1024"],
 		"qualities": ["low", "medium", "high"],
 		"prices_usd": {
@@ -37,6 +39,7 @@ IMAGE_MODEL_CONFIGS: dict[str, dict] = {
 		},
 	},
 	"google/nano-banana-2/text-to-image": {
+        "provider": "google",
 		"sizes": ["1:1", "9:16", "16:9"],
 		"qualities": ["1k", "2k", "4k"],
 		"prices_usd": {
