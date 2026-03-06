@@ -5,7 +5,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
-from src.services.ai import AIModelItem
+from src.core.schemas import AIModelItem
 
 
 MODE_LLM_TEXT = "💬 Чат-нейросети"
@@ -31,7 +31,6 @@ def build_model_types_keyboard() -> ReplyKeyboardMarkup:
 
 def build_ai_models_keyboard(
     models: list[AIModelItem],
-    *,
     selected_model_id: str | None = None,
     include_llm_config_button: bool = False,
 ) -> InlineKeyboardMarkup:
@@ -71,3 +70,35 @@ def build_llm_config_keyboard() -> InlineKeyboardMarkup:
             ]
         ]
     )
+
+
+def build_image_sizes_keyboard(
+    sizes: list[str],
+    selected_size: str | None = None,
+) -> InlineKeyboardMarkup:
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text=(f"✅ {size}" if size == selected_size else size),
+                callback_data=f"image_size:{size}",
+            )
+        ]
+        for size in sizes
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def build_image_qualities_keyboard(
+    qualities: list[str],
+    selected_quality: str | None = None,
+) -> InlineKeyboardMarkup:
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text=(f"✅ {quality}" if quality == selected_quality else quality),
+                callback_data=f"image_quality:{quality}",
+            )
+        ]
+        for quality in qualities
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

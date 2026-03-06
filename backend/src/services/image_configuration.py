@@ -8,7 +8,7 @@ from src.core.schemas.ai import (
     ImageModelDetailResponseSchema,
     ImageModelPriceResponseSchema,
 )
-from src.repositories import AIModelRepository
+from src.repositories import AIModelRepository, GenerationRepository
 from .generation_billing import GenerationBillingService
 
 
@@ -17,11 +17,13 @@ class ImageConfigurationService:
         self,
         session: AsyncSession,
         ai_model_repo: AIModelRepository,
+        generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
         image_model_configs: dict[str, dict],
     ) -> None:
         self.session = session
         self.ai_model_repo = ai_model_repo
+        self.generation_repo = generation_repo
         self.generation_billing_service = generation_billing_service
         self.image_model_configs = image_model_configs
 
@@ -128,6 +130,7 @@ class ImageConfigurationService:
 
     async def get_image_model_price(
         self,
+        user_id: UUID,
         model_id: UUID,
         size: str | None,
         quality: str | None,
@@ -144,11 +147,21 @@ class ImageConfigurationService:
             provider_cost=provider_price
         )
 
+        if ai_model.free_requests_limit > 0:
+            generation_count = await self.generation_repo.count_by_user_and_model(
+                session=self.session,
+                user_id=user_id,
+                ai_model_id=ai_model.id,
+                max_count=ai_model.free_requests_limit,
+            )
+            if generation_count < ai_model.free_requests_limit:
+                provider_price = 0.0
+                tokens_price = 0.0
+
         return ImageModelPriceResponseSchema(
             ai_model_id=ai_model.id,
             provider_key=ai_model.provider_key,
             size=resolved_size,
             quality=resolved_quality,
-            provider_price_usd=provider_price,
             tokens_price=tokens_price,
         )

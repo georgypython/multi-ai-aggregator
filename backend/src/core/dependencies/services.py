@@ -103,6 +103,7 @@ class ServicesProvider(Provider):
         session: AsyncSession,
         user_repo: UserRepository,
         ai_model_repo: AIModelRepository,
+        generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
         wavespeed_service: WaveSpeedService,
         image_model_configs: dict[str, dict],
@@ -111,6 +112,7 @@ class ServicesProvider(Provider):
             session=session,
             user_repo=user_repo,
             ai_model_repo=ai_model_repo,
+            generation_repo=generation_repo,
             generation_billing_service=generation_billing_service,
             wavespeed_service=wavespeed_service,
             image_model_configs=image_model_configs,
@@ -121,12 +123,14 @@ class ServicesProvider(Provider):
         self,
         session: AsyncSession,
         ai_model_repo: AIModelRepository,
+        generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
         image_model_configs: dict[str, dict],
     ) -> ImageConfigurationService:
         return ImageConfigurationService(
             session=session,
             ai_model_repo=ai_model_repo,
+            generation_repo=generation_repo,
             generation_billing_service=generation_billing_service,
             image_model_configs=image_model_configs,
         )

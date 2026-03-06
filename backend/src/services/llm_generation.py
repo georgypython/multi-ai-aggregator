@@ -158,7 +158,7 @@ class LLMGenerationService:
             user_id=llm_request_data.user_id,
             ai_model_id=llm_request_data.ai_model_id,
             generation_type=GenerationType.LLM,
-            min_charge_tokens=llm_request_data.min_charge_tokens,
+            hold_amount=llm_request_data.min_charge_tokens,
             free_requests_limit=llm_request_data.free_requests_limit,
         )
 

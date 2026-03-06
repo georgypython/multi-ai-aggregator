@@ -63,6 +63,7 @@ class GenerationResultSchema(BaseModel):
     generation_id: UUID
     hold_amount: float
     provider_cost: float
+    result_url: str | None = None
 
 
 class LLMProviderResponseSchema(BaseModel):
@@ -87,7 +88,6 @@ class ImageResultResponseDataSchema(BaseModel):
     ai_model_id: UUID
     user_id: UUID
     generation_id: UUID
-    result_url: str
     tokens_cost: float
 
 
@@ -106,7 +106,6 @@ class ImageModelPriceResponseSchema(BaseModel):
     provider_key: str
     size: str
     quality: str
-    provider_price_usd: float
     tokens_price: float
 
 

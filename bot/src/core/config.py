@@ -43,7 +43,7 @@ class Settings(BaseSettings):
         env_prefix="BOT__CONFIG__",
     )
 
-    ai: AIConfig = AIConfig()
+    ai: AIConfig
     redis: RedisConfig = RedisConfig()
     logger: LoggerConfig = LoggerConfig()
     tg: TgConfig

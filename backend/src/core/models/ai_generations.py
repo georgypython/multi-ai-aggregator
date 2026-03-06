@@ -30,6 +30,7 @@ class AIGeneration(Base, UUIDPKMixin, CreatedAtMixin):
         Enum(GenerationType, name="generation_type_enum"), nullable=False
     )
     task_id: Mapped[str | None] = mapped_column(nullable=True)
+    result_url: Mapped[str | None] = mapped_column(nullable=True)
     charged_tokens: Mapped[float] = mapped_column(nullable=False, default=0.0)
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

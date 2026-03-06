@@ -79,7 +79,7 @@ class RedisConfig(BaseModel):
 
 
 class AILogicConfig(BaseModel):
-    new_user_free_tokens: float = 10
+    new_user_free_tokens: float = 50
 
 
 class Settings(BaseSettings):

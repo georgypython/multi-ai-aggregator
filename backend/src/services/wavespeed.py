@@ -30,6 +30,64 @@ class WaveSpeedService:
             "Content-Type": "application/json",
         }
 
+    async def _request(
+        self,
+        method: str,
+        url: str,
+        **kwargs: Any,
+    ):
+        try:
+            response = await self.client.request(method=method, url=url, **kwargs)
+            response.raise_for_status()
+            return response
+        except TimeoutException as exc:
+            raise ProviderTimeoutError("WaveSpeed request timeout") from exc
+        except HTTPStatusError as exc:
+            raise ProviderHTTPError(status_code=exc.response.status_code) from exc
+        except RequestError as exc:
+            raise ProviderNetworkError("WaveSpeed network error") from exc
+
+    @staticmethod
+    def _parse_response_data(payload: dict[str, Any]) -> dict[str, Any]:
+        data = payload.get("data")
+        if not isinstance(data, dict):
+            raise ProviderResponseFormatError("WaveSpeed response has invalid data payload")
+        return data
+
+    @staticmethod
+    def _pick_output_url(payload: dict[str, Any]) -> str | None:
+        data = payload.get("data")
+        candidates: list[dict[str, Any]] = [payload]
+        if isinstance(data, dict):
+            candidates.append(data)
+
+        for source in candidates:
+            outputs = source.get("outputs")
+            if isinstance(outputs, list) and outputs:
+                first = outputs[0]
+                if isinstance(first, str) and first.strip():
+                    return first.strip()
+
+            result_url = source.get("result_url")
+            if isinstance(result_url, str) and result_url.strip():
+                return result_url.strip()
+
+        return None
+
+    async def download_image_bytes(self, url: str) -> bytes:
+        response = await self._request("GET", url, headers=self._base_headers)
+        payload = response.json()
+
+        output_url = self._pick_output_url(payload)
+        if not output_url:
+            raise ProviderResponseFormatError("WaveSpeed result endpoint returned JSON without outputs")
+
+        response = await self._request("GET", output_url, headers=self._base_headers)
+        if not response.content:
+            raise ProviderResponseFormatError("WaveSpeed output image body is empty")
+
+        return response.content
+
     async def create_image_generation(
         self,
         request_data: ImageRequestDataSchema,
@@ -49,42 +107,23 @@ class WaveSpeedService:
                 f"Unsupported WaveSpeed provider: {request_data.provider}"
             )
 
-        try:
-            response = await self.client.post(
-                f"{self._base_url}/api/v3/{request_data.provider_model_key}",
-                headers=self._base_headers,
-                json=payload,
-            )
-            response.raise_for_status()
-        except TimeoutException as exc:
-            raise ProviderTimeoutError("WaveSpeed request timeout") from exc
-        except HTTPStatusError as exc:
-            raise ProviderHTTPError(status_code=exc.response.status_code) from exc
-        except RequestError as exc:
-            raise ProviderNetworkError("WaveSpeed network error") from exc
-
-        try:
-            response_data = response.json()
-        except ValueError as exc:
-            raise ProviderResponseFormatError(
-                "WaveSpeed returned non-JSON response"
-            ) from exc
-
-        if not isinstance(response_data, dict):
-            raise ProviderResponseFormatError("WaveSpeed response has invalid JSON format")
-
-        data = response_data.get("data")
-        if not isinstance(data, dict):
-            raise ProviderResponseFormatError("WaveSpeed response has invalid data payload")
-
-        urls = data.get("urls")
-        if not isinstance(urls, dict):
-            raise ProviderResponseFormatError("WaveSpeed response has invalid urls payload")
+        response = await self._request(
+            "POST",
+            f"{self._base_url}/api/v3/{request_data.provider_model_key}",
+            headers=self._base_headers,
+            json=payload,
+        )
+        response_data = response.json()
+        data = self._parse_response_data(response_data)
 
         generation_status: str = data.get("status")
+        urls = data.get("urls") if isinstance(data.get("urls"), dict) else {}
+        task_id = str(data.get("id") or "")
+        if not task_id:
+            raise ProviderResponseFormatError("WaveSpeed response does not contain task id")
 
         return ImageProviderResponseSchema(
-            task_id=data.get("id"),
+            task_id=task_id,
             model_key=data.get("model"),
             status=ImageGenerationStatus(generation_status.lower()),
             result_url=urls.get("get"),
@@ -96,34 +135,15 @@ class WaveSpeedService:
         self,
         task_id: str,
     ) -> ImageProviderResponseSchema:
-        try:
-            response = await self.client.get(
-                f"{self._base_url}/api/v3/predictions/{task_id}/result",
-                headers=self._base_headers,
-            )
-            response.raise_for_status()
-        except TimeoutException as exc:
-            raise ProviderTimeoutError("WaveSpeed request timeout") from exc
-        except HTTPStatusError as exc:
-            raise ProviderHTTPError(status_code=exc.response.status_code) from exc
-        except RequestError as exc:
-            raise ProviderNetworkError("WaveSpeed network error") from exc
+        response = await self._request(
+            "GET",
+            f"{self._base_url}/api/v3/predictions/{task_id}/result",
+            headers=self._base_headers,
+        )
+        response_data = response.json()
+        data = self._parse_response_data(response_data)
 
-        try:
-            response_data = response.json()
-        except ValueError as exc:
-            raise ProviderResponseFormatError(
-                "WaveSpeed returned non-JSON response"
-            ) from exc
-
-        if not isinstance(response_data, dict):
-            raise ProviderResponseFormatError("WaveSpeed response has invalid JSON format")
-
-        data = response_data.get("data")
-        if not isinstance(data, dict):
-            raise ProviderResponseFormatError("WaveSpeed response has invalid data payload")
-
-        urls = data.get("urls")
+        urls = data.get("urls") if isinstance(data.get("urls"), dict) else {}
         result_url = None
         if isinstance(urls, dict):
             result_url = urls.get("get")

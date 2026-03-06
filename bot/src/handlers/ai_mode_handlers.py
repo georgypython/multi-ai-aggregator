@@ -3,11 +3,12 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from dishka.integrations.aiogram import FromDishka
+import httpx
 
 from src.core.logger import logger
-from src.handlers.ai_shared import MODE_TEXT_TO_TYPE, render_models_text, serialize_models
+from src.handlers.ai_shared import AIFlowHelper
 from src.keyboards.ai import build_ai_models_keyboard, build_model_types_keyboard
-from src.services.ai import AIService, BackendAPIError
+from src.services.ai import AIService
 from src.states import AIFlow
 
 
@@ -24,7 +25,7 @@ async def start(message: Message, state: FSMContext) -> None:
     )
 
 
-@router.message(F.text.in_(MODE_TEXT_TO_TYPE.keys()))
+@router.message(F.text.in_(tuple(AIFlowHelper.MODE_TEXT_TO_TYPE.keys())))
 async def choose_model_type(
     message: Message,
     ai_service: FromDishka[AIService],
@@ -34,18 +35,18 @@ async def choose_model_type(
         await message.answer("Не удалось определить Telegram пользователя")
         return
 
-    model_type = MODE_TEXT_TO_TYPE.get(message.text or "", "llm")
+    model_type = AIFlowHelper.MODE_TEXT_TO_TYPE.get(message.text or "", "llm")
 
     try:
         models = await ai_service.get_models(
             tg_user_id=message.from_user.id,
             model_type=model_type,
         )
-    except BackendAPIError as exc:
-        if exc.status_code == 401:
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 401:
             await message.answer("Ошибка авторизации бота на backend.")
         else:
-            await message.answer(f"Не удалось загрузить модели: {exc.detail}")
+            await message.answer(f"Не удалось загрузить модели: HTTP {exc.response.status_code}")
         return
     except Exception:
         logger.exception("Failed to fetch AI models from backend")
@@ -67,14 +68,14 @@ async def choose_model_type(
         selected_model_id=str(selected_model.id),
         selected_model_name=selected_model.name,
         selected_model_type=selected_model.model_type.lower(),
-        last_models=serialize_models(models),
+        last_models=AIFlowHelper.serialize_models(models),
     )
     if selected_model.model_type.lower() == "llm":
         await state.set_state(AIFlow.chatting_llm)
     else:
         await state.set_state(AIFlow.choosing_model)
 
-    models_text = render_models_text(
+    models_text = AIFlowHelper.render_models_text(
         models=models,
         current_model_name=selected_model.name,
     )

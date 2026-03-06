@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
 from src.core.exceptions.image import (
@@ -101,9 +101,11 @@ async def get_image_model_price(
     model_id: UUID,
     size: str | None = None,
     quality: str | None = None,
+    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ):
     try:
         return await service.get_image_model_price(
+            user_id=user_id,
             model_id=model_id,
             size=size,
             quality=quality,
@@ -121,5 +123,42 @@ async def get_image_model_price(
     except RuntimeError as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        )
+
+
+@router.get("/generations/{generation_id}/content")
+async def get_image_generation_content(
+    service: FromDishka[ImageGenerationService],
+    generation_id: UUID,
+    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+):
+    try:
+        content = await service.get_image_generation_content(
+            user_id=user_id,
+            generation_id=generation_id,
+        )
+        return Response(
+            content=content,
+            headers={"Cache-Control": "no-store"},
+        )
+    except ImageGenerationNotCompletedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        )
+    except ProviderTimeoutError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=str(exc),
+        )
+    except ProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(exc),
         )

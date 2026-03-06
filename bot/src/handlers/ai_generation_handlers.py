@@ -5,20 +5,21 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from dishka.integrations.aiogram import FromDishka
+import httpx
 
 from src.core.logger import logger
-from src.handlers.ai_shared import MODE_TEXT_TO_TYPE
-from src.services.ai import AIService, BackendAPIError
+from src.handlers.ai_shared import AIFlowHelper
+from src.services.llm_generation import LLMGenerationService
 from src.states import AIFlow
 
 
 router = Router()
 
 
-@router.message(F.text)
+@router.message(AIFlow.chatting_llm, F.text)
 async def generate_for_selected_model(
     message: Message,
-    ai_service: FromDishka[AIService],
+    llm_generation_service: FromDishka[LLMGenerationService],
     state: FSMContext,
 ) -> None:
     if message.from_user is None:
@@ -28,7 +29,7 @@ async def generate_for_selected_model(
     text = (message.text or "").strip()
     if not text or text.startswith("/"):
         return
-    if text in MODE_TEXT_TO_TYPE:
+    if text in AIFlowHelper.MODE_TEXT_TO_TYPE:
         return
 
     fsm_data = await state.get_data()
@@ -44,20 +45,21 @@ async def generate_for_selected_model(
         return
 
     try:
-        result = await ai_service.generate_llm_response(
+        result = await llm_generation_service.generate_llm_response(
             tg_user_id=message.from_user.id,
             model_id=UUID(selected_model_id),
             prompt=text,
         )
-    except BackendAPIError as exc:
-        if exc.status_code == 402:
+    except httpx.HTTPStatusError as exc:
+        status_code = exc.response.status_code
+        if status_code == 402:
             await message.answer("Недостаточно токенов для этой модели.")
-        elif exc.status_code == 401:
+        elif status_code == 401:
             await message.answer("Ошибка авторизации бота на backend.")
-        elif exc.status_code == 409:
-            await message.answer(exc.detail)
+        elif status_code == 409:
+            await message.answer(f"HTTP {status_code}")
         else:
-            await message.answer(f"Ошибка генерации: {exc.detail}")
+            await message.answer(f"Ошибка генерации: HTTP {status_code}")
         return
     except Exception:
         logger.exception("Failed to generate LLM response")

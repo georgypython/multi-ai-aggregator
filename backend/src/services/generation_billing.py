@@ -155,6 +155,7 @@ class GenerationBillingService:
                 session=self.session,
                 generation_id=data.generation_id,
                 charged_tokens=final_tokens_cost,
+                result_url=data.result_url,
             )
             if not completed_generation:
                 raise RuntimeError(
@@ -167,18 +168,17 @@ class GenerationBillingService:
         self,
         provider_cost: float,
     ) -> float:
-        async with self.session.begin():
-            usage_token_price = await self.token_price_repo.get_one(
-                session=self.session,
-                price_type=PriceType.USAGE,
-                is_active=True,
-            )
-            if not usage_token_price:
-                raise RuntimeError("Active USAGE token price not configured")
-            if usage_token_price.usd_per_token <= 0:
-                raise RuntimeError("USAGE usd_per_token must be greater than 0")
-            if usage_token_price.provider_cost_multiplier is None:
-                raise RuntimeError("USAGE provider_cost_multiplier is None")
+        usage_token_price = await self.token_price_repo.get_one(
+            session=self.session,
+            price_type=PriceType.USAGE,
+            is_active=True,
+        )
+        if not usage_token_price:
+            raise RuntimeError("Active USAGE token price not configured")
+        if usage_token_price.usd_per_token <= 0:
+            raise RuntimeError("USAGE usd_per_token must be greater than 0")
+        if usage_token_price.provider_cost_multiplier is None:
+            raise RuntimeError("USAGE provider_cost_multiplier is None")
 
-            final_usd_cost = provider_cost * usage_token_price.provider_cost_multiplier
-            return final_usd_cost / usage_token_price.usd_per_token
+        final_usd_cost = provider_cost * usage_token_price.provider_cost_multiplier
+        return final_usd_cost / usage_token_price.usd_per_token

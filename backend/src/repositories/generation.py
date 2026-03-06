@@ -17,7 +17,6 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
     async def create_processing(
         self,
         session: AsyncSession,
-        *,
         user_id: UUID,
         ai_model_id: UUID,
         generation_type: GenerationType,
@@ -36,7 +35,6 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
     async def set_task_id(
         self,
         session: AsyncSession,
-        *,
         generation_id: UUID,
         task_id: str,
     ) -> AIGeneration | None:
@@ -51,7 +49,6 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
     async def mark_failed(
         self,
         session: AsyncSession,
-        *,
         generation_id: UUID,
     ) -> AIGeneration | None:
         generation = await session.get(AIGeneration, generation_id)
@@ -65,9 +62,9 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
     async def mark_completed(
         self,
         session: AsyncSession,
-        *,
         generation_id: UUID,
         charged_tokens: float,
+        result_url: str | None = None,
     ) -> AIGeneration | None:
         generation = await session.get(AIGeneration, generation_id)
         if not generation:
@@ -75,6 +72,7 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
 
         generation.status = GenerationStatus.COMPLETED
         generation.charged_tokens = charged_tokens
+        generation.result_url = result_url
         generation.completed_at = datetime.now(timezone.utc)
         await session.flush()
         return generation
@@ -82,7 +80,6 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
     async def count_by_user_and_model(
         self,
         session: AsyncSession,
-        *,
         user_id: UUID,
         ai_model_id: UUID,
         max_count: int | None = None,

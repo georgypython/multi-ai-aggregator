@@ -3,11 +3,13 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from dishka.integrations.aiogram import FromDishka
+import httpx
 
 from src.core.logger import logger
-from src.handlers.ai_shared import render_llm_config_text
+from src.handlers.ai_shared import AIFlowHelper
 from src.keyboards.ai import build_llm_config_keyboard
-from src.services.ai import AIService, BackendAPIError
+from src.services.ai import AIService
+from src.services.llm_generation import LLMGenerationService
 from src.states import AIFlow
 
 
@@ -34,22 +36,23 @@ async def open_llm_config(
         config = await ai_service.get_llm_config(tg_user_id=callback.from_user.id)
         temperature = config.temperature
         instructions = config.instructions
-    except BackendAPIError as exc:
-        if exc.status_code == 404:
+    except httpx.HTTPStatusError as exc:
+        status_code = exc.response.status_code
+        if status_code == 404:
             temperature = None
             instructions = None
-        elif exc.status_code == 401:
+        elif status_code == 401:
             await callback.answer("Ошибка авторизации бота на backend", show_alert=True)
             return
         else:
-            await callback.answer(f"Ошибка загрузки: {exc.detail}", show_alert=True)
+            await callback.answer(f"Ошибка загрузки: HTTP {status_code}", show_alert=True)
             return
     except Exception:
         logger.exception("Failed to fetch LLM config")
         await callback.answer("Не удалось открыть настройки", show_alert=True)
         return
 
-    config_text = render_llm_config_text(
+    config_text = AIFlowHelper.render_llm_config_text(
         temperature=temperature,
         instructions=instructions,
     )
@@ -95,7 +98,7 @@ async def ask_instructions(
 @router.message(AIFlow.editing_llm_temperature, F.text)
 async def save_temperature(
     message: Message,
-    ai_service: FromDishka[AIService],
+    llm_generation_service: FromDishka[LLMGenerationService],
     state: FSMContext,
 ) -> None:
     if message.from_user is None:
@@ -114,15 +117,15 @@ async def save_temperature(
         return
 
     try:
-        config = await ai_service.create_or_update_llm_config(
+        config = await llm_generation_service.create_or_update_llm_config(
             tg_user_id=message.from_user.id,
             temperature=temperature,
         )
-    except BackendAPIError as exc:
-        if exc.status_code == 401:
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 401:
             await message.answer("Ошибка авторизации бота на backend.")
         else:
-            await message.answer(f"Не удалось сохранить температуру: {exc.detail}")
+            await message.answer(f"Не удалось сохранить температуру: HTTP {exc.response.status_code}")
         return
     except Exception:
         logger.exception("Failed to save LLM temperature")
@@ -131,7 +134,7 @@ async def save_temperature(
 
     await state.set_state(AIFlow.chatting_llm)
     await message.answer(
-        render_llm_config_text(
+        AIFlowHelper.render_llm_config_text(
             temperature=config.temperature,
             instructions=config.instructions,
         ),
@@ -142,7 +145,7 @@ async def save_temperature(
 @router.message(AIFlow.editing_llm_instructions, F.text)
 async def save_instructions(
     message: Message,
-    ai_service: FromDishka[AIService],
+    llm_generation_service: FromDishka[LLMGenerationService],
     state: FSMContext,
 ) -> None:
     if message.from_user is None:
@@ -155,15 +158,15 @@ async def save_instructions(
         return
 
     try:
-        config = await ai_service.create_or_update_llm_config(
+        config = await llm_generation_service.create_or_update_llm_config(
             tg_user_id=message.from_user.id,
             instructions=instructions,
         )
-    except BackendAPIError as exc:
-        if exc.status_code == 401:
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 401:
             await message.answer("Ошибка авторизации бота на backend.")
         else:
-            await message.answer(f"Не удалось сохранить инструкции: {exc.detail}")
+            await message.answer(f"Не удалось сохранить инструкции: HTTP {exc.response.status_code}")
         return
     except Exception:
         logger.exception("Failed to save LLM instructions")
@@ -172,7 +175,7 @@ async def save_instructions(
 
     await state.set_state(AIFlow.chatting_llm)
     await message.answer(
-        render_llm_config_text(
+        AIFlowHelper.render_llm_config_text(
             temperature=config.temperature,
             instructions=config.instructions,
         ),

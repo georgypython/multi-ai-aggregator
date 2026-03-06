@@ -8,7 +8,12 @@ from src.core.exceptions.image import (
     ImageModelConfigError,
 )
 from src.core.exceptions.llm import ProviderError
-from src.core.models.enums import GenerationType, ImageGenerationStatus, ModelType
+from src.core.models.enums import (
+    GenerationStatus,
+    GenerationType,
+    ImageGenerationStatus,
+    ModelType,
+)
 from src.core.schemas.ai import (
     GenerationResultSchema,
     ImageProviderResponseSchema,
@@ -18,6 +23,7 @@ from src.core.schemas.ai import (
     GenerationRequestSchema,
 )
 from src.repositories import AIModelRepository, UserRepository
+from src.repositories import GenerationRepository
 from .generation_billing import GenerationBillingService
 from .wavespeed import WaveSpeedService
 from src.core.config import settings
@@ -29,6 +35,7 @@ class ImageGenerationService:
         session: AsyncSession,
         user_repo: UserRepository,
         ai_model_repo: AIModelRepository,
+        generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
         wavespeed_service: WaveSpeedService,
         image_model_configs: dict[str, dict],
@@ -36,6 +43,7 @@ class ImageGenerationService:
         self.session = session
         self.user_repo = user_repo
         self.ai_model_repo = ai_model_repo
+        self.generation_repo = generation_repo
         self.generation_billing_service = generation_billing_service
         self.image_model_configs = image_model_configs
         self.wavespeed_service = wavespeed_service
@@ -168,6 +176,7 @@ class ImageGenerationService:
                     generation_id=generation_id,
                     hold_amount=generation_data.hold_amount,
                     provider_cost=request_data.provider_cost,
+                    result_url=result_url,
                 )
             )
         except Exception as e:
@@ -179,9 +188,35 @@ class ImageGenerationService:
             ai_model_id=request_data.ai_model_id,
             user_id=request_data.user_id,
             generation_id=generation_id,
-            result_url=result_url,
             tokens_cost=final_tokens_cost,
         )
+
+    async def get_image_generation_content(
+        self,
+        user_id: UUID,
+        generation_id: UUID,
+    ) -> bytes:
+        generation = await self.generation_repo.get_one(
+            session=self.session,
+            id=generation_id,
+            user_id=user_id,
+            generation_type=GenerationType.IMAGE,
+            status=GenerationStatus.COMPLETED,
+        )
+
+        if not generation:
+            raise ValueError(
+                f"Completed image generation not found for generation_id={generation_id}"
+            )
+
+        if not generation.result_url:
+            raise ImageGenerationNotCompletedError(
+                "Image generation content is unavailable: result_url is empty"
+            )
+
+        result_url = generation.result_url
+
+        return await self.wavespeed_service.download_image_bytes(url=result_url)
 
     async def generate_image(
         self,

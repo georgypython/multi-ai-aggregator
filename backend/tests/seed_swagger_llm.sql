@@ -247,7 +247,7 @@ VALUES
         TRUE,
         'Быстрая и дешевая генерация изображений.',
         'IMAGE',
-        30,
+        5,
         0
     ),
     (
@@ -257,7 +257,7 @@ VALUES
         TRUE,
         'Качественная генерация изображений.',
         'IMAGE',
-        40,
+        5,
         0
     ),
     (
@@ -267,8 +267,8 @@ VALUES
         TRUE,
         'Гибкая генерация изображений от OpenAI.',
         'IMAGE',
-        10,
-        0
+        5,
+        2
     );
 
 -- LLM model settings + provider pricing per 1M tokens
