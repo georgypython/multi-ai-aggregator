@@ -17,7 +17,7 @@ class TgConfig(BaseModel):
 
 
 class AIConfig(BaseModel):
-    ai_api_url: str = "http://localhost:8000"
+    ai_api_url: str = "http://localhost:8001"
     api_key: str = "YOUR_API_KEY"
     request_timeout_seconds: float = 120.0
 

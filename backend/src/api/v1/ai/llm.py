@@ -13,7 +13,7 @@ from src.core.exceptions.llm import (
     ProviderTimeoutError,
     UserBalanceNotConfiguredError,
 )
-from src.core.schemas.ai import LLMResultResponseSchema
+from src.core.schemas.ai import GenerationResultResponseDataSchema
 from src.core.schemas.ai import LLMConfigCreateRequestSchema, LLMConfigResponseSchema
 from src.core.logger_setup import logger
 from src.services.llm_configuration import LLMConfigurationService
@@ -71,13 +71,13 @@ async def get_llm_config(
         )
     
 
-@router.post("/generations", response_model=LLMResultResponseSchema)
+@router.post("/generations", response_model=GenerationResultResponseDataSchema)
 async def generate_llm_response(
     model_id: UUID,
     prompt: str,
     service: FromDishka[LLMGenerationService],
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
-) -> LLMResultResponseSchema:
+) -> GenerationResultResponseDataSchema:
     """
     Генерирует текстовый ответ LLM и возвращает итог по генерации.
 

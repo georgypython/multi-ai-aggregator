@@ -7,6 +7,7 @@ from src.core.config import settings
 from src.services.ai import AIService
 from src.services.image_generation import ImageGenerationService
 from src.services.llm_generation import LLMGenerationService
+from src.services.video_generation import VideoGenerationService
 
 
 class ServicesProvider(Provider):
@@ -45,6 +46,18 @@ class ServicesProvider(Provider):
             yield image_generation_service
         finally:
             await image_generation_service.aclose()
+
+    @provide(scope=Scope.APP)
+    async def get_video_generation_service(self) -> AsyncIterator[VideoGenerationService]:
+        video_generation_service = VideoGenerationService(
+            base_url=settings.ai.ai_api_url,
+            api_key=settings.ai.api_key,
+            timeout_seconds=settings.ai.request_timeout_seconds,
+        )
+        try:
+            yield video_generation_service
+        finally:
+            await video_generation_service.aclose()
 
 
 container: AsyncContainer = make_async_container(ServicesProvider())

@@ -14,7 +14,7 @@ BEGIN;
 -- Providers used in this seed:
 -- LLM:   openai/gpt-4o-mini, openai/gpt-5.2, openai/gpt-5.1, openai/gpt-4, x-ai/grok-4, anthropic/claude-sonnet-4.5
 -- Image: openai/dall-e-3, openai/gpt-image-1.5/text-to-image, google/nano-banana-2/text-to-image
--- Video: openai/sora-2, google/veo-3
+-- Video: openai/sora-2/text-to-video, google/veo3.1/text-to-video
 
 -- Clean previous seed (idempotent)
 DELETE FROM ai_generations
@@ -45,8 +45,8 @@ WHERE user_id = '11111111-1111-1111-1111-111111111111'
            'openai/dall-e-3',
            'openai/gpt-image-1.5/text-to-image',
            'google/nano-banana-2/text-to-image',
-           'openai/sora-2',
-           'google/veo-3'
+           'openai/sora-2/text-to-video',
+           'google/veo3.1/text-to-video'
        )
    );
 
@@ -106,8 +106,8 @@ WHERE provider_key IN (
     'openai/dall-e-3',
     'openai/gpt-image-1.5/text-to-image',
     'google/nano-banana-2/text-to-image',
-    'openai/sora-2',
-    'google/veo-3'
+    'openai/sora-2/text-to-video',
+    'google/veo3.1/text-to-video'
 );
 
 DELETE FROM token_prices
@@ -223,7 +223,7 @@ VALUES
     (
         '22222222-2222-2222-2222-222222222227',
         'Sora 2',
-        'openai/sora-2',
+        'openai/sora-2/text-to-video',
         TRUE,
         'Видео-генерация высокого качества.',
         'VIDEO',
@@ -232,8 +232,8 @@ VALUES
     ),
     (
         '22222222-2222-2222-2222-222222222228',
-        'Veo 3',
-        'google/veo-3',
+        'Veo 3.1',
+        'google/veo3.1/text-to-video',
         TRUE,
         'Кинематографичная видео-генерация.',
         'VIDEO',

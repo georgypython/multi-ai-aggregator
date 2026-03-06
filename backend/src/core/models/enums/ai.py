@@ -2,6 +2,7 @@ from enum import StrEnum
 
 
 class GenerationStatus(StrEnum):
+    CREATED = "created"
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -14,14 +15,7 @@ class GenerationType(StrEnum):
     VIDEO = "video"
 
 
-class ImageGenerationStatus(StrEnum):
-    CREATED = "created"
-    PROCESSING = "processing"
-    COMPLETED = "completed"
-    FAILED = "failed"
-
-
-class ImageProvider(StrEnum):
+class ModelProvider(StrEnum):
     OPENAI = "openai"
     GOOGLE = "google"
 

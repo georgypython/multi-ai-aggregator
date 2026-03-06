@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
@@ -5,8 +7,13 @@ from aiogram.types import CallbackQuery
 from dishka.integrations.aiogram import FromDishka
 import httpx
 
+from src.core.logger import logger
 from src.handlers.ai_shared import AIFlowHelper
-from src.keyboards.ai import build_ai_models_keyboard, build_image_sizes_keyboard
+from src.keyboards.ai import (
+    build_ai_models_keyboard,
+    build_image_sizes_keyboard,
+    build_video_durations_keyboard,
+)
 from src.services.ai import AIService
 from src.states import AIFlow
 
@@ -59,6 +66,9 @@ async def choose_model(
         selected_image_size=None,
         selected_image_quality=None,
         selected_image_tokens_price=None,
+        selected_video_duration_seconds=None,
+        selected_video_size=None,
+        selected_video_tokens_price=None,
     )
 
     selected_type = selected_model.model_type.lower()
@@ -85,14 +95,62 @@ async def choose_model(
         await callback.answer(f"Выбрана модель: {selected_model.name}", show_alert=False)
         return
 
-    if selected_type == "image":
+    updated_text = AIFlowHelper.render_models_text(
+        models=last_models,
+        current_model_name=selected_model.name,
+    )
+    updated_keyboard = build_ai_models_keyboard(
+        models=last_models,
+        selected_model_id=str(selected_model.id),
+        include_generation_button=True,
+    )
+    try:
+        await callback.message.edit_text(
+            updated_text,
+            reply_markup=updated_keyboard,
+        )
+    except TelegramBadRequest as exc:
+        if "message is not modified" not in str(exc):
+            raise
+
+    await state.set_state(AIFlow.choosing_model)
+    await callback.answer(
+        f"Выбрана модель: {selected_model.name}. Нажми «Генерация».",
+        show_alert=False,
+    )
+
+
+@router.callback_query(F.data == "generation:start")
+async def start_generation_flow(
+    callback: CallbackQuery,
+    state: FSMContext,
+    ai_service: FromDishka[AIService],
+) -> None:
+    if callback.from_user is None or callback.message is None:
+        await callback.answer("Не удалось определить пользователя", show_alert=True)
+        return
+
+    fsm_data = await state.get_data()
+    selected_model_id = fsm_data.get("selected_model_id")
+    selected_model_type = fsm_data.get("selected_model_type")
+    selected_model_name = fsm_data.get("selected_model_name")
+
+    if not selected_model_id or selected_model_type not in ("image", "video"):
+        await callback.answer("Сначала выбери image/video модель", show_alert=False)
+        return
+
+    if selected_model_type == "image":
         try:
-            image_config = await ai_service.get_image_model_config(model_id=selected_model.id)
+            image_config = await ai_service.get_image_model_config(model_id=UUID(selected_model_id))
         except httpx.HTTPStatusError as exc:
             await callback.answer(
                 f"Ошибка загрузки модели: HTTP {exc.response.status_code}",
                 show_alert=True,
             )
+            return
+        except Exception:
+            logger.exception("Failed to load image model config")
+            await callback.answer("Ошибка загрузки конфигурации image модели", show_alert=True)
             return
 
         await state.update_data(
@@ -102,7 +160,7 @@ async def choose_model(
         await state.set_state(AIFlow.choosing_image_size)
 
         text = (
-            f"Выбрана image-модель: <b>{selected_model.name}</b>\n"
+            f"Выбрана image-модель: <b>{selected_model_name}</b>\n"
             f"Выбери размер изображения:"
         )
         try:
@@ -116,8 +174,37 @@ async def choose_model(
         await callback.answer("Выбери размер", show_alert=False)
         return
 
-    await state.set_state(AIFlow.choosing_model)
-    await callback.answer(
-        "Для этого типа модели flow пока не подключен.",
-        show_alert=False,
-    )
+    if selected_model_type == "video":
+        try:
+            video_config = await ai_service.get_video_model_config(model_id=UUID(selected_model_id))
+        except httpx.HTTPStatusError as exc:
+            await callback.answer(
+                f"Ошибка загрузки модели: HTTP {exc.response.status_code}",
+                show_alert=True,
+            )
+            return
+        except Exception:
+            logger.exception("Failed to load video model config")
+            await callback.answer("Ошибка загрузки конфигурации video модели", show_alert=True)
+            return
+
+        await state.update_data(
+            selected_video_durations_seconds=video_config.durations_seconds,
+            selected_video_sizes=video_config.sizes,
+        )
+        await state.set_state(AIFlow.choosing_video_duration)
+
+        text = (
+            f"Выбрана video-модель: <b>{selected_model_name}</b>\n"
+            f"Выбери длительность видео:"
+        )
+        try:
+            await callback.message.edit_text(
+                text,
+                reply_markup=build_video_durations_keyboard(video_config.durations_seconds),
+            )
+        except TelegramBadRequest as exc:
+            if "message is not modified" not in str(exc):
+                raise
+        await callback.answer("Выбери длительность", show_alert=False)
+        return

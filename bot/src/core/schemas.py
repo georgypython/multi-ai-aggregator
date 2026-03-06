@@ -47,8 +47,40 @@ class ImageModelPriceResult(BaseModel):
     tokens_price: float
 
 
+class VideoModelConfigResult(BaseModel):
+    id: UUID
+    name: str
+    provider_key: str
+    provider: str
+    durations_seconds: list[int]
+    sizes: list[str]
+    prices_usd_by_duration: dict[str, dict[str, float]]
+
+
+class VideoModelPriceResult(BaseModel):
+    ai_model_id: UUID
+    provider_key: str
+    duration_seconds: int
+    size: str
+    tokens_price: float
+
+
 class ImageGenerationResult(BaseModel):
     ai_model_id: UUID
     user_id: UUID
     generation_id: UUID
     tokens_cost: float
+
+
+class VideoGenerationResult(BaseModel):
+    ai_model_id: UUID
+    user_id: UUID
+    generation_id: UUID
+    tokens_cost: float
+
+
+class UserBalanceResult(BaseModel):
+    user_id: UUID
+    telegram_id: int
+    available_tokens: float
+    hold_tokens: float

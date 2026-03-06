@@ -9,7 +9,7 @@ BASE_PATH = Path(__file__).resolve().parent.parent.parent.parent
 
 class RunConfig(BaseModel):
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 8001
 
 
 class LoggerConfig(BaseModel):
@@ -66,7 +66,7 @@ class WaveSpeedConfig(BaseModel):
 
 class RedisConfig(BaseModel):
     host: str = "localhost"
-    port: int = 6379
+    port: int = 6378
     db: int = 0
     password: str | None = None
     chat_history_ttl_seconds: int = 7 * 24 * 60 * 60
@@ -79,7 +79,7 @@ class RedisConfig(BaseModel):
 
 
 class AILogicConfig(BaseModel):
-    new_user_free_tokens: float = 50
+    new_user_free_tokens: float = 300
 
 
 class Settings(BaseSettings):

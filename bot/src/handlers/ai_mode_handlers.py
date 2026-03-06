@@ -83,5 +83,6 @@ async def choose_model_type(
         models=models,
         selected_model_id=str(selected_model.id),
         include_llm_config_button=(model_type == "llm"),
+        include_generation_button=(model_type in ("image", "video")),
     )
     await message.answer(models_text, reply_markup=models_keyboard)

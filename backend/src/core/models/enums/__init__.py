@@ -1,8 +1,7 @@
 from .ai import (
 	GenerationStatus,
 	GenerationType,
-	ImageProvider,
-	ImageGenerationStatus,
+	ModelProvider,
 	LLMConfigurationType,
 	ModelType,
 	PriceType,
@@ -11,8 +10,7 @@ from .ai import (
 __all__ = (
 	"GenerationStatus",
 	"GenerationType",
-	"ImageProvider",
-	"ImageGenerationStatus",
+	"ModelProvider",
 	"LLMConfigurationType",
 	"PriceType",
 	"ModelType",

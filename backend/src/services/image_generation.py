@@ -3,7 +3,6 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exceptions.image import (
-    ImageGenerationFinalizeError,
     ImageGenerationNotCompletedError,
     ImageModelConfigError,
 )
@@ -11,22 +10,19 @@ from src.core.exceptions.llm import ProviderError
 from src.core.models.enums import (
     GenerationStatus,
     GenerationType,
-    ImageGenerationStatus,
     ModelType,
 )
 from src.core.schemas.ai import (
-    GenerationResultSchema,
-    ImageProviderResponseSchema,
+    GenerationFinishData,
     ImageRequestDataSchema,
-    ImageResultResponseDataSchema,
-    ImageModelConfigDataSchema,
+    GenerationResultResponseDataSchema,
+    ModelConfigDataSchema,
     GenerationRequestSchema,
 )
 from src.repositories import AIModelRepository, UserRepository
 from src.repositories import GenerationRepository
 from .generation_billing import GenerationBillingService
 from .wavespeed import WaveSpeedService
-from src.core.config import settings
 
 
 class ImageGenerationService:
@@ -39,6 +35,8 @@ class ImageGenerationService:
         generation_billing_service: GenerationBillingService,
         wavespeed_service: WaveSpeedService,
         image_model_configs: dict[str, dict],
+        poll_interval_seconds: int,
+        poll_max_attempts: int,
     ):
         self.session = session
         self.user_repo = user_repo
@@ -47,13 +45,15 @@ class ImageGenerationService:
         self.generation_billing_service = generation_billing_service
         self.image_model_configs = image_model_configs
         self.wavespeed_service = wavespeed_service
+        self.poll_interval_seconds = poll_interval_seconds
+        self.poll_max_attempts = poll_max_attempts
 
     def _get_image_model_config_fields(
         self,
         provider_model_key: str,
         size: str | None,
         quality: str | None,
-    ) -> ImageModelConfigDataSchema:
+    ) -> ModelConfigDataSchema:
         model_config = self.image_model_configs.get(provider_model_key)
         if not model_config:
             raise ImageModelConfigError(
@@ -74,7 +74,7 @@ class ImageGenerationService:
                 if prices:
                     price = prices.get(resolved_size)
                     if price is not None:
-                        return ImageModelConfigDataSchema(
+                        return ModelConfigDataSchema(
                             size=resolved_size,
                             quality=resolved_quality,
                             provider_cost=price,
@@ -142,55 +142,6 @@ class ImageGenerationService:
                 **model_config.model_dump(),
             )
 
-    async def _finish_image_generation(
-        self,
-        poll_response: ImageProviderResponseSchema,
-        request_data: ImageRequestDataSchema,
-        generation_data: GenerationRequestSchema,
-        generation_id: UUID,
-    ) -> ImageResultResponseDataSchema:
-        if poll_response.status != ImageGenerationStatus.COMPLETED:
-            await self.generation_billing_service.rollback_failed_generation(
-                data=generation_data,
-                generation_id=generation_id,
-            )
-            raise ImageGenerationNotCompletedError(
-                f"Image generation failed with status={poll_response.status}"
-            )
-
-        result_url = poll_response.result_url
-
-        if result_url is None:
-            await self.generation_billing_service.rollback_failed_generation(
-                data=generation_data,
-                generation_id=generation_id,
-            )
-            raise ImageGenerationNotCompletedError(
-                "Image generation completed without result URL"
-            )
-        
-        try:
-            final_tokens_cost = await self.generation_billing_service.finalize_generation_billing(
-                data=GenerationResultSchema(
-                    user_id=request_data.user_id,
-                    generation_id=generation_id,
-                    hold_amount=generation_data.hold_amount,
-                    provider_cost=request_data.provider_cost,
-                    result_url=result_url,
-                )
-            )
-        except Exception as e:
-            raise ImageGenerationFinalizeError(
-                "Failed to finalize image generation billing"
-            ) from e
-
-        return ImageResultResponseDataSchema(
-            ai_model_id=request_data.ai_model_id,
-            user_id=request_data.user_id,
-            generation_id=generation_id,
-            tokens_cost=final_tokens_cost,
-        )
-
     async def get_image_generation_content(
         self,
         user_id: UUID,
@@ -225,7 +176,7 @@ class ImageGenerationService:
         prompt: str,
         size: str | None,
         quality: str | None,
-    ) -> ImageResultResponseDataSchema:
+    ) -> GenerationResultResponseDataSchema:
         request_data = await self._create_and_validate_request_image_data(
             user_id, model_id, prompt, size, quality
         )
@@ -249,10 +200,10 @@ class ImageGenerationService:
         )
 
         try:
-            poll_response = await self.wavespeed_service.poll_image_generation_status(
+            poll_response = await self.wavespeed_service.poll_generation_status(
                 task_id=response_create_data.task_id,
-                poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
-                max_attempts=settings.wavespeed.poll_max_attempts,
+                poll_interval_seconds=self.poll_interval_seconds,
+                max_attempts=self.poll_max_attempts,
             )
         except ProviderError:
             await self.generation_billing_service.rollback_failed_generation(
@@ -270,10 +221,15 @@ class ImageGenerationService:
                 "Unexpected image polling error"
             ) from e
         
-        final_result = await self._finish_image_generation(
-            poll_response=poll_response,
-            request_data=request_data,
-            generation_data=generation_data,
-            generation_id=generation.id,
+        return await self.generation_billing_service.finish_generation(
+            data=GenerationFinishData(
+                ai_model_id=request_data.ai_model_id,
+                generation_id=generation.id,
+                user_id=request_data.user_id,
+                generation_type=generation_data.generation_type,
+                hold_amount=generation_data.hold_amount,
+                provider_cost=request_data.provider_cost,
+                provider_status=poll_response.status,
+                result_url=poll_response.result_url,
+            )
         )
-        return final_result

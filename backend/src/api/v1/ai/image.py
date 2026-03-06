@@ -13,9 +13,9 @@ from src.core.exceptions.llm import (
     ProviderTimeoutError,
 )
 from src.core.schemas.ai import (
+    GenerationResultResponseDataSchema,
     ImageModelDetailResponseSchema,
     ImageModelPriceResponseSchema,
-    ImageResultResponseDataSchema,
 )
 from src.services.image_configuration import ImageConfigurationService
 from src.services.image_generation import ImageGenerationService
@@ -27,7 +27,7 @@ router = APIRouter(
 )
 
 
-@router.post("/generations", response_model=ImageResultResponseDataSchema)
+@router.post("/generations", response_model=GenerationResultResponseDataSchema)
 async def generate_image(
     service: FromDishka[ImageGenerationService],
     model_id: UUID,

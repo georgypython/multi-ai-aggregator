@@ -6,8 +6,8 @@ from uuid import UUID
 
 from src.core.models.enums import (
     GenerationType,
-    ImageProvider,
-    ImageGenerationStatus,
+    GenerationStatus,
+    ModelProvider,
     LLMConfigurationType,
     ModelType,
 )
@@ -26,14 +26,14 @@ class LLMRequestDataSchema(BaseModel):
     instructions: str | None
 
 
-class ImageModelConfigDataSchema(BaseModel):
+class ModelConfigDataSchema(BaseModel):
     size: str
     quality: str
     provider_cost: float
-    provider: ImageProvider
+    provider: ModelProvider
 
 
-class ImageRequestDataSchema(ImageModelConfigDataSchema):
+class ImageRequestDataSchema(ModelConfigDataSchema):
     user_id: UUID
     ai_model_id: UUID
     provider_model_key: str
@@ -42,10 +42,26 @@ class ImageRequestDataSchema(ImageModelConfigDataSchema):
     free_requests_limit: int = 0
 
 
-class ImageProviderResponseSchema(BaseModel):
+class VideoModelConfigDataSchema(BaseModel):
+    duration_seconds: int
+    size: str
+    provider_cost: float
+    provider: ModelProvider
+
+
+class VideoRequestDataSchema(VideoModelConfigDataSchema):
+    user_id: UUID
+    ai_model_id: UUID
+    provider_model_key: str
+    prompt: str
+    min_charge_tokens: float
+    free_requests_limit: int = 0
+
+
+class WavespeedGenerationResponseSchema(BaseModel):
     task_id: str
     model_key: str | None = None
-    status: ImageGenerationStatus
+    status: GenerationStatus
     result_url: str | None = None
     created_at: str | None = None
     error: str | None = None
@@ -66,6 +82,18 @@ class GenerationResultSchema(BaseModel):
     result_url: str | None = None
 
 
+class GenerationFinishData(BaseModel):
+    ai_model_id: UUID
+    generation_id: UUID
+    user_id: UUID
+    generation_type: GenerationType
+    hold_amount: float
+    provider_cost: float
+    provider_status: GenerationStatus
+    result_url: str | None = None
+    text: str | None = None
+
+
 class LLMProviderResponseSchema(BaseModel):
     text: str
     model: str
@@ -76,26 +104,19 @@ class LLMProviderResponseSchema(BaseModel):
     raw: dict[str, Any]
 
 
-class LLMResultResponseSchema(BaseModel):
-    text: str
+class GenerationResultResponseDataSchema(BaseModel):
     ai_model_id: UUID
     user_id: UUID
     generation_id: UUID
     tokens_cost: float
-
-
-class ImageResultResponseDataSchema(BaseModel):
-    ai_model_id: UUID
-    user_id: UUID
-    generation_id: UUID
-    tokens_cost: float
+    text: str | None = None
 
 
 class ImageModelDetailResponseSchema(BaseModel):
     id: UUID
     name: str
     provider_key: str
-    provider: ImageProvider
+    provider: ModelProvider
     sizes: list[str]
     qualities: list[str]
     prices_usd: dict[str, dict[str, float]]
@@ -106,6 +127,24 @@ class ImageModelPriceResponseSchema(BaseModel):
     provider_key: str
     size: str
     quality: str
+    tokens_price: float
+
+
+class VideoModelDetailResponseSchema(BaseModel):
+    id: UUID
+    name: str
+    provider_key: str
+    provider: ModelProvider
+    durations_seconds: list[int]
+    sizes: list[str]
+    prices_usd_by_duration: dict[str, dict[str, float]]
+
+
+class VideoModelPriceResponseSchema(BaseModel):
+    ai_model_id: UUID
+    provider_key: str
+    duration_seconds: int
+    size: str
     tokens_price: float
 
 
@@ -133,3 +172,10 @@ class LLMConfigResponseSchema(BaseModel):
     temperature: float | None
     instructions: str | None
     created_at: datetime
+
+
+class UserBalanceResponseSchema(BaseModel):
+    user_id: UUID
+    telegram_id: int
+    available_tokens: float
+    hold_tokens: float

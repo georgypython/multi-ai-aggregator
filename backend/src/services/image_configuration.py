@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exceptions.image import ImageModelConfigError
-from src.core.models.enums import ImageProvider, ModelType
+from src.core.models.enums import ModelProvider, ModelType
 from src.core.schemas.ai import (
     ImageModelDetailResponseSchema,
     ImageModelPriceResponseSchema,
@@ -13,6 +13,10 @@ from .generation_billing import GenerationBillingService
 
 
 class ImageConfigurationService:
+    @staticmethod
+    def _normalize_provider_key(value: str) -> str:
+        return "/".join(part for part in value.strip().lower().split("/") if part)
+
     def __init__(
         self,
         session: AsyncSession,
@@ -43,16 +47,22 @@ class ImageConfigurationService:
 
     def _get_model_config(self, provider_key: str) -> dict:
         model_config = self.image_model_configs.get(provider_key)
-        if not model_config:
-            raise ImageModelConfigError(
-                f"Image model config not found for provider_key={provider_key}"
-            )
-        return model_config
+        if model_config:
+            return model_config
 
-    def _resolve_provider(self, model_config: dict) -> ImageProvider:
+        normalized_target = self._normalize_provider_key(provider_key)
+        for key, value in self.image_model_configs.items():
+            if self._normalize_provider_key(key) == normalized_target:
+                return value
+
+        raise ImageModelConfigError(
+            f"Image model config not found for provider_key={provider_key}"
+        )
+
+    def _resolve_provider(self, model_config: dict) -> ModelProvider:
         provider_raw = model_config.get("provider")
         try:
-            return ImageProvider(provider_raw)
+            return ModelProvider(provider_raw)
         except ValueError as exc:
             raise ImageModelConfigError(
                 f"Unsupported image provider in config: {provider_raw}"
@@ -107,6 +117,7 @@ class ImageConfigurationService:
     ) -> ImageModelDetailResponseSchema:
         ai_model = await self._get_active_image_model(model_id=model_id)
         model_config = self._get_model_config(provider_key=ai_model.provider_key)
+        print(model_config)
         provider = self._resolve_provider(model_config=model_config)
 
         sizes = model_config.get("sizes")

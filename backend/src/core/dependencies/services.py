@@ -5,6 +5,7 @@ from dishka import Provider, Scope, provide
 
 from src.core.config import settings
 from src.core.utils.image_configs import IMAGE_MODEL_CONFIGS
+from src.core.utils.video_configs import VIDEO_MODEL_CONFIGS
 from src.services.ai_models import AIModelsService
 from src.services.generation_billing import GenerationBillingService
 from src.services.image_configuration import ImageConfigurationService
@@ -12,6 +13,9 @@ from src.services.image_generation import ImageGenerationService
 from src.services.llm_configuration import LLMConfigurationService
 from src.services.llm_generation import LLMGenerationService
 from src.services.openrouter import OpenRouterService
+from src.services.video_configuration import VideoConfigurationService
+from src.services.video_generation import VideoGenerationService
+from src.services.users import UsersService
 from src.services.wavespeed import WaveSpeedService
 from src.repositories import (
     AIModelRepository,
@@ -27,6 +31,10 @@ class ServicesProvider(Provider):
     @provide(scope=Scope.APP)
     def get_image_model_configs(self) -> dict[str, dict]:
         return IMAGE_MODEL_CONFIGS
+
+    @provide(scope=Scope.APP)
+    def get_video_model_configs(self) -> dict[str, dict]:
+        return VIDEO_MODEL_CONFIGS
 
     @provide(scope=Scope.APP)
     def get_openrouter_service(
@@ -98,6 +106,17 @@ class ServicesProvider(Provider):
         )
 
     @provide(scope=Scope.REQUEST)
+    def get_users_service(
+        self,
+        session: AsyncSession,
+        user_repo: UserRepository,
+    ) -> UsersService:
+        return UsersService(
+            session=session,
+            user_repo=user_repo,
+        )
+
+    @provide(scope=Scope.REQUEST)
     def get_image_generation_service(
         self,
         session: AsyncSession,
@@ -106,7 +125,6 @@ class ServicesProvider(Provider):
         generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
         wavespeed_service: WaveSpeedService,
-        image_model_configs: dict[str, dict],
     ) -> ImageGenerationService:
         return ImageGenerationService(
             session=session,
@@ -115,7 +133,31 @@ class ServicesProvider(Provider):
             generation_repo=generation_repo,
             generation_billing_service=generation_billing_service,
             wavespeed_service=wavespeed_service,
-            image_model_configs=image_model_configs,
+            image_model_configs=IMAGE_MODEL_CONFIGS,
+            poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
+            poll_max_attempts=settings.wavespeed.poll_max_attempts,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_video_generation_service(
+        self,
+        session: AsyncSession,
+        user_repo: UserRepository,
+        ai_model_repo: AIModelRepository,
+        generation_repo: GenerationRepository,
+        generation_billing_service: GenerationBillingService,
+        wavespeed_service: WaveSpeedService,
+    ) -> VideoGenerationService:
+        return VideoGenerationService(
+            session=session,
+            user_repo=user_repo,
+            ai_model_repo=ai_model_repo,
+            generation_repo=generation_repo,
+            generation_billing_service=generation_billing_service,
+            wavespeed_service=wavespeed_service,
+            video_model_configs=VIDEO_MODEL_CONFIGS,
+            poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
+            poll_max_attempts=settings.wavespeed.poll_max_attempts,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -125,14 +167,29 @@ class ServicesProvider(Provider):
         ai_model_repo: AIModelRepository,
         generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
-        image_model_configs: dict[str, dict],
     ) -> ImageConfigurationService:
         return ImageConfigurationService(
             session=session,
             ai_model_repo=ai_model_repo,
             generation_repo=generation_repo,
             generation_billing_service=generation_billing_service,
-            image_model_configs=image_model_configs,
+            image_model_configs=IMAGE_MODEL_CONFIGS,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_video_configuration_service(
+        self,
+        session: AsyncSession,
+        ai_model_repo: AIModelRepository,
+        generation_repo: GenerationRepository,
+        generation_billing_service: GenerationBillingService,
+    ) -> VideoConfigurationService:
+        return VideoConfigurationService(
+            session=session,
+            ai_model_repo=ai_model_repo,
+            generation_repo=generation_repo,
+            generation_billing_service=generation_billing_service,
+            video_model_configs=VIDEO_MODEL_CONFIGS,
         )
 
     @provide(scope=Scope.REQUEST)

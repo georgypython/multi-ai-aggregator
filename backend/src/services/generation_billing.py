@@ -7,8 +7,13 @@ from src.core.exceptions.llm import (
     UserBalanceNotConfiguredError,
 )
 from src.core.models import AIGeneration
-from src.core.models.enums import PriceType
-from src.core.schemas.ai import GenerationRequestSchema, GenerationResultSchema
+from src.core.models.enums import PriceType, GenerationStatus, GenerationType
+from src.core.schemas.ai import (
+    GenerationRequestSchema,
+    GenerationResultSchema,
+    GenerationFinishData,
+    GenerationResultResponseDataSchema,
+)
 from src.repositories import (
     UserRepository,
     GenerationRepository,
@@ -114,6 +119,59 @@ class GenerationBillingService:
             await self.generation_repo.mark_failed(
                 session=self.session,
                 generation_id=generation_id,
+            )
+
+    async def finish_generation(
+        self,
+        data: GenerationFinishData,
+    ) -> GenerationResultResponseDataSchema:
+        if data.provider_status != GenerationStatus.COMPLETED:
+            await self._rollback_by_finish_data(data=data)
+            raise RuntimeError(f"Generation failed with status={data.provider_status}")
+
+        if (
+            data.generation_type in (GenerationType.IMAGE, GenerationType.VIDEO)
+            and data.result_url is None
+        ):
+            await self._rollback_by_finish_data(data=data)
+            raise RuntimeError("Generation completed without result URL")
+
+        try:
+            final_tokens_cost = await self.finalize_generation_billing(
+                data=GenerationResultSchema(
+                    user_id=data.user_id,
+                    generation_id=data.generation_id,
+                    hold_amount=data.hold_amount,
+                    provider_cost=data.provider_cost,
+                    result_url=data.result_url,
+                )
+            )
+        except Exception as e:
+            await self._rollback_by_finish_data(data=data)
+            raise RuntimeError("Failed to finalize generation billing") from e
+
+        return GenerationResultResponseDataSchema(
+            ai_model_id=data.ai_model_id,
+            user_id=data.user_id,
+            generation_id=data.generation_id,
+            tokens_cost=final_tokens_cost,
+            text=data.text,
+        )
+
+    async def _rollback_by_finish_data(
+        self,
+        data: GenerationFinishData,
+    ) -> None:
+        async with self.session.begin():
+            if data.hold_amount > 0:
+                await self.user_repo.release_tokens(
+                    session=self.session,
+                    user_id=data.user_id,
+                    amount=data.hold_amount,
+                )
+            await self.generation_repo.mark_failed(
+                session=self.session,
+                generation_id=data.generation_id,
             )
 
     async def finalize_generation_billing(

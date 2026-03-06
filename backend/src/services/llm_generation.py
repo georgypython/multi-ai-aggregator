@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.models.enums import GenerationType
+from src.core.models.enums import GenerationType, GenerationStatus
 from src.core.exceptions.llm import (
     InactiveModelError,
     UserBalanceNotConfiguredError,
@@ -10,10 +10,10 @@ from src.core.exceptions.llm import (
 )
 from src.core.schemas.ai import (
     GenerationRequestSchema,
-    GenerationResultSchema,
+    GenerationFinishData,
+    GenerationResultResponseDataSchema,
     LLMRequestDataSchema,
     LLMProviderResponseSchema,
-    LLMResultResponseSchema,
 )
 from src.repositories import (
     UserRepository,
@@ -113,36 +113,6 @@ class LLMGenerationService:
         ) * request.output_price_per_million_usd
         return input_cost + output_cost
 
-    async def _finish_llm_generation(
-        self,
-        response: LLMProviderResponseSchema,
-        request: LLMRequestDataSchema,
-        generation_id: UUID,
-    ) -> LLMResultResponseSchema:
-        provider_cost = 0.0
-        if request.min_charge_tokens > 0:
-            provider_cost = self._calculate_provider_cost(
-                response=response,
-                request=request,
-            )
-        response.provider_cost = provider_cost
-        final_tokens_cost = await self.generation_billing_service.finalize_generation_billing(
-            data=GenerationResultSchema(
-                user_id=request.user_id,
-                generation_id=generation_id,
-                hold_amount=float(request.min_charge_tokens),
-                provider_cost=provider_cost,
-            ),
-        )
-
-        return LLMResultResponseSchema(
-            text=response.text,
-            ai_model_id=request.ai_model_id,
-            user_id=request.user_id,
-            generation_id=generation_id,
-            tokens_cost=final_tokens_cost,
-        )
-
     async def generate_llm_response(
         self,
         user_id: UUID,
@@ -193,18 +163,23 @@ class LLMGenerationService:
             assistant_response=llm_response.text,
         )
 
-        try:
-            final_llm_result = await self._finish_llm_generation(
+        provider_cost = 0.0
+        if llm_request_data.min_charge_tokens > 0:
+            provider_cost = self._calculate_provider_cost(
                 response=llm_response,
                 request=llm_request_data,
-                generation_id=generation_id,
             )
-        except Exception as e:
-            await self.generation_billing_service.rollback_failed_generation(
-                data=billing_request_data,
+        llm_response.provider_cost = provider_cost
+
+        return await self.generation_billing_service.finish_generation(
+            data=GenerationFinishData(
+                ai_model_id=llm_request_data.ai_model_id,
                 generation_id=generation_id,
+                user_id=llm_request_data.user_id,
+                generation_type=billing_request_data.generation_type,
+                hold_amount=billing_request_data.hold_amount,
+                provider_cost=provider_cost,
+                provider_status=GenerationStatus.COMPLETED,
+                text=llm_response.text,
             )
-            logger.exception("Failed to finalize generation for user_id=%s", user_id)
-            raise RuntimeError(f"Failed to finalize generation: {e}")
-        
-        return final_llm_result
+        )

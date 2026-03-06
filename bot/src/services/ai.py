@@ -7,6 +7,9 @@ from src.core.schemas import (
     ImageModelConfigResult,
     ImageModelPriceResult,
     LLMConfigResult,
+    UserBalanceResult,
+    VideoModelConfigResult,
+    VideoModelPriceResult,
 )
 
 
@@ -73,3 +76,44 @@ class AIService(BaseBackendService):
         )
         response.raise_for_status()
         return ImageModelPriceResult.model_validate(response.json())
+
+    async def get_video_model_config(
+        self,
+        model_id: UUID,
+    ) -> VideoModelConfigResult:
+        response = await self._client.get(
+            f"{self._base_url}/api/v1/ai/video/{model_id}",
+            headers=self._base_headers,
+        )
+        response.raise_for_status()
+        return VideoModelConfigResult.model_validate(response.json())
+
+    async def get_video_model_price(
+        self,
+        tg_user_id: int,
+        model_id: UUID,
+        duration_seconds: int,
+        size: str,
+    ) -> VideoModelPriceResult:
+        response = await self._client.get(
+            f"{self._base_url}/api/v1/ai/video/{model_id}/price",
+            params={
+                "tg_user_id": str(tg_user_id),
+                "duration_seconds": duration_seconds,
+                "size": size,
+            },
+            headers=self._base_headers,
+        )
+        response.raise_for_status()
+        return VideoModelPriceResult.model_validate(response.json())
+
+    async def get_user_balance(
+        self,
+        user_id: str,
+    ) -> UserBalanceResult:
+        response = await self._client.get(
+            f"{self._base_url}/api/v1/users/{user_id}/balance",
+            headers=self._base_headers,
+        )
+        response.raise_for_status()
+        return UserBalanceResult.model_validate(response.json())

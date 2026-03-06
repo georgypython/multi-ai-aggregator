@@ -9,11 +9,13 @@ from src.core.exceptions.llm import (
     ProviderResponseFormatError,
     ProviderTimeoutError,
 )
-from src.core.models.enums import ImageGenerationStatus, ImageProvider
+from src.core.models.enums import GenerationStatus, ModelProvider
 from src.core.schemas.ai import (
     ImageRequestDataSchema,
-    ImageProviderResponseSchema,
+    WavespeedGenerationResponseSchema,
+    VideoRequestDataSchema,
 )
+
 
 class WaveSpeedService:
     def __init__(
@@ -88,18 +90,21 @@ class WaveSpeedService:
 
         return response.content
 
+    async def download_video_bytes(self, url: str) -> bytes:
+        return await self.download_image_bytes(url=url)
+
     async def create_image_generation(
         self,
         request_data: ImageRequestDataSchema,
-    ) -> ImageProviderResponseSchema:
+    ) -> WavespeedGenerationResponseSchema:
         payload: dict[str, Any] = {
             "prompt": request_data.prompt,
         }
 
-        if request_data.provider == ImageProvider.OPENAI:
+        if request_data.provider == ModelProvider.OPENAI:
             payload["size"] = request_data.size
             payload["quality"] = request_data.quality
-        elif request_data.provider == ImageProvider.GOOGLE:
+        elif request_data.provider == ModelProvider.GOOGLE:
             payload["aspect_ratio"] = request_data.size
             payload["resolution"] = request_data.quality
         else:
@@ -107,9 +112,42 @@ class WaveSpeedService:
                 f"Unsupported WaveSpeed provider: {request_data.provider}"
             )
 
+        return await self._create_generation_request(
+            provider_model_key=request_data.provider_model_key,
+            payload=payload,
+        )
+
+    async def create_video_generation(
+        self,
+        request_data: VideoRequestDataSchema,
+    ) -> WavespeedGenerationResponseSchema:
+        payload: dict[str, Any] = {
+            "prompt": request_data.prompt,
+            "duration": request_data.duration_seconds,
+        }
+
+        if request_data.provider == ModelProvider.OPENAI:
+            payload["size"] = request_data.size
+        elif request_data.provider == ModelProvider.GOOGLE:
+            payload["aspect_ratio"] = request_data.size
+        else:
+            raise ProviderResponseFormatError(
+                f"Unsupported WaveSpeed provider: {request_data.provider}"
+            )
+
+        return await self._create_generation_request(
+            provider_model_key=request_data.provider_model_key,
+            payload=payload,
+        )
+
+    async def _create_generation_request(
+        self,
+        provider_model_key: str,
+        payload: dict[str, Any],
+    ) -> WavespeedGenerationResponseSchema:
         response = await self._request(
             "POST",
-            f"{self._base_url}/api/v3/{request_data.provider_model_key}",
+            f"{self._base_url}/api/v3/{provider_model_key}",
             headers=self._base_headers,
             json=payload,
         )
@@ -122,10 +160,10 @@ class WaveSpeedService:
         if not task_id:
             raise ProviderResponseFormatError("WaveSpeed response does not contain task id")
 
-        return ImageProviderResponseSchema(
+        return WavespeedGenerationResponseSchema(
             task_id=task_id,
             model_key=data.get("model"),
-            status=ImageGenerationStatus(generation_status.lower()),
+            status=GenerationStatus(generation_status.lower()),
             result_url=urls.get("get"),
             created_at=data.get("created_at"),
             error=data.get("error"),
@@ -134,7 +172,7 @@ class WaveSpeedService:
     async def get_image_generation_status(
         self,
         task_id: str,
-    ) -> ImageProviderResponseSchema:
+    ) -> WavespeedGenerationResponseSchema:
         response = await self._request(
             "GET",
             f"{self._base_url}/api/v3/predictions/{task_id}/result",
@@ -149,21 +187,21 @@ class WaveSpeedService:
             result_url = urls.get("get")
 
         generation_status: str = data.get("status")
-        return ImageProviderResponseSchema(
+        return WavespeedGenerationResponseSchema(
             task_id=str(data.get("id") or task_id),
             model_key=data.get("model"),
-            status=ImageGenerationStatus(generation_status.lower()),
+            status=GenerationStatus(generation_status.lower()),
             result_url=result_url,
             created_at=data.get("created_at"),
             error=data.get("error"),
         )
 
-    async def poll_image_generation_status(
+    async def poll_generation_status(
         self,
         task_id: str,
         poll_interval_seconds: int,
         max_attempts: int,
-    ) -> ImageProviderResponseSchema:
+    ) -> WavespeedGenerationResponseSchema:
         if max_attempts < 1:
             raise ValueError("max_attempts must be greater than 0")
         if poll_interval_seconds < 0:
@@ -174,8 +212,8 @@ class WaveSpeedService:
             status = response.status
 
             if status in (
-                ImageGenerationStatus.COMPLETED,
-                ImageGenerationStatus.FAILED,
+                GenerationStatus.COMPLETED,
+                GenerationStatus.FAILED,
             ):
                 return response
 
