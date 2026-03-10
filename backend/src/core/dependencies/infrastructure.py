@@ -1,5 +1,7 @@
 from typing import AsyncGenerator
 import httpx
+import boto3
+from botocore.client import BaseClient, Config
 from redis.asyncio import Redis
 
 from dishka import Provider, Scope, provide
@@ -10,6 +12,17 @@ from src.core.models.db_helper import db_helper
 
 
 class InfrastructureProvider(Provider):
+
+    @provide(scope=Scope.APP)
+    def get_s3_client(self) -> BaseClient:
+        return boto3.client(
+            "s3",
+            endpoint_url=settings.storage.endpoint_url,
+            region_name=settings.storage.region,
+            aws_access_key_id=settings.storage.access_key,
+            aws_secret_access_key=settings.storage.secret_key,
+            config=Config(signature_version="s3v4"),
+        )
 
     @provide(scope=Scope.REQUEST)
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:

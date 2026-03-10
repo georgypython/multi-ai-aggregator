@@ -109,6 +109,7 @@ class GenerationResultResponseDataSchema(BaseModel):
     user_id: UUID
     generation_id: UUID
     tokens_cost: float
+    status: GenerationStatus
     text: str | None = None
 
 
@@ -179,3 +180,20 @@ class UserBalanceResponseSchema(BaseModel):
     telegram_id: int
     available_tokens: float
     hold_tokens: float
+
+
+class UploadImageResponseSchema(BaseModel):
+    object_key: str
+    content_type: str
+    size_bytes: int
+
+
+class PollWaveSpeedGenerationTaskSchema(BaseModel):
+    generation_id: UUID
+    wavespeed_task_id: str
+    poll_interval_seconds: int = 5
+    max_attempts: int = 120
+    current_attempt: int = 1
+    timeout: int = 30
+    final_tokens_cost: float
+    result_url: str | None

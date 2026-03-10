@@ -16,13 +16,13 @@ from src.core.models.enums import GenerationStatus, GenerationType, ModelType
 from src.core.schemas.ai import (
     GenerationResultResponseDataSchema,
     GenerationRequestSchema,
-    GenerationFinishData,
+    PollWaveSpeedGenerationTaskSchema,
     VideoModelConfigDataSchema,
     VideoRequestDataSchema,
-    WavespeedGenerationResponseSchema,
 )
 from src.repositories import AIModelRepository, UserRepository
 from src.repositories import GenerationRepository
+from src.tasks.generation_tasks import poll_generation_status
 from .generation_billing import GenerationBillingService
 from .wavespeed import WaveSpeedService
 
@@ -170,19 +170,36 @@ class VideoGenerationService:
         generation = await self.generation_billing_service.prepare_generation_and_freeze_user_tokens(
             data=generation_data
         )
-        response_create_data = await self.wavespeed_service.create_video_generation(
-            request_data=request_data,
-        )
-        await self.generation_billing_service.set_generation_task_id(
-            generation_id=generation.id,
-            task_id=response_create_data.task_id,
-        )
-
         try:
-            poll_response = await self.wavespeed_service.poll_generation_status(
+            response_create_data = await self.wavespeed_service.create_video_generation(
+                request_data=request_data,
+            )
+            await self.generation_billing_service.set_generation_task_id(
+                generation_id=generation.id,
                 task_id=response_create_data.task_id,
-                poll_interval_seconds=self.poll_interval_seconds,
-                max_attempts=self.poll_max_attempts,
+            )
+
+            final_tokens_cost = 0.0
+            if generation_data.hold_amount > 0:
+                final_tokens_cost = (
+                    await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
+                        provider_cost=request_data.provider_cost,
+                    )
+                )
+
+            await poll_generation_status.kiq(
+                data=PollWaveSpeedGenerationTaskSchema(
+                    generation_id=generation.id,
+                    wavespeed_task_id=response_create_data.task_id,
+                    poll_interval_seconds=self.poll_interval_seconds,
+                    max_attempts=self.poll_max_attempts,
+                    current_attempt=1,
+                    timeout=30,
+                    final_tokens_cost=final_tokens_cost,
+                    result_url=response_create_data.result_url or "",
+                ),
+                api_key=self.wavespeed_service._api_key,
+                base_url=self.wavespeed_service._base_url,
             )
         except ProviderError:
             await self.generation_billing_service.rollback_failed_generation(
@@ -199,17 +216,12 @@ class VideoGenerationService:
                 "Unexpected video polling error"
             ) from e
 
-        return await self.generation_billing_service.finish_generation(
-            data=GenerationFinishData(
-                ai_model_id=request_data.ai_model_id,
-                generation_id=generation.id,
-                user_id=request_data.user_id,
-                generation_type=generation_data.generation_type,
-                hold_amount=generation_data.hold_amount,
-                provider_cost=request_data.provider_cost,
-                provider_status=poll_response.status,
-                result_url=poll_response.result_url,
-            )
+        return GenerationResultResponseDataSchema(
+            ai_model_id=request_data.ai_model_id,
+            user_id=request_data.user_id,
+            generation_id=generation.id,
+            tokens_cost=final_tokens_cost,
+            status=GenerationStatus.PROCESSING,
         )
 
     async def get_video_generation_content(

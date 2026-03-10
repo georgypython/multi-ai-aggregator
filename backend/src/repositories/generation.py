@@ -87,6 +87,12 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
         base_stmt = select(self.model.id).where(
             self.model.user_id == user_id,
             self.model.ai_model_id == ai_model_id,
+            self.model.status.in_(
+                (
+                    GenerationStatus.PROCESSING,
+                    GenerationStatus.COMPLETED,
+                )
+            ),
         )
         if max_count is not None and max_count > 0:
             base_stmt = base_stmt.limit(max_count)

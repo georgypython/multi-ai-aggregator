@@ -8,7 +8,7 @@
 ## Общий конфиг (вынесен в root)
 
 - `./.env` — единый env для backend + bot
-- `./docker-compose.yml` — общие инфраструктурные сервисы (PostgreSQL, Redis)
+- `./docker-compose.yml` — общие инфраструктурные сервисы (PostgreSQL, Redis, RabbitMQ, MinIO)
 - `./pyproject.toml` — `uv` workspace
 
 Скопируй шаблон:

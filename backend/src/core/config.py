@@ -78,6 +78,43 @@ class RedisConfig(BaseModel):
         return f"redis://{auth}{self.host}:{self.port}/{self.db}"
 
 
+class RabbitMQConfig(BaseModel):
+    host: str = "localhost"
+    port: int = 5672
+    user: str = "guest"
+    password: str = "guest"
+    vhost: str = "/"
+
+    @property
+    def url(self) -> str:
+        return (
+            f"amqp://{self.user}:{self.password}"
+            f"@{self.host}:{self.port}{self.vhost}"
+        )
+
+
+class StorageConfig(BaseModel):
+    endpoint_url: str = "http://localhost:9000"
+    region: str = "us-east-1"
+    access_key: str = "minioadmin"
+    secret_key: str = "minioadmin"
+    bucket: str = "ai-media"
+    presigned_ttl_seconds: int = 900
+    input_retention_hours: int = 24
+    input_prefix: str = "inputs"
+    max_upload_bytes: int = 10 * 1024 * 1024
+    allowed_image_content_types: tuple[str, ...] = (
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+    )
+    image_extensions: dict[str, str] = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+    }
+
+
 class AILogicConfig(BaseModel):
     new_user_free_tokens: float = 300
 
@@ -98,6 +135,8 @@ class Settings(BaseSettings):
     openrouter: OpenRouterConfig
     wavespeed: WaveSpeedConfig
     redis: RedisConfig = RedisConfig()
+    rabbitmq: RabbitMQConfig = RabbitMQConfig()
+    storage: StorageConfig = StorageConfig()
     ai_logic: AILogicConfig = AILogicConfig()
 
 settings = Settings()

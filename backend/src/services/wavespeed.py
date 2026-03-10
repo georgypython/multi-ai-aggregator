@@ -169,7 +169,7 @@ class WaveSpeedService:
             error=data.get("error"),
         )
 
-    async def get_image_generation_status(
+    async def get_generation_status(
         self,
         task_id: str,
     ) -> WavespeedGenerationResponseSchema:
@@ -194,32 +194,4 @@ class WaveSpeedService:
             result_url=result_url,
             created_at=data.get("created_at"),
             error=data.get("error"),
-        )
-
-    async def poll_generation_status(
-        self,
-        task_id: str,
-        poll_interval_seconds: int,
-        max_attempts: int,
-    ) -> WavespeedGenerationResponseSchema:
-        if max_attempts < 1:
-            raise ValueError("max_attempts must be greater than 0")
-        if poll_interval_seconds < 0:
-            raise ValueError("poll_interval_seconds must be >= 0")
-
-        for attempt in range(1, max_attempts + 1):
-            response = await self.get_image_generation_status(task_id=task_id)
-            status = response.status
-
-            if status in (
-                GenerationStatus.COMPLETED,
-                GenerationStatus.FAILED,
-            ):
-                return response
-
-            if attempt < max_attempts and poll_interval_seconds > 0:
-                await asyncio.sleep(poll_interval_seconds)
-
-        raise ProviderTimeoutError(
-            f"WaveSpeed generation polling timeout: task_id={task_id}, attempts={max_attempts}"
         )

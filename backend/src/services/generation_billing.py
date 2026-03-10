@@ -155,6 +155,7 @@ class GenerationBillingService:
             user_id=data.user_id,
             generation_id=data.generation_id,
             tokens_cost=final_tokens_cost,
+            status=GenerationStatus.COMPLETED,
             text=data.text,
         )
 

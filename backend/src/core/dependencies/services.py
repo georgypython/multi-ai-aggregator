@@ -1,4 +1,5 @@
 from httpx import AsyncClient
+from botocore.client import BaseClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dishka import Provider, Scope, provide
@@ -13,6 +14,7 @@ from src.services.image_generation import ImageGenerationService
 from src.services.llm_configuration import LLMConfigurationService
 from src.services.llm_generation import LLMGenerationService
 from src.services.openrouter import OpenRouterService
+from src.services.storage import StorageService
 from src.services.video_configuration import VideoConfigurationService
 from src.services.video_generation import VideoGenerationService
 from src.services.users import UsersService
@@ -56,6 +58,19 @@ class ServicesProvider(Provider):
             client=client,
             api_key=settings.wavespeed.api_key,
             base_url=settings.wavespeed.base_url,
+        )
+
+    @provide(scope=Scope.APP)
+    def get_storage_service(self, s3_client: BaseClient) -> StorageService:
+        return StorageService(
+            client=s3_client,
+            bucket=settings.storage.bucket,
+            presigned_ttl_seconds=settings.storage.presigned_ttl_seconds,
+            input_retention_hours=settings.storage.input_retention_hours,
+            input_prefix=settings.storage.input_prefix,
+            max_upload_bytes=settings.storage.max_upload_bytes,
+            allowed_image_content_types=settings.storage.allowed_image_content_types,
+            image_extensions=settings.storage.image_extensions,
         )
 
     @provide(scope=Scope.REQUEST)
