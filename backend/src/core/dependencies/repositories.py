@@ -7,6 +7,7 @@ from src.repositories import (
     LLMRepository,
     LLMConfigurationRepository,
     GenerationRepository,
+    MediaFilesRepository,
     ChatMemoryRepository,
     TokenPriceRepository,
 )
@@ -42,6 +43,12 @@ class RepositoriesProvider(Provider):
         self,
     ) -> GenerationRepository:
         return GenerationRepository()
+
+    @provide(scope=Scope.APP)
+    def get_media_files_repository(
+        self,
+    ) -> MediaFilesRepository:
+        return MediaFilesRepository()
 
     @provide(scope=Scope.APP)
     def get_chat_memory_repository(

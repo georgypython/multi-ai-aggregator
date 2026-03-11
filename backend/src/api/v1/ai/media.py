@@ -7,10 +7,11 @@ from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
 from src.core.exceptions.storage import (
     EmptyFileError,
     FileTooLargeError,
+    StorageMetadataPersistError,
     StorageUploadError,
     UnsupportedFileTypeError,
 )
-from src.core.schemas.ai import UploadImageResponseSchema
+from src.core.schemas.ai import UploadFileResponseSchema
 from src.services.storage import StorageService
 
 router = APIRouter(
@@ -20,20 +21,15 @@ router = APIRouter(
 )
 
 
-@router.post("/images", response_model=UploadImageResponseSchema)
+@router.post("/images", response_model=UploadFileResponseSchema)
 async def upload_image(
     storage_service: FromDishka[StorageService],
-    file: UploadFile = File(...),
+    files: list[UploadFile] = File(...),
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ):
     try:
-        return await storage_service.upload_image(file=file, user_id=user_id)
-    except UnsupportedFileTypeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        )
-    except EmptyFileError as exc:
+        return await storage_service.upload_image(files=files, user_id=user_id)
+    except (UnsupportedFileTypeError, EmptyFileError) as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
@@ -46,5 +42,10 @@ async def upload_image(
     except StorageUploadError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        )
+    except StorageMetadataPersistError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
         )

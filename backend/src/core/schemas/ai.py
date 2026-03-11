@@ -182,10 +182,8 @@ class UserBalanceResponseSchema(BaseModel):
     hold_tokens: float
 
 
-class UploadImageResponseSchema(BaseModel):
-    object_key: str
-    content_type: str
-    size_bytes: int
+class UploadFileResponseSchema(BaseModel):
+    media_file_ids: list[UUID]
 
 
 class PollWaveSpeedGenerationTaskSchema(BaseModel):
@@ -197,3 +195,17 @@ class PollWaveSpeedGenerationTaskSchema(BaseModel):
     timeout: int = 30
     final_tokens_cost: float
     result_url: str | None
+
+
+class MediaFileDbDataSchema(BaseModel):
+    id: UUID
+    user_id: UUID
+    content_type: str
+    size_bytes: int
+    object_key: str
+    expires_at: datetime
+
+
+class UpdloadFileDataSchema(BaseModel):
+    data: bytes
+    file: MediaFileDbDataSchema

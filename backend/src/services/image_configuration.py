@@ -13,10 +13,6 @@ from .generation_billing import GenerationBillingService
 
 
 class ImageConfigurationService:
-    @staticmethod
-    def _normalize_provider_key(value: str) -> str:
-        return "/".join(part for part in value.strip().lower().split("/") if part)
-
     def __init__(
         self,
         session: AsyncSession,
@@ -49,11 +45,6 @@ class ImageConfigurationService:
         model_config = self.image_model_configs.get(provider_key)
         if model_config:
             return model_config
-
-        normalized_target = self._normalize_provider_key(provider_key)
-        for key, value in self.image_model_configs.items():
-            if self._normalize_provider_key(key) == normalized_target:
-                return value
 
         raise ImageModelConfigError(
             f"Image model config not found for provider_key={provider_key}"

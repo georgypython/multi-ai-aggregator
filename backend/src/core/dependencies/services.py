@@ -25,6 +25,7 @@ from src.repositories import (
     LLMRepository,
     LLMConfigurationRepository,
     GenerationRepository,
+    MediaFilesRepository,
     ChatMemoryRepository,
     TokenPriceRepository,
 )
@@ -60,10 +61,17 @@ class ServicesProvider(Provider):
             base_url=settings.wavespeed.base_url,
         )
 
-    @provide(scope=Scope.APP)
-    def get_storage_service(self, s3_client: BaseClient) -> StorageService:
+    @provide(scope=Scope.REQUEST)
+    def get_storage_service(
+        self,
+        s3_client: BaseClient,
+        session: AsyncSession,
+        media_files_repo: MediaFilesRepository,
+    ) -> StorageService:
         return StorageService(
             client=s3_client,
+            session=session,
+            media_files_repo=media_files_repo,
             bucket=settings.storage.bucket,
             presigned_ttl_seconds=settings.storage.presigned_ttl_seconds,
             input_retention_hours=settings.storage.input_retention_hours,

@@ -67,7 +67,10 @@ services:
       STORAGE_BUCKET: "${APP_CONFIG__STORAGE__BUCKET:-ai-media}"
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\" &&
+      until mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\"; do
+        echo 'Waiting for MinIO to be ready...';
+        sleep 2;
+      done &&
       mc mb -p local/\"$${STORAGE_BUCKET}\" || true &&
       mc anonymous set none local/\"$${STORAGE_BUCKET}\" || true
       "

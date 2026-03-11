@@ -12,6 +12,7 @@ from .mixins import CreatedAtMixin, UUIDPKMixin
 if TYPE_CHECKING:
     from .ai_models import AIModel
     from .users import User
+    from .media_files import MediaFile
 
 
 class AIGeneration(Base, UUIDPKMixin, CreatedAtMixin):
@@ -38,3 +39,6 @@ class AIGeneration(Base, UUIDPKMixin, CreatedAtMixin):
 
     user: Mapped["User"] = relationship("User", back_populates="generations")
     ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="generations")
+    media_files: Mapped[list["MediaFile"]] = relationship(
+        back_populates="generation"
+    )

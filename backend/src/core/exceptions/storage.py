@@ -16,3 +16,7 @@ class FileTooLargeError(StorageError):
 
 class StorageUploadError(StorageError):
     pass
+
+
+class StorageMetadataPersistError(StorageError):
+    pass

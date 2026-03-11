@@ -4,6 +4,7 @@ from .users import UserRepository
 from .llm import LLMRepository
 from .llm_configurations import LLMConfigurationRepository
 from .generation import GenerationRepository
+from .media_files import MediaFilesRepository
 from .chat_memory import ChatMemoryRepository
 from .token_prices import TokenPriceRepository
 
@@ -14,6 +15,7 @@ __all__ = (
     "LLMRepository",
     "LLMConfigurationRepository",
     "GenerationRepository",
+    "MediaFilesRepository",
     "ChatMemoryRepository",
     "TokenPriceRepository",
 )

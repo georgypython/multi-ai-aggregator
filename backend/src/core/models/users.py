@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from .ai_generations import AIGeneration
     from .llm_configurations import LLMConfiguration
     from .user_balances import UserBalance
+    from .media_files import MediaFile
 
 
 class User(Base, UUIDPKMixin, CreatedAtMixin):
@@ -24,3 +25,4 @@ class User(Base, UUIDPKMixin, CreatedAtMixin):
     )
     llm_configuration: Mapped["LLMConfiguration"] = relationship(back_populates="user")
     generations: Mapped[list["AIGeneration"]] = relationship(back_populates="user")
+    media_files: Mapped[list["MediaFile"]] = relationship(back_populates="user")
