@@ -18,5 +18,9 @@ class StorageUploadError(StorageError):
     pass
 
 
+class StoragePresignedUrlError(StorageError):
+    pass
+
+
 class StorageMetadataPersistError(StorageError):
     pass

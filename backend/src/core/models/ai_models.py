@@ -24,6 +24,7 @@ class AIModel(Base, UUIDPKMixin, CreatedAtMixin):
     )
     min_charge_tokens: Mapped[int] = mapped_column(default=0, nullable=False)
     free_requests_limit: Mapped[int] = mapped_column(default=0, nullable=False)
+    images_edit_support: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     llm_model: Mapped["LLMModel | None"] = relationship(
         back_populates="ai_model", cascade="all, delete-orphan", uselist=False

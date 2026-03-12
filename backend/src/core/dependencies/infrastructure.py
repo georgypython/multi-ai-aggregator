@@ -21,7 +21,16 @@ class InfrastructureProvider(Provider):
             region_name=settings.storage.region,
             aws_access_key_id=settings.storage.access_key,
             aws_secret_access_key=settings.storage.secret_key,
-            config=Config(signature_version="s3v4"),
+            config=Config(
+                signature_version="s3v4",
+                connect_timeout=settings.storage.connect_timeout_seconds,
+                read_timeout=settings.storage.read_timeout_seconds,
+                retries={
+                    "max_attempts": settings.storage.max_retry_attempts,
+                    "mode": "standard",
+                },
+                tcp_keepalive=True,
+            ),
         )
 
     @provide(scope=Scope.REQUEST)

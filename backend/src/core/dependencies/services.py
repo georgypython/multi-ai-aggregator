@@ -79,6 +79,7 @@ class ServicesProvider(Provider):
             max_upload_bytes=settings.storage.max_upload_bytes,
             allowed_image_content_types=settings.storage.allowed_image_content_types,
             image_extensions=settings.storage.image_extensions,
+            operation_timeout_seconds=settings.storage.operation_timeout_seconds,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -148,6 +149,7 @@ class ServicesProvider(Provider):
         generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
         wavespeed_service: WaveSpeedService,
+        storage_service: StorageService,
     ) -> ImageGenerationService:
         return ImageGenerationService(
             session=session,
@@ -156,6 +158,7 @@ class ServicesProvider(Provider):
             generation_repo=generation_repo,
             generation_billing_service=generation_billing_service,
             wavespeed_service=wavespeed_service,
+            storage_service=storage_service,
             image_model_configs=IMAGE_MODEL_CONFIGS,
             poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
             poll_max_attempts=settings.wavespeed.poll_max_attempts,

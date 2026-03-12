@@ -57,6 +57,28 @@ class WaveSpeedService:
         return data
 
     @staticmethod
+    def _parse_generation_status(raw_status: Any) -> GenerationStatus:
+        if not isinstance(raw_status, str):
+            return GenerationStatus.PROCESSING
+
+        normalized_status = raw_status.strip().lower()
+        status_map: dict[str, GenerationStatus] = {
+            "created": GenerationStatus.CREATED,
+            "processing": GenerationStatus.PROCESSING,
+            "queued": GenerationStatus.PROCESSING,
+            "pending": GenerationStatus.PROCESSING,
+            "running": GenerationStatus.PROCESSING,
+            "in_progress": GenerationStatus.PROCESSING,
+            "completed": GenerationStatus.COMPLETED,
+            "succeeded": GenerationStatus.COMPLETED,
+            "failed": GenerationStatus.FAILED,
+            "error": GenerationStatus.FAILED,
+            "canceled": GenerationStatus.CANCELED,
+            "cancelled": GenerationStatus.CANCELED,
+        }
+        return status_map.get(normalized_status, GenerationStatus.PROCESSING)
+
+    @staticmethod
     def _pick_output_url(payload: dict[str, Any]) -> str | None:
         data = payload.get("data")
         candidates: list[dict[str, Any]] = [payload]
@@ -112,6 +134,9 @@ class WaveSpeedService:
                 f"Unsupported WaveSpeed provider: {request_data.provider}"
             )
 
+        if request_data.media_file_urls:
+            payload["images"] = request_data.media_file_urls
+
         return await self._create_generation_request(
             provider_model_key=request_data.provider_model_key,
             payload=payload,
@@ -154,7 +179,7 @@ class WaveSpeedService:
         response_data = response.json()
         data = self._parse_response_data(response_data)
 
-        generation_status: str = data.get("status")
+        generation_status = self._parse_generation_status(data.get("status"))
         urls = data.get("urls") if isinstance(data.get("urls"), dict) else {}
         task_id = str(data.get("id") or "")
         if not task_id:
@@ -163,7 +188,7 @@ class WaveSpeedService:
         return WavespeedGenerationResponseSchema(
             task_id=task_id,
             model_key=data.get("model"),
-            status=GenerationStatus(generation_status.lower()),
+            status=generation_status,
             result_url=urls.get("get"),
             created_at=data.get("created_at"),
             error=data.get("error"),
@@ -186,11 +211,11 @@ class WaveSpeedService:
         if isinstance(urls, dict):
             result_url = urls.get("get")
 
-        generation_status: str = data.get("status")
+        generation_status = self._parse_generation_status(data.get("status"))
         return WavespeedGenerationResponseSchema(
             task_id=str(data.get("id") or task_id),
             model_key=data.get("model"),
-            status=GenerationStatus(generation_status.lower()),
+            status=generation_status,
             result_url=result_url,
             created_at=data.get("created_at"),
             error=data.get("error"),

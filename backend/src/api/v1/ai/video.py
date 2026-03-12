@@ -16,6 +16,7 @@ from src.core.exceptions.video import (
 )
 from src.core.schemas.ai import (
 	GenerationResultResponseDataSchema,
+	VideoGenerationCreateRequestSchema,
 	VideoModelDetailResponseSchema,
 	VideoModelPriceResponseSchema,
 )
@@ -82,20 +83,18 @@ async def get_video_model_price(
 
 @router.post("/generations", response_model=GenerationResultResponseDataSchema)
 async def generate_video(
+	payload: VideoGenerationCreateRequestSchema,
 	service: FromDishka[VideoGenerationService],
-	model_id: UUID,
-	prompt: str,
-	duration_seconds: int | None = None,
-	size: str | None = None,
 	user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ):
 	try:
 		return await service.generate_video(
 			user_id=user_id,
-			model_id=model_id,
-			prompt=prompt,
-			duration_seconds=duration_seconds,
-			size=size,
+			model_id=payload.model_id,
+			prompt=payload.prompt,
+			duration_seconds=payload.duration_seconds,
+			size=payload.size,
+			media_file_id=payload.media_file_id,
 		)
 	except VideoModelConfigError as exc:
 		raise HTTPException(

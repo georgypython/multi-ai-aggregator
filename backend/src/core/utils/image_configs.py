@@ -18,6 +18,7 @@ IMAGE_MODEL_CONFIGS: dict[str, dict] = {
 	},
 	"openai/gpt-image-1.5/text-to-image": {
         "provider": "openai",
+		"image_edit_model_name": "openai/gpt-image-1.5/edit",
 		"sizes": ["1024*1024", "1024*1536", "1536*1024"],
 		"qualities": ["low", "medium", "high"],
 		"prices_usd": {
@@ -40,23 +41,24 @@ IMAGE_MODEL_CONFIGS: dict[str, dict] = {
 	},
 	"google/nano-banana-2/text-to-image": {
         "provider": "google",
+		"image_edit_model_name": "google/nano-banana-2/edit",
 		"sizes": ["1:1", "9:16", "16:9"],
 		"qualities": ["1k", "2k", "4k"],
 		"prices_usd": {
 			"1k": {
-				"1:1": 0.08,
-				"9:16": 0.08,
-				"16:9": 0.08,
+				"1:1": 0.070,
+				"9:16": 0.070,
+				"16:9": 0.070,
 			},
 			"2k": {
-				"1:1": 0.12,
-				"9:16": 0.12,
-				"16:9": 0.12,
+				"1:1": 0.105,
+				"9:16": 0.105,
+				"16:9": 0.105,
 			},
 			"4k": {
-				"1:1": 0.16,
-				"9:16": 0.16,
-				"16:9": 0.16,
+				"1:1": 0.140,
+				"9:16": 0.140,
+				"16:9": 0.140,
 			},
 		},
 	},

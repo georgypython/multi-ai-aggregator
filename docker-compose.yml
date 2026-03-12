@@ -20,7 +20,7 @@ services:
     image: redis:7-alpine
     container_name: app-redis
     ports:
-      - "${APP_CONFIG__REDIS__PORT:-6378}:6379"
+      - "${APP_CONFIG__REDIS__PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -74,6 +74,28 @@ services:
       mc mb -p local/\"$${STORAGE_BUCKET}\" || true &&
       mc anonymous set none local/\"$${STORAGE_BUCKET}\" || true
       "
+
+  taskiq-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.taskiq-worker
+    container_name: app-taskiq-worker
+    env_file:
+      - .env
+    environment:
+      APP_CONFIG__DB__HOST: postgres
+      APP_CONFIG__DB__PORT: 5432
+      APP_CONFIG__RABBITMQ__HOST: rabbitmq
+      APP_CONFIG__REDIS__HOST: redis
+      APP_CONFIG__STORAGE__ENDPOINT_URL: http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres_data:

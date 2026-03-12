@@ -94,6 +94,7 @@ class VideoGenerationService:
         prompt: str,
         duration_seconds: int | None,
         size: str | None,
+        media_file_id: UUID | None,
     ) -> VideoRequestDataSchema:
         async with self.session.begin():
             user = await self.user_repo.get_one_with_balance(
@@ -139,6 +140,7 @@ class VideoGenerationService:
                 ai_model_id=model_id,
                 provider_model_key=provider_model_key,
                 prompt=prompt,
+                media_file_id=media_file_id,
                 min_charge_tokens=ai_model.min_charge_tokens,
                 free_requests_limit=ai_model.free_requests_limit,
                 **model_config.model_dump(),
@@ -151,6 +153,7 @@ class VideoGenerationService:
         prompt: str,
         duration_seconds: int | None,
         size: str | None,
+        media_file_id: UUID | None = None,
     ) -> GenerationResultResponseDataSchema:
         request_data = await self._create_and_validate_request_video_data(
             user_id=user_id,
@@ -158,7 +161,11 @@ class VideoGenerationService:
             prompt=prompt,
             duration_seconds=duration_seconds,
             size=size,
+            media_file_id=media_file_id,
         )
+
+        if request_data.media_file_id:
+            pass
 
         generation_data = GenerationRequestSchema(
             user_id=user_id,

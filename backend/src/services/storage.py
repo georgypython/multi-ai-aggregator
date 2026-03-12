@@ -1,3 +1,4 @@
+import asyncio
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import UploadFile
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.exceptions.storage import (
     EmptyFileError,
     FileTooLargeError,
+    StoragePresignedUrlError,
     StorageUploadError,
     UnsupportedFileTypeError,
 )
@@ -34,6 +36,7 @@ class StorageService:
         max_upload_bytes: int,
         allowed_image_content_types: tuple[str, ...],
         image_extensions: dict[str, str],
+        operation_timeout_seconds: float,
     ) -> None:
         self.client = client
         self.session = session
@@ -45,6 +48,7 @@ class StorageService:
         self.max_upload_bytes = max_upload_bytes
         self.allowed_image_content_types = allowed_image_content_types
         self.image_extensions = image_extensions
+        self.operation_timeout_seconds = operation_timeout_seconds
 
     async def _upload_bytes(
         self,
@@ -53,15 +57,96 @@ class StorageService:
         content_type: str,
     ) -> None:
         try:
-            await run_in_threadpool(
-                self.client.put_object,
-                Bucket=self.bucket,
-                Key=object_key,
-                Body=data,
-                ContentType=content_type,
+            await asyncio.wait_for(
+                run_in_threadpool(
+                    self.client.put_object,
+                    Bucket=self.bucket,
+                    Key=object_key,
+                    Body=data,
+                    ContentType=content_type,
+                ),
+                timeout=self.operation_timeout_seconds,
             )
+        except TimeoutError as exc:
+            raise StorageUploadError("Storage upload timed out") from exc
         except (BotoCoreError, ClientError) as exc:
             raise StorageUploadError("Failed to upload file to storage") from exc
+
+    async def _create_presigned_get_url(self, object_key: str) -> str:
+        try:
+            return await asyncio.wait_for(
+                run_in_threadpool(
+                    self.client.generate_presigned_url,
+                    "get_object",
+                    Params={"Bucket": self.bucket, "Key": object_key},
+                    ExpiresIn=self.presigned_ttl_seconds,
+                ),
+                timeout=self.operation_timeout_seconds,
+            )
+        except TimeoutError as exc:
+            raise StoragePresignedUrlError(
+                f"Presigned URL generation timed out for object_key={object_key}"
+            ) from exc
+        except (BotoCoreError, ClientError) as exc:
+            raise StoragePresignedUrlError(
+                f"Failed to generate presigned URL for object_key={object_key}"
+            ) from exc
+
+    async def _get_active_media_files_by_ids(
+        self,
+        user_id: UUID,
+        media_file_ids: list[UUID],
+    ) -> list[MediaFileDbDataSchema]:
+        now = datetime.now(timezone.utc)
+        media_files = await self.media_files_repo.get_active_user_files_by_ids(
+            session=self.session,
+            user_id=user_id,
+            media_file_ids=media_file_ids,
+            now=now,
+        )
+        media_files_by_id = {item.id: item for item in media_files}
+
+        ordered_media_files: list[MediaFileDbDataSchema] = []
+        for media_file_id in media_file_ids:
+            media = media_files_by_id.get(media_file_id)
+            if not media:
+                raise ValueError(
+                    f"Media file not found or expired for media_file_id={media_file_id}"
+                )
+
+            ordered_media_files.append(
+                MediaFileDbDataSchema(
+                    id=media.id,
+                    user_id=media.user_id,
+                    content_type=media.content_type,
+                    size_bytes=media.size_bytes,
+                    object_key=media.object_key,
+                    expires_at=media.expires_at,
+                )
+            )
+
+        return ordered_media_files
+
+    async def _create_presigned_urls_for_media_files(
+        self,
+        files: list[MediaFileDbDataSchema],
+    ) -> list[str]:
+        urls: list[str] = []
+        for file in files:
+            url = await self._create_presigned_get_url(object_key=file.object_key)
+            urls.append(url)
+        return urls
+
+    async def get_files_urls(
+        self,
+        user_id: UUID,
+        media_file_ids: list[UUID],
+    ) -> list[str]:
+        media_files = await self._get_active_media_files_by_ids(
+            user_id=user_id,
+            media_file_ids=media_file_ids,
+        )
+        return await self._create_presigned_urls_for_media_files(files=media_files)
 
     async def _create_upload_file_data(self, user_id: UUID, file: UploadFile) -> UpdloadFileDataSchema:
         expires_at = datetime.now(timezone.utc) + timedelta(
@@ -103,33 +188,27 @@ class StorageService:
     
     async def upload_image(
         self,
-        files: list[UploadFile],
+        file: UploadFile,
         user_id: UUID,
     ) -> UploadFileResponseSchema:
-        total_upload_files: list[UpdloadFileDataSchema] = []
-
-        for file in files:
-            upload_file_data = await self._create_upload_file_data(
-                user_id=user_id, file=file
-            )
-            total_upload_files.append(upload_file_data)
+        upload_file_data = await self._create_upload_file_data(
+            user_id=user_id,
+            file=file,
+        )
 
         async with self.session.begin():
             await self.media_files_repo.add_uploaded_items(
                 session=self.session,
-                items=[
-                    upload.file.model_dump() for upload in total_upload_files
-                ],
+                items=[upload_file_data.file.model_dump()],
             )
 
-            for upload in total_upload_files:
-                await self._upload_bytes(
-                    object_key=upload.file.object_key,
-                    data=upload.data,
-                    content_type=upload.file.content_type
-                )
+            await self._upload_bytes(
+                object_key=upload_file_data.file.object_key,
+                data=upload_file_data.data,
+                content_type=upload_file_data.file.content_type,
+            )
 
                 
         return UploadFileResponseSchema(
-            media_file_ids=[upload.file.id for upload in total_upload_files],
+            media_file_id=upload_file_data.file.id,
         )

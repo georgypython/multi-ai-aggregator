@@ -70,6 +70,12 @@ class ImageGenerationResult(BaseModel):
     user_id: UUID
     generation_id: UUID
     tokens_cost: float
+    status: str
+    text: str | None = None
+
+
+class UploadMediaImagesResult(BaseModel):
+    media_file_id: UUID
 
 
 class VideoGenerationResult(BaseModel):

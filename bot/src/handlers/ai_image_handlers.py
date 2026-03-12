@@ -1,3 +1,4 @@
+from io import BytesIO
 from html import escape
 from uuid import UUID
 
@@ -125,18 +126,15 @@ async def choose_image_quality(
     await callback.answer("Quality выбран", show_alert=False)
 
 
-@router.message(AIFlow.waiting_image_prompt, F.text)
-async def generate_image_from_prompt(
+async def _run_image_generation(
     message: Message,
     image_generation_service: FromDishka[ImageGenerationService],
     state: FSMContext,
+    prompt: str,
+    image_attachments: list[tuple[str, bytes, str]] | None = None,
 ) -> None:
     if message.from_user is None:
         await message.answer("Не удалось определить Telegram пользователя")
-        return
-
-    prompt = (message.text or "").strip()
-    if not prompt or prompt.startswith("/"):
         return
 
     fsm_data = await state.get_data()
@@ -152,6 +150,30 @@ async def generate_image_from_prompt(
         await message.answer("Сначала выбери size и quality.")
         return
 
+    media_file_ids: list[UUID] | None = None
+    if image_attachments:
+        try:
+            upload_result = await image_generation_service.upload_image(
+                tg_user_id=message.from_user.id,
+                file=image_attachments[0],
+            )
+            media_file_ids = [upload_result.media_file_id]
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code
+            if status_code == 413:
+                await message.answer("Одно из изображений слишком большое.")
+            elif status_code == 400:
+                await message.answer("Некорректный формат изображения для загрузки.")
+            elif status_code == 401:
+                await message.answer("Ошибка авторизации бота на backend.")
+            else:
+                await message.answer(f"Ошибка загрузки изображений: HTTP {status_code}")
+            return
+        except Exception:
+            logger.exception("Failed to upload images before generation")
+            await message.answer("Ошибка загрузки изображений. Попробуй позже.")
+            return
+
     await message.answer("Генерирую изображение, подожди немного…")
 
     try:
@@ -161,6 +183,7 @@ async def generate_image_from_prompt(
             prompt=prompt,
             size=selected_size,
             quality=selected_quality,
+            media_file_ids=media_file_ids,
         )
     except httpx.HTTPStatusError as exc:
         status_code = exc.response.status_code
@@ -176,9 +199,46 @@ async def generate_image_from_prompt(
         await message.answer("Ошибка генерации изображения. Попробуй позже.")
         return
 
+    await message.answer("Генерация запущена. Ожидаю завершение…")
+
+    try:
+        final_status = await image_generation_service.wait_for_image_generation_status(
+            tg_user_id=message.from_user.id,
+            generation_id=result.generation_id,
+        )
+    except httpx.HTTPStatusError as exc:
+        logger.exception("Backend failed while polling image generation status")
+        await message.answer(
+            f"Не удалось проверить статус генерации: HTTP {exc.response.status_code}"
+        )
+        return
+    except TimeoutError:
+        await message.answer(
+            "Генерация зависла в статусе processing слишком долго. Попробуй ещё раз или проверь backend/worker логи."
+        )
+        return
+    except Exception:
+        logger.exception("Failed while polling image generation status")
+        await message.answer("Ошибка при проверке статуса генерации.")
+        return
+
+    if final_status.status == "failed":
+        await message.answer("Генерация завершилась с ошибкой ❌")
+        return
+
+    if final_status.status == "canceled":
+        await message.answer("Генерация была отменена ❌")
+        return
+
+    if final_status.status != "completed":
+        await message.answer(
+            f"Генерация пока не завершена (status={final_status.status})."
+        )
+        return
+
     await message.answer(
         "Готово ✅\n"
-        f"Списано: <b>{result.tokens_cost:.4f} токенов</b>\n"
+        f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>\n"
         "Отправляю изображение..."
     )
 
@@ -195,7 +255,7 @@ async def generate_image_from_prompt(
             ),
             caption=(
                 "Изображение готово ✅\n"
-                f"Списано: <b>{result.tokens_cost:.4f} токенов</b>"
+                f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>"
             ),
         )
     except TelegramBadRequest:
@@ -207,7 +267,7 @@ async def generate_image_from_prompt(
             ),
             caption=(
                 "Изображение готово ✅\n"
-                f"Списано: <b>{result.tokens_cost:.4f} токенов</b>"
+                f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>"
             ),
         )
     except httpx.HTTPStatusError as exc:
@@ -220,3 +280,66 @@ async def generate_image_from_prompt(
         await message.answer("Не удалось отправить изображение. Попробуй позже.")
 
     await state.set_state(AIFlow.choosing_model)
+
+
+async def _collect_photo_attachments(messages: list[Message]) -> list[tuple[str, bytes, str]]:
+    attachments: list[tuple[str, bytes, str]] = []
+
+    for item in messages:
+        if not item.photo:
+            continue
+
+        photo = item.photo[-1]
+        tg_file = await item.bot.get_file(photo.file_id)
+        buffer = BytesIO()
+        await item.bot.download_file(tg_file.file_path, destination=buffer)
+        file_bytes = buffer.getvalue()
+        if not file_bytes:
+            continue
+
+        attachments.append((f"{photo.file_unique_id}.jpg", file_bytes, "image/jpeg"))
+
+    return attachments
+
+
+@router.message(AIFlow.waiting_image_prompt, F.text)
+async def generate_image_from_prompt_text(
+    message: Message,
+    image_generation_service: FromDishka[ImageGenerationService],
+    state: FSMContext,
+) -> None:
+    prompt = (message.text or "").strip()
+    if not prompt or prompt.startswith("/"):
+        return
+
+    await _run_image_generation(
+        message=message,
+        image_generation_service=image_generation_service,
+        state=state,
+        prompt=prompt,
+    )
+
+
+@router.message(AIFlow.waiting_image_prompt, F.photo)
+async def generate_image_from_single_photo(
+    message: Message,
+    image_generation_service: FromDishka[ImageGenerationService],
+    state: FSMContext,
+) -> None:
+    prompt = (message.caption or "").strip()
+    if not prompt:
+        await message.answer("Добавь подпись к фото — это и будет prompt.")
+        return
+
+    attachments = await _collect_photo_attachments([message])
+    if not attachments:
+        await message.answer("Не удалось прочитать изображение из сообщения.")
+        return
+
+    await _run_image_generation(
+        message=message,
+        image_generation_service=image_generation_service,
+        state=state,
+        prompt=prompt,
+        image_attachments=attachments,
+    )

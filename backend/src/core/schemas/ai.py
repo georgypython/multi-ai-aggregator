@@ -27,6 +27,7 @@ class LLMRequestDataSchema(BaseModel):
 
 
 class ModelConfigDataSchema(BaseModel):
+    request_provider_model_key: str
     size: str
     quality: str
     provider_cost: float
@@ -38,6 +39,7 @@ class ImageRequestDataSchema(ModelConfigDataSchema):
     ai_model_id: UUID
     provider_model_key: str
     prompt: str
+    media_file_urls: list[str] | None = None
     min_charge_tokens: float
     free_requests_limit: int = 0
 
@@ -54,8 +56,25 @@ class VideoRequestDataSchema(VideoModelConfigDataSchema):
     ai_model_id: UUID
     provider_model_key: str
     prompt: str
+    media_file_id: UUID | None = None
     min_charge_tokens: float
     free_requests_limit: int = 0
+
+
+class ImageGenerationCreateRequestSchema(BaseModel):
+    model_id: UUID
+    prompt: str
+    size: str | None = None
+    quality: str | None = None
+    media_file_ids: list[UUID] | None = None
+
+
+class VideoGenerationCreateRequestSchema(BaseModel):
+    model_id: UUID
+    prompt: str
+    duration_seconds: int | None = None
+    size: str | None = None
+    media_file_id: UUID | None = None
 
 
 class WavespeedGenerationResponseSchema(BaseModel):
@@ -183,7 +202,7 @@ class UserBalanceResponseSchema(BaseModel):
 
 
 class UploadFileResponseSchema(BaseModel):
-    media_file_ids: list[UUID]
+    media_file_id: UUID
 
 
 class PollWaveSpeedGenerationTaskSchema(BaseModel):

@@ -3,6 +3,7 @@ from httpx import AsyncClient
 from uuid import UUID
 
 from .broker import broker
+from src.core.logger_setup import logger
 from src.core.models.db_helper import db_helper
 from src.core.models.enums import GenerationStatus
 from src.core.schemas.ai import PollWaveSpeedGenerationTaskSchema
@@ -39,13 +40,40 @@ async def poll_generation_status(
     api_key: str,
     base_url: str,
 ):
-    async with AsyncClient(timeout=data.timeout) as client:
-        wavespeed = WaveSpeedService(
-            client=client,
+    generation = None
+    try:
+        async with AsyncClient(timeout=data.timeout) as client:
+            wavespeed = WaveSpeedService(
+                client=client,
+                api_key=api_key,
+                base_url=base_url,
+            )
+            generation = await wavespeed.get_generation_status(task_id=data.wavespeed_task_id)
+    except Exception as exc:
+        logger.exception(
+            "poll_generation_status_error generation_id=%s task_id=%s attempt=%s",
+            data.generation_id,
+            data.wavespeed_task_id,
+            data.current_attempt,
+        )
+
+        if data.current_attempt >= data.max_attempts:
+            await _update_generation_status(
+                generation_id=data.generation_id,
+                status=GenerationStatus.FAILED,
+                result_url=data.result_url,
+                final_token_cost=data.final_tokens_cost,
+            )
+            return
+
+        await asyncio.sleep(data.poll_interval_seconds)
+        data.current_attempt += 1
+        await poll_generation_status.kiq(
+            data=data,
             api_key=api_key,
             base_url=base_url,
         )
-        generation = await wavespeed.get_generation_status(task_id=data.wavespeed_task_id)
+        return
 
     current_status = GenerationStatus.PROCESSING
     if generation.status == GenerationStatus.COMPLETED:

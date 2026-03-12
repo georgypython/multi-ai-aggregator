@@ -12,13 +12,18 @@ from src.core.config import settings
 from src.core.logger_setup import logger
 from src.core.models.db_helper import db_helper
 from src.core.dependencies.container import container
+from src.tasks.broker import broker
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    await broker.startup()
+
     yield
+
     # Shutdown
+    await broker.shutdown()
     await db_helper.dispose()
 
 

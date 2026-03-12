@@ -14,6 +14,7 @@ from src.core.exceptions.llm import (
 )
 from src.core.schemas.ai import (
     GenerationResultResponseDataSchema,
+    ImageGenerationCreateRequestSchema,
     ImageModelDetailResponseSchema,
     ImageModelPriceResponseSchema,
 )
@@ -29,20 +30,18 @@ router = APIRouter(
 
 @router.post("/generations", response_model=GenerationResultResponseDataSchema)
 async def generate_image(
+    payload: ImageGenerationCreateRequestSchema,
     service: FromDishka[ImageGenerationService],
-    model_id: UUID,
-    prompt: str,
-    size: str | None = None,
-    quality: str | None = None,
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ):
     try:
         return await service.generate_image(
             user_id=user_id,
-            model_id=model_id,
-            prompt=prompt,
-            size=size,
-            quality=quality,
+            model_id=payload.model_id,
+            prompt=payload.prompt,
+            size=payload.size,
+            quality=payload.quality,
+            media_file_ids=payload.media_file_ids,
         )
     except ImageModelConfigError as exc:
         raise HTTPException(
@@ -72,6 +71,24 @@ async def generate_image(
     except ProviderError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        )
+
+
+@router.get("/generations/{generation_id}", response_model=GenerationResultResponseDataSchema)
+async def get_image_generation_status(
+    service: FromDishka[ImageGenerationService],
+    generation_id: UUID,
+    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+):
+    try:
+        return await service.get_image_generation_status(
+            user_id=user_id,
+            generation_id=generation_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         )
 

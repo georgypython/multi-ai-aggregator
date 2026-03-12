@@ -66,7 +66,7 @@ class WaveSpeedConfig(BaseModel):
 
 class RedisConfig(BaseModel):
     host: str = "localhost"
-    port: int = 6378
+    port: int = 6379
     db: int = 0
     password: str | None = None
     chat_history_ttl_seconds: int = 7 * 24 * 60 * 60
@@ -98,6 +98,10 @@ class StorageConfig(BaseModel):
     region: str = "us-east-1"
     access_key: str = "minioadmin"
     secret_key: str = "minioadmin"
+    connect_timeout_seconds: float = 3.0
+    read_timeout_seconds: float = 15.0
+    max_retry_attempts: int = 2
+    operation_timeout_seconds: float = 20.0
     bucket: str = "ai-media"
     presigned_ttl_seconds: int = 900
     input_retention_hours: int = 24

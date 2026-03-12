@@ -24,6 +24,7 @@ class MediaFile(Base, UUIDPKMixin, CreatedAtMixin):
     )
     object_key: Mapped[str] = mapped_column(nullable=False)
     content_type: Mapped[str] = mapped_column(nullable=False)
+    size_bytes: Mapped[int] = mapped_column(nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )

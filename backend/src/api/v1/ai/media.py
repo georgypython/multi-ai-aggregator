@@ -24,11 +24,11 @@ router = APIRouter(
 @router.post("/images", response_model=UploadFileResponseSchema)
 async def upload_image(
     storage_service: FromDishka[StorageService],
-    files: list[UploadFile] = File(...),
+    file: UploadFile = File(...),
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ):
     try:
-        return await storage_service.upload_image(files=files, user_id=user_id)
+        return await storage_service.upload_image(file=file, user_id=user_id)
     except (UnsupportedFileTypeError, EmptyFileError) as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
