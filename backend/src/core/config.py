@@ -9,7 +9,7 @@ BASE_PATH = Path(__file__).resolve().parent.parent.parent.parent
 
 class RunConfig(BaseModel):
     host: str = "0.0.0.0"
-    port: int = 8001
+    port: int = 8000
 
 
 class LoggerConfig(BaseModel):
@@ -120,7 +120,7 @@ class StorageConfig(BaseModel):
 
 
 class AILogicConfig(BaseModel):
-    new_user_free_tokens: float = 300
+    new_user_free_tokens: float = 10
 
 
 class Settings(BaseSettings):
