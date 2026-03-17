@@ -142,7 +142,7 @@ class ImageGenerationService:
                 )
 
             media_file_urls: list[str] | None = None
-            if media_file_ids and ai_model.images_edit_support:
+            if media_file_ids:
                 try:
                     resolved_media_file_urls = await self.storage_service.get_files_urls(
                         user_id=user_id,

@@ -11,6 +11,7 @@ from .base import Base
 
 if TYPE_CHECKING:
     from .ai_generations import AIGeneration
+    from .model_configs import ImageProfile, VideoProfile, LLMProfile
     from .token_prices import TokenPrice
 
 
@@ -31,29 +32,16 @@ class AIModel(Base, UUIDPKMixin, CreatedAtMixin):
         Numeric(18, 6), default=Decimal("0"), nullable=False
     )
     free_requests_limit: Mapped[int] = mapped_column(default=0, nullable=False)
-    images_edit_support: Mapped[bool] = mapped_column(default=False, nullable=False)
 
-    llm_model: Mapped["LLMModel | None"] = relationship(
+    llm_profile: Mapped["LLMProfile | None"] = relationship(
+        back_populates="ai_model", cascade="all, delete-orphan", uselist=False
+    )
+    image_profile: Mapped["ImageProfile | None"] = relationship(
+        back_populates="ai_model", cascade="all, delete-orphan", uselist=False
+    )
+    video_profile: Mapped["VideoProfile | None"] = relationship(
         back_populates="ai_model", cascade="all, delete-orphan", uselist=False
     )
     generations: Mapped[list["AIGeneration"]] = relationship(back_populates="ai_model")
     token_price: Mapped["TokenPrice"] = relationship(back_populates="ai_models")
 
-
-class LLMModel(Base, UUIDPKMixin, CreatedAtMixin):
-    __tablename__ = "llm_models"
-
-    ai_model_id: Mapped[UUID] = mapped_column(
-        ForeignKey("ai_models.id"), nullable=False, unique=True, index=True
-    )
-    input_price_per_million_usd: Mapped[Decimal] = mapped_column(
-        Numeric(18, 10), nullable=False
-    )
-    output_price_per_million_usd: Mapped[Decimal] = mapped_column(
-        Numeric(18, 10), nullable=False
-    )
-    is_temperature_support: Mapped[bool | None] = mapped_column(
-        nullable=True, default=False
-    )
-
-    ai_model: Mapped["AIModel"] = relationship("AIModel", back_populates="llm_model")
