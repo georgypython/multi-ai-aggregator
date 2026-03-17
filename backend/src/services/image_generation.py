@@ -3,11 +3,11 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.logger_setup  import logger
-from src.core.exceptions.image import (
+from backend.src.core.exceptions.generation import (
     ImageGenerationNotCompletedError,
-    ImageModelConfigError,
+    ModelConfigError,
+    ProviderError,
 )
-from src.core.exceptions.llm import ProviderError
 from src.core.exceptions.storage import StoragePresignedUrlError
 from src.core.models.enums import (
     GenerationStatus,
@@ -63,7 +63,7 @@ class ImageGenerationService:
     ) -> ModelConfigDataSchema:
         model_config = self.image_model_configs.get(provider_model_key)
         if not model_config:
-            raise ImageModelConfigError(
+            raise ModelConfigError(
                 f"Image model config not found for provider_key={provider_model_key}"
             )
 
@@ -95,7 +95,7 @@ class ImageGenerationService:
                             provider=model_provider,
                         )
 
-        raise ImageModelConfigError(
+        raise ModelConfigError(
             f"Image model config is invalid for provider_key={provider_model_key}"
         )
         
@@ -266,7 +266,12 @@ class ImageGenerationService:
 
             await poll_generation_status.kiq(
                 data=PollWaveSpeedGenerationTaskSchema(
+                    ai_model_id=request_data.ai_model_id,
+                    user_id=request_data.user_id,
                     generation_id=generation.id,
+                    generation_type=generation_data.generation_type,
+                    hold_amount=generation_data.hold_amount,
+                    provider_cost=request_data.provider_cost,
                     wavespeed_task_id=response_create_data.task_id,
                     poll_interval_seconds=self.poll_interval_seconds,
                     max_attempts=self.poll_max_attempts,
@@ -280,14 +285,16 @@ class ImageGenerationService:
             )
         except ProviderError:
             await self.generation_billing_service.rollback_failed_generation(
-                data=generation_data,
+                user_id=generation_data.user_id,
+                hold_amount=generation_data.hold_amount,
                 generation_id=generation.id,
             )
             raise
         
         except Exception as e:
             await self.generation_billing_service.rollback_failed_generation(
-                data=generation_data,
+                user_id=generation_data.user_id,
+                hold_amount=generation_data.hold_amount,
                 generation_id=generation.id,
             )
             raise ImageGenerationNotCompletedError(

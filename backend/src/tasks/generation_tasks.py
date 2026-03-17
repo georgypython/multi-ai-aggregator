@@ -1,45 +1,86 @@
 import asyncio
 from httpx import AsyncClient
-from uuid import UUID
 
 from .broker import broker
 from src.core.logger_setup import logger
 from src.core.models.db_helper import db_helper
 from src.core.models.enums import GenerationStatus
 from src.core.schemas.ai import PollWaveSpeedGenerationTaskSchema
-from src.repositories import GenerationRepository
+from src.repositories import GenerationRepository, TokenPriceRepository, UserRepository
+from src.services.generation_billing import GenerationBillingService
 from src.services.wavespeed import WaveSpeedService
+from src.core.schemas.ai import GenerationFinishData
 
 
-async def _update_generation_status(
-    generation_id: UUID,
+async def _complete_generation_polling(
     status: GenerationStatus,
-    result_url: str,
-    final_token_cost: float,
+    data: PollWaveSpeedGenerationTaskSchema,
 ) -> None:
     generation_repo = GenerationRepository()
+    user_repo = UserRepository()
+    token_price_repo = TokenPriceRepository()
+    
     async with db_helper.session_factory() as session:
+        generation_billing_service = GenerationBillingService(
+            session=session,
+            user_repo=user_repo,
+            generation_repo=generation_repo,
+            token_price_repo=token_price_repo,
+        )
         if status == GenerationStatus.COMPLETED:
-            await generation_repo.mark_completed(
-                session=session,
-                generation_id=generation_id,
-                charged_tokens=final_token_cost,
-                result_url=result_url,
+            await generation_billing_service.finish_generation(
+                data=GenerationFinishData(
+                    ai_model_id=data.ai_model_id,
+                    generation_id=data.generation_id,
+                    user_id=data.user_id,
+                    generation_type=data.generation_type,
+                    hold_amount=data.hold_amount,
+                    provider_cost=data.provider_cost,
+                    provider_status=status,
+                    result_url=data.result_url,
+                )
+            )
+            logger.info(
+                "generation_polling_completed generation_id=%s status=%s final_tokens_cost=%s",
+                data.generation_id,
+                status,
+                data.final_tokens_cost,
             )
         else:
-            await generation_repo.mark_failed(
-                session=session,
-                generation_id=generation_id,
+            await generation_billing_service.rollback_failed_generation(
+                user_id=data.user_id,
+                hold_amount=data.hold_amount,
+                generation_id=data.generation_id,
             )
-        await session.commit()
+            logger.warning(
+                "generation_polling_failed generation_id=%s status=%s hold_amount=%s",
+                data.generation_id,
+                status,
+                data.hold_amount,
+            )
+    return None
 
+
+async def _continue_generation_polling(
+    data: PollWaveSpeedGenerationTaskSchema,
+    api_key: str,
+    base_url: str,
+) -> None:
+    await asyncio.sleep(data.poll_interval_seconds)
+    data.current_attempt += 1
+    await poll_generation_status.kiq(
+        data=data,
+        api_key=api_key,
+        base_url=base_url,
+    )
+    return None
 
 @broker.task(task_name="generation.poll_wavespeed_status.v1")
 async def poll_generation_status(
     data: PollWaveSpeedGenerationTaskSchema,
     api_key: str,
     base_url: str,
-):
+) -> None:
     generation = None
     try:
         async with AsyncClient(timeout=data.timeout) as client:
@@ -51,29 +92,21 @@ async def poll_generation_status(
             generation = await wavespeed.get_generation_status(task_id=data.wavespeed_task_id)
     except Exception as exc:
         logger.exception(
-            "poll_generation_status_error generation_id=%s task_id=%s attempt=%s",
+            "poll_generation_status_error generation_id=%s task_id=%s attempt=%s error=%s",
             data.generation_id,
             data.wavespeed_task_id,
             data.current_attempt,
+            exc,
         )
 
         if data.current_attempt >= data.max_attempts:
-            await _update_generation_status(
-                generation_id=data.generation_id,
-                status=GenerationStatus.FAILED,
-                result_url=data.result_url,
-                final_token_cost=data.final_tokens_cost,
-            )
-            return
+            await _complete_generation_polling(status=GenerationStatus.FAILED, data=data)
+            return None
 
-        await asyncio.sleep(data.poll_interval_seconds)
-        data.current_attempt += 1
-        await poll_generation_status.kiq(
-            data=data,
-            api_key=api_key,
-            base_url=base_url,
+        await _continue_generation_polling(
+            data=data, api_key=api_key, base_url=base_url
         )
-        return
+        return None
 
     current_status = GenerationStatus.PROCESSING
     if generation.status == GenerationStatus.COMPLETED:
@@ -85,19 +118,11 @@ async def poll_generation_status(
         current_status = GenerationStatus.FAILED
 
     if current_status != GenerationStatus.PROCESSING:
-        await _update_generation_status(
-            generation_id=data.generation_id,
-            status=current_status,
-            result_url=generation.result_url,
-            final_token_cost=data.final_tokens_cost
-        )
-        return
-    
-    await asyncio.sleep(data.poll_interval_seconds)
+        data.result_url = generation.result_url or data.result_url
+        await _complete_generation_polling(status=current_status, data=data)
+        return None
 
-    data.current_attempt += 1
-    await poll_generation_status.kiq(
-        data=data,
-        api_key=api_key,
-        base_url=base_url,
+    await _continue_generation_polling(
+        data=data, api_key=api_key, base_url=base_url
     )
+    return None

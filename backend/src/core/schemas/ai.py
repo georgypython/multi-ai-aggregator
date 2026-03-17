@@ -206,7 +206,12 @@ class UploadFileResponseSchema(BaseModel):
 
 
 class PollWaveSpeedGenerationTaskSchema(BaseModel):
+    ai_model_id: UUID
+    user_id: UUID
     generation_id: UUID
+    generation_type: GenerationType
+    hold_amount: float
+    provider_cost: float
     wavespeed_task_id: str
     poll_interval_seconds: int = 5
     max_attempts: int = 120

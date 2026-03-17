@@ -3,16 +3,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
-from src.core.exceptions.llm import (
+from backend.src.core.exceptions.generation import (
 	InsufficientBalanceError,
 	ProviderError,
 	ProviderTimeoutError,
-	UserBalanceNotConfiguredError,
-)
-from src.core.exceptions.video import (
-	VideoGenerationError,
 	VideoGenerationNotCompletedError,
-	VideoModelConfigError,
+	UserBalanceNotConfiguredError,
+	ModelConfigError,
 )
 from src.core.schemas.ai import (
 	GenerationResultResponseDataSchema,
@@ -37,16 +34,16 @@ async def get_video_model_configuration(
 ):
 	try:
 		return await service.get_video_model_configuration(model_id=model_id)
-	except VideoModelConfigError as exc:
-		raise HTTPException(
-			status_code=status.HTTP_400_BAD_REQUEST,
-			detail=str(exc),
-		)
 	except ValueError as exc:
 		raise HTTPException(
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail=str(exc),
 		)
+	except ModelConfigError as exc:
+	    raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        )
 
 
 @router.get("/{model_id}/price", response_model=VideoModelPriceResponseSchema)
@@ -64,11 +61,11 @@ async def get_video_model_price(
 			duration_seconds=duration_seconds,
 			size=size,
 		)
-	except VideoModelConfigError as exc:
+	except ModelConfigError as exc:
 		raise HTTPException(
-			status_code=status.HTTP_400_BAD_REQUEST,
-			detail=str(exc),
-		)
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        )
 	except ValueError as exc:
 		raise HTTPException(
 			status_code=status.HTTP_404_NOT_FOUND,
@@ -96,21 +93,11 @@ async def generate_video(
 			size=payload.size,
 			media_file_id=payload.media_file_id,
 		)
-	except VideoModelConfigError as exc:
+	except ModelConfigError as exc:
 		raise HTTPException(
-			status_code=status.HTTP_400_BAD_REQUEST,
-			detail=str(exc),
-		)
-	except VideoGenerationNotCompletedError as exc:
-		raise HTTPException(
-			status_code=status.HTTP_502_BAD_GATEWAY,
-			detail=str(exc),
-		)
-	except VideoGenerationError as exc:
-		raise HTTPException(
-			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-			detail=str(exc),
-		)
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        )
 	except InsufficientBalanceError as exc:
 		raise HTTPException(
 			status_code=status.HTTP_402_PAYMENT_REQUIRED,
@@ -131,14 +118,9 @@ async def generate_video(
 			status_code=status.HTTP_504_GATEWAY_TIMEOUT,
 			detail=str(exc),
 		)
-	except ProviderError as exc:
+	except (ProviderError, VideoGenerationNotCompletedError) as exc:
 		raise HTTPException(
 			status_code=status.HTTP_502_BAD_GATEWAY,
-			detail=str(exc),
-		)
-	except RuntimeError as exc:
-		raise HTTPException(
-			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
 			detail=str(exc),
 		)
 

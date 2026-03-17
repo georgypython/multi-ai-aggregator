@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.exceptions.image import ImageModelConfigError
+from backend.src.core.exceptions.generation import ModelConfigError
 from src.core.models.enums import ModelProvider, ModelType
 from src.core.schemas.ai import (
     ImageModelDetailResponseSchema,
@@ -37,7 +37,7 @@ class ImageConfigurationService:
             raise ValueError(f"Active AIModel not found for model_id={model_id}")
 
         if ai_model.model_type != ModelType.IMAGE:
-            raise ImageModelConfigError(f"AIModel is not image type for model_id={model_id}")
+            raise ModelConfigError(f"AIModel is not image type for model_id={model_id}")
 
         return ai_model
 
@@ -46,7 +46,7 @@ class ImageConfigurationService:
         if model_config:
             return model_config
 
-        raise ImageModelConfigError(
+        raise ModelConfigError(
             f"Image model config not found for provider_key={provider_key}"
         )
 
@@ -55,7 +55,7 @@ class ImageConfigurationService:
         try:
             return ModelProvider(provider_raw)
         except ValueError as exc:
-            raise ImageModelConfigError(
+            raise ModelConfigError(
                 f"Unsupported image provider in config: {provider_raw}"
             ) from exc
 
@@ -70,33 +70,33 @@ class ImageConfigurationService:
         prices_usd = model_config.get("prices_usd")
 
         if not isinstance(sizes, list) or not sizes:
-            raise ImageModelConfigError("Image model sizes config is invalid")
+            raise ModelConfigError("Image model sizes config is invalid")
         if not isinstance(qualities, list) or not qualities:
-            raise ImageModelConfigError("Image model qualities config is invalid")
+            raise ModelConfigError("Image model qualities config is invalid")
         if not isinstance(prices_usd, dict) or not prices_usd:
-            raise ImageModelConfigError("Image model prices config is invalid")
+            raise ModelConfigError("Image model prices config is invalid")
 
         resolved_size = size or sizes[0]
         resolved_quality = quality or qualities[0]
 
         if resolved_size not in sizes:
-            raise ImageModelConfigError(
+            raise ModelConfigError(
                 f"Unsupported size '{resolved_size}'. Allowed: {sizes}"
             )
         if resolved_quality not in qualities:
-            raise ImageModelConfigError(
+            raise ModelConfigError(
                 f"Unsupported quality '{resolved_quality}'. Allowed: {qualities}"
             )
 
         quality_prices = prices_usd.get(resolved_quality)
         if not isinstance(quality_prices, dict):
-            raise ImageModelConfigError(
+            raise ModelConfigError(
                 f"Missing prices for quality='{resolved_quality}'"
             )
 
         provider_price = quality_prices.get(resolved_size)
         if provider_price is None:
-            raise ImageModelConfigError(
+            raise ModelConfigError(
                 f"Missing price for size='{resolved_size}', quality='{resolved_quality}'"
             )
 
@@ -116,7 +116,7 @@ class ImageConfigurationService:
         prices_usd = model_config.get("prices_usd")
 
         if not isinstance(sizes, list) or not isinstance(qualities, list) or not isinstance(prices_usd, dict):
-            raise ImageModelConfigError(
+            raise ModelConfigError(
                 f"Image model config is invalid for provider_key={ai_model.provider_key}"
             )
 

@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from src.core.config import settings
 from src.core.models.user_balances import UserBalance
 from src.core.models.users import User
-from src.core.exceptions.llm import InsufficientBalanceError
+from backend.src.core.exceptions.generation import InsufficientBalanceError
 from .abstract_repo import AbstractRepository
 
 

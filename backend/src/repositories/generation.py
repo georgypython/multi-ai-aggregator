@@ -20,6 +20,7 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
         user_id: UUID,
         ai_model_id: UUID,
         generation_type: GenerationType,
+        hold_tokens_amount: float,
     ) -> AIGeneration:
         generation = AIGeneration(
             user_id=user_id,
@@ -27,6 +28,7 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
             status=GenerationStatus.PROCESSING,
             generation_type=generation_type,
             charged_tokens=0.0,
+            hold_tokens_amount=hold_tokens_amount,
         )
         session.add(generation)
         await session.flush()

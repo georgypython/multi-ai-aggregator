@@ -3,12 +3,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
-from src.core.exceptions.image import (
+from backend.src.core.exceptions.generation import (
     ImageGenerationFinalizeError,
     ImageGenerationNotCompletedError,
-    ImageModelConfigError,
-)
-from src.core.exceptions.llm import (
+    ModelConfigError,
     ProviderError,
     ProviderTimeoutError,
 )
@@ -43,9 +41,9 @@ async def generate_image(
             quality=payload.quality,
             media_file_ids=payload.media_file_ids,
         )
-    except ImageModelConfigError as exc:
+    except ModelConfigError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(exc),
         )
     except ImageGenerationNotCompletedError as exc:
@@ -100,9 +98,9 @@ async def get_image_model_configuration(
 ):
     try:
         return await service.get_image_model_configuration(model_id=model_id)
-    except ImageModelConfigError as exc:
+    except ModelConfigError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(exc),
         )
     except ValueError as exc:
@@ -127,9 +125,9 @@ async def get_image_model_price(
             size=size,
             quality=quality,
         )
-    except ImageModelConfigError as exc:
+    except ModelConfigError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(exc),
         )
     except ValueError as exc:

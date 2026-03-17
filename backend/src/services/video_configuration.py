@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.exceptions.video import VideoModelConfigError
+from backend.src.core.exceptions.generation import ModelConfigError
 from src.core.models.enums import ModelProvider, ModelType
 from src.core.schemas.ai import VideoModelDetailResponseSchema, VideoModelPriceResponseSchema
 from src.repositories import AIModelRepository, GenerationRepository
@@ -34,14 +34,14 @@ class VideoConfigurationService:
             raise ValueError(f"Active AIModel not found for model_id={model_id}")
 
         if ai_model.model_type != ModelType.VIDEO:
-            raise VideoModelConfigError(f"AIModel is not video type for model_id={model_id}")
+            raise ModelConfigError(f"AIModel is not video type for model_id={model_id}")
 
         return ai_model
 
     def _get_model_config(self, provider_key: str) -> dict:
         model_config = self.video_model_configs.get(provider_key)
         if not model_config:
-            raise VideoModelConfigError(
+            raise ModelConfigError(
                 f"Video model config not found for provider_key={provider_key}"
             )
         return model_config
@@ -51,7 +51,7 @@ class VideoConfigurationService:
         try:
             return ModelProvider(provider_raw)
         except ValueError as exc:
-            raise VideoModelConfigError(
+            raise ModelConfigError(
                 f"Unsupported video provider in config: {provider_raw}"
             ) from exc
 
@@ -66,33 +66,33 @@ class VideoConfigurationService:
         prices_usd_by_duration = model_config.get("prices_usd_by_duration")
 
         if not isinstance(durations_seconds, list) or not durations_seconds:
-            raise VideoModelConfigError("Video model durations config is invalid")
+            raise ModelConfigError("Video model durations config is invalid")
         if not isinstance(sizes, list) or not sizes:
-            raise VideoModelConfigError("Video model sizes config is invalid")
+            raise ModelConfigError("Video model sizes config is invalid")
         if not isinstance(prices_usd_by_duration, dict) or not prices_usd_by_duration:
-            raise VideoModelConfigError("Video model prices config is invalid")
+            raise ModelConfigError("Video model prices config is invalid")
 
         resolved_duration = duration_seconds or durations_seconds[0]
         resolved_size = size or sizes[0]
 
         if resolved_duration not in durations_seconds:
-            raise VideoModelConfigError(
+            raise ModelConfigError(
                 f"Unsupported duration_seconds '{resolved_duration}'. Allowed: {durations_seconds}"
             )
         if resolved_size not in sizes:
-            raise VideoModelConfigError(
+            raise ModelConfigError(
                 f"Unsupported size '{resolved_size}'. Allowed: {sizes}"
             )
 
         duration_prices = prices_usd_by_duration.get(str(resolved_duration))
         if not isinstance(duration_prices, dict):
-            raise VideoModelConfigError(
+            raise ModelConfigError(
                 f"Missing prices for duration_seconds='{resolved_duration}'"
             )
 
         provider_price = duration_prices.get(resolved_size)
         if provider_price is None:
-            raise VideoModelConfigError(
+            raise ModelConfigError(
                 f"Missing price for duration_seconds='{resolved_duration}', size='{resolved_size}'"
             )
 
@@ -115,7 +115,7 @@ class VideoConfigurationService:
             or not isinstance(sizes, list)
             or not isinstance(prices_usd_by_duration, dict)
         ):
-            raise VideoModelConfigError(
+            raise ModelConfigError(
                 f"Video model config is invalid for provider_key={ai_model.provider_key}"
             )
 

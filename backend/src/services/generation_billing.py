@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.exceptions.llm import (
+from backend.src.core.exceptions.generation import (
     InsufficientBalanceError,
     UserBalanceNotConfiguredError,
 )
@@ -66,26 +66,29 @@ class GenerationBillingService:
                     user_id=user_id,
                     ai_model_id=data.ai_model_id,
                     generation_type=data.generation_type,
+                    hold_tokens_amount=data.hold_amount
                 )
+            
+            else:
+                if balance.available_tokens < data.hold_amount:
+                    raise InsufficientBalanceError(
+                        f"User balance insufficient for this model. Minimal={data.hold_amount}"
+                    )
 
-            if balance.available_tokens < data.hold_amount:
-                raise InsufficientBalanceError(
-                    f"User balance insufficient for this model. Minimal={data.hold_amount}"
+                balance = await self.user_repo.freeze_tokens(
+                    session=self.session, user_id=user_id, amount=data.hold_amount
                 )
-
-            balance = await self.user_repo.freeze_tokens(
-                session=self.session, user_id=user_id, amount=data.hold_amount
-            )
-            if not balance:
-                raise UserBalanceNotConfiguredError(
-                    f"User balance is not configured for user_id={user_id}"
+                if not balance:
+                    raise UserBalanceNotConfiguredError(
+                        f"User balance is not configured for user_id={user_id}"
+                    )
+                return await self.generation_repo.create_processing(
+                    session=self.session,
+                    user_id=user_id,
+                    ai_model_id=data.ai_model_id,
+                    generation_type=data.generation_type,
+                    hold_tokens_amount=data.hold_amount
                 )
-            return await self.generation_repo.create_processing(
-                session=self.session,
-                user_id=user_id,
-                ai_model_id=data.ai_model_id,
-                generation_type=data.generation_type,
-            )
 
     async def set_generation_task_id(
         self,
@@ -106,15 +109,16 @@ class GenerationBillingService:
         
     async def rollback_failed_generation(
         self,
-        data: GenerationRequestSchema,
+        user_id: UUID,
+        hold_amount: float,
         generation_id: UUID,
     ) -> None:
         async with self.session.begin():
-            if data.hold_amount > 0:
+            if hold_amount > 0:
                 await self.user_repo.release_tokens(
                     session=self.session,
-                    user_id=data.user_id,
-                    amount=data.hold_amount,
+                    user_id=user_id,
+                    amount=hold_amount,
                 )
             await self.generation_repo.mark_failed(
                 session=self.session,

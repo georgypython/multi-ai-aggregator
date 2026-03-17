@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
-from src.core.exceptions.llm import (
+from backend.src.core.exceptions.generation import (
     InactiveModelError,
     InsufficientBalanceError,
     ProviderError,
@@ -96,7 +96,6 @@ async def generate_llm_response(
     - 409: не настроен баланс или модель недоступна.
     - 404: пользователь/модель не найдены.
     - 502/504: ошибки внешнего провайдера.
-    - 500: непредвиденная внутренняя ошибка.
     """
     try:
         return await service.generate_llm_response(
@@ -109,12 +108,7 @@ async def generate_llm_response(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail=str(exc),
         )
-    except UserBalanceNotConfiguredError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        )
-    except InactiveModelError as exc:
+    except (UserBalanceNotConfiguredError, InactiveModelError) as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
@@ -129,23 +123,6 @@ async def generate_llm_response(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail=str(exc),
         )
-    except ProviderNetworkError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc),
-        )
-    except ProviderResponseFormatError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc),
-        )
-    except ProviderHTTPError as exc:
-        mapped_status = (
-            exc.status_code
-            if 400 <= exc.status_code <= 599
-            else status.HTTP_502_BAD_GATEWAY
-        )
-        raise HTTPException(status_code=mapped_status, detail=str(exc))
     except ProviderError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

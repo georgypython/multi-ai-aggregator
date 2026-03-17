@@ -3,10 +3,10 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.models.enums import GenerationType, GenerationStatus
-from src.core.exceptions.llm import (
+from backend.src.core.exceptions.generation import (
     InactiveModelError,
-    UserBalanceNotConfiguredError,
     ProviderError,
+    UserBalanceNotConfiguredError,
 )
 from src.core.schemas.ai import (
     GenerationRequestSchema,
@@ -145,13 +145,15 @@ class LLMGenerationService:
             )
         except ProviderError:
             await self.generation_billing_service.rollback_failed_generation(
-                data=billing_request_data,
+                user_id=billing_request_data.user_id,
+                hold_amount=billing_request_data.hold_amount,
                 generation_id=generation_id,
             )
             raise
         except Exception as e:
             await self.generation_billing_service.rollback_failed_generation(
-                data=billing_request_data,
+                user_id=billing_request_data.user_id,
+                hold_amount=billing_request_data.hold_amount,
                 generation_id=generation_id,
             )
             logger.exception("Unexpected LLM provider error for user_id=%s", user_id)

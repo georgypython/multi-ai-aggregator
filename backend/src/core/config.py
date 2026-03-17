@@ -120,7 +120,7 @@ class StorageConfig(BaseModel):
 
 
 class AILogicConfig(BaseModel):
-    new_user_free_tokens: float = 10
+    new_user_free_tokens: float = 300
 
 
 class Settings(BaseSettings):

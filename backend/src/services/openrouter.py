@@ -1,6 +1,6 @@
 from httpx import AsyncClient, HTTPStatusError, RequestError, TimeoutException
 
-from src.core.exceptions.llm import (
+from backend.src.core.exceptions.generation import (
     ProviderHTTPError,
     ProviderNetworkError,
     ProviderResponseFormatError,

@@ -2,15 +2,13 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.exceptions.llm import (
+from backend.src.core.exceptions.generation import (
     InsufficientBalanceError,
     ProviderError,
     UserBalanceNotConfiguredError,
-)
-from src.core.exceptions.video import (
     VideoGenerationError,
     VideoGenerationNotCompletedError,
-    VideoModelConfigError,
+    ModelConfigError,
 )
 from src.core.models.enums import GenerationStatus, GenerationType, ModelType
 from src.core.schemas.ai import (
@@ -58,7 +56,7 @@ class VideoGenerationService:
     ) -> VideoModelConfigDataSchema:
         model_config = self.video_model_configs.get(provider_model_key)
         if not model_config:
-            raise VideoModelConfigError(
+            raise ModelConfigError(
                 f"Video model config not found for provider_key={provider_model_key}"
             )
 
@@ -83,7 +81,7 @@ class VideoGenerationService:
                             provider=model_provider,
                         )
 
-        raise VideoModelConfigError(
+        raise ModelConfigError(
             f"Video model config is invalid for provider_key={provider_model_key}"
         )
 
@@ -196,7 +194,12 @@ class VideoGenerationService:
 
             await poll_generation_status.kiq(
                 data=PollWaveSpeedGenerationTaskSchema(
+                    ai_model_id=request_data.ai_model_id,
+                    user_id=request_data.user_id,
                     generation_id=generation.id,
+                    generation_type=generation_data.generation_type,
+                    hold_amount=generation_data.hold_amount,
+                    provider_cost=request_data.provider_cost,
                     wavespeed_task_id=response_create_data.task_id,
                     poll_interval_seconds=self.poll_interval_seconds,
                     max_attempts=self.poll_max_attempts,
@@ -210,13 +213,15 @@ class VideoGenerationService:
             )
         except ProviderError:
             await self.generation_billing_service.rollback_failed_generation(
-                data=generation_data,
+                user_id=generation_data.user_id,
+                hold_amount=generation_data.hold_amount,
                 generation_id=generation.id,
             )
             raise
         except Exception as e:
             await self.generation_billing_service.rollback_failed_generation(
-                data=generation_data,
+                user_id=generation_data.user_id,
+                hold_amount=generation_data.hold_amount,
                 generation_id=generation.id,
             )
             raise VideoGenerationError(

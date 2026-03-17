@@ -3,7 +3,6 @@ from time import perf_counter
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
-from fastapi.responses import ORJSONResponse
 import uvicorn
 from dishka.integrations.fastapi import setup_dishka
 
@@ -29,7 +28,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    default_response_class=ORJSONResponse,
 )
 
 
