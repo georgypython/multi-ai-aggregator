@@ -138,6 +138,7 @@ class VideoGenerationService:
                 ai_model_id=model_id,
                 provider_model_key=provider_model_key,
                 prompt=prompt,
+                model_token_price_id=ai_model.token_price_id,
                 media_file_id=media_file_id,
                 min_charge_tokens=ai_model.min_charge_tokens,
                 free_requests_limit=ai_model.free_requests_limit,
@@ -184,13 +185,11 @@ class VideoGenerationService:
                 task_id=response_create_data.task_id,
             )
 
-            final_tokens_cost = 0.0
-            if generation_data.hold_amount > 0:
-                final_tokens_cost = (
-                    await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
-                        provider_cost=request_data.provider_cost,
-                    )
-                )
+            final_tokens_cost = await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
+                provider_cost=request_data.provider_cost,
+                model_token_price_id=request_data.model_token_price_id,
+                hold_amount=generation_data.hold_amount,
+            )
 
             await poll_generation_status.kiq(
                 data=PollWaveSpeedGenerationTaskSchema(
@@ -198,6 +197,7 @@ class VideoGenerationService:
                     user_id=request_data.user_id,
                     generation_id=generation.id,
                     generation_type=generation_data.generation_type,
+                    model_token_price_id=request_data.model_token_price_id,
                     hold_amount=generation_data.hold_amount,
                     provider_cost=request_data.provider_cost,
                     wavespeed_task_id=response_create_data.task_id,

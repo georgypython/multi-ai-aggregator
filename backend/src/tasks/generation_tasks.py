@@ -30,14 +30,8 @@ async def _complete_generation_polling(
         if status == GenerationStatus.COMPLETED:
             await generation_billing_service.finish_generation(
                 data=GenerationFinishData(
-                    ai_model_id=data.ai_model_id,
-                    generation_id=data.generation_id,
-                    user_id=data.user_id,
-                    generation_type=data.generation_type,
-                    hold_amount=data.hold_amount,
-                    provider_cost=data.provider_cost,
                     provider_status=status,
-                    result_url=data.result_url,
+                    **data.model_dump()
                 )
             )
             logger.info(
@@ -74,6 +68,7 @@ async def _continue_generation_polling(
         base_url=base_url,
     )
     return None
+
 
 @broker.task(task_name="generation.poll_wavespeed_status.v1")
 async def poll_generation_status(

@@ -1,5 +1,6 @@
 from uuid import UUID
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,14 +21,14 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
         user_id: UUID,
         ai_model_id: UUID,
         generation_type: GenerationType,
-        hold_tokens_amount: float,
+        hold_tokens_amount: Decimal,
     ) -> AIGeneration:
         generation = AIGeneration(
             user_id=user_id,
             ai_model_id=ai_model_id,
             status=GenerationStatus.PROCESSING,
             generation_type=generation_type,
-            charged_tokens=0.0,
+            charged_tokens=Decimal("0"),
             hold_tokens_amount=hold_tokens_amount,
         )
         session.add(generation)
@@ -65,7 +66,7 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
         self,
         session: AsyncSession,
         generation_id: UUID,
-        charged_tokens: float,
+        charged_tokens: Decimal,
         result_url: str | None = None,
     ) -> AIGeneration | None:
         generation = await session.get(AIGeneration, generation_id)

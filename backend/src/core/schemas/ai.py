@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any
+from decimal import Decimal
 
 from pydantic import BaseModel, Field
 from uuid import UUID
@@ -18,10 +19,11 @@ class LLMRequestDataSchema(BaseModel):
     ai_model_id: UUID
     provider_model_key: str
     prompt: str
-    min_charge_tokens: float
+    model_token_price_id: UUID
+    min_charge_tokens: Decimal
     free_requests_limit: int = 0
-    input_price_per_million_usd: float | None = None
-    output_price_per_million_usd: float | None = None
+    input_price_per_million_usd: Decimal | None = None
+    output_price_per_million_usd: Decimal | None = None
     temperature: float | None
     instructions: str | None
 
@@ -30,7 +32,7 @@ class ModelConfigDataSchema(BaseModel):
     request_provider_model_key: str
     size: str
     quality: str
-    provider_cost: float
+    provider_cost: Decimal
     provider: ModelProvider
 
 
@@ -39,15 +41,16 @@ class ImageRequestDataSchema(ModelConfigDataSchema):
     ai_model_id: UUID
     provider_model_key: str
     prompt: str
+    model_token_price_id: UUID
     media_file_urls: list[str] | None = None
-    min_charge_tokens: float
+    min_charge_tokens: Decimal
     free_requests_limit: int = 0
 
 
 class VideoModelConfigDataSchema(BaseModel):
     duration_seconds: int
     size: str
-    provider_cost: float
+    provider_cost: Decimal
     provider: ModelProvider
 
 
@@ -56,8 +59,9 @@ class VideoRequestDataSchema(VideoModelConfigDataSchema):
     ai_model_id: UUID
     provider_model_key: str
     prompt: str
+    model_token_price_id: UUID
     media_file_id: UUID | None = None
-    min_charge_tokens: float
+    min_charge_tokens: Decimal
     free_requests_limit: int = 0
 
 
@@ -89,15 +93,15 @@ class GenerationRequestSchema(BaseModel):
     user_id: UUID
     ai_model_id: UUID
     generation_type: GenerationType
-    hold_amount: float
+    hold_amount: Decimal
     free_requests_limit: int = 0
 
 
 class GenerationResultSchema(BaseModel):
     user_id: UUID
     generation_id: UUID
-    hold_amount: float
-    provider_cost: float
+    hold_amount: Decimal
+    provider_cost: Decimal
     result_url: str | None = None
 
 
@@ -106,8 +110,9 @@ class GenerationFinishData(BaseModel):
     generation_id: UUID
     user_id: UUID
     generation_type: GenerationType
-    hold_amount: float
-    provider_cost: float
+    model_token_price_id: UUID
+    hold_amount: Decimal
+    provider_cost: Decimal
     provider_status: GenerationStatus
     result_url: str | None = None
     text: str | None = None
@@ -119,7 +124,6 @@ class LLMProviderResponseSchema(BaseModel):
     input_tokens: int
     output_tokens: int
     total_tokens: int
-    provider_cost: float | None = None
     raw: dict[str, Any]
 
 
@@ -127,7 +131,7 @@ class GenerationResultResponseDataSchema(BaseModel):
     ai_model_id: UUID
     user_id: UUID
     generation_id: UUID
-    tokens_cost: float
+    tokens_cost: Decimal
     status: GenerationStatus
     text: str | None = None
 
@@ -139,7 +143,7 @@ class ImageModelDetailResponseSchema(BaseModel):
     provider: ModelProvider
     sizes: list[str]
     qualities: list[str]
-    prices_usd: dict[str, dict[str, float]]
+    prices_usd: dict[str, dict[str, Decimal]]
 
 
 class ImageModelPriceResponseSchema(BaseModel):
@@ -147,7 +151,7 @@ class ImageModelPriceResponseSchema(BaseModel):
     provider_key: str
     size: str
     quality: str
-    tokens_price: float
+    tokens_price: Decimal
 
 
 class VideoModelDetailResponseSchema(BaseModel):
@@ -157,7 +161,7 @@ class VideoModelDetailResponseSchema(BaseModel):
     provider: ModelProvider
     durations_seconds: list[int]
     sizes: list[str]
-    prices_usd_by_duration: dict[str, dict[str, float]]
+    prices_usd_by_duration: dict[str, dict[str, Decimal]]
 
 
 class VideoModelPriceResponseSchema(BaseModel):
@@ -165,7 +169,7 @@ class VideoModelPriceResponseSchema(BaseModel):
     provider_key: str
     duration_seconds: int
     size: str
-    tokens_price: float
+    tokens_price: Decimal
 
 
 class AIModelListItemResponseSchema(BaseModel):
@@ -197,8 +201,8 @@ class LLMConfigResponseSchema(BaseModel):
 class UserBalanceResponseSchema(BaseModel):
     user_id: UUID
     telegram_id: int
-    available_tokens: float
-    hold_tokens: float
+    available_tokens: Decimal
+    hold_tokens: Decimal
 
 
 class UploadFileResponseSchema(BaseModel):
@@ -210,14 +214,15 @@ class PollWaveSpeedGenerationTaskSchema(BaseModel):
     user_id: UUID
     generation_id: UUID
     generation_type: GenerationType
-    hold_amount: float
-    provider_cost: float
+    model_token_price_id: UUID
+    hold_amount: Decimal
+    provider_cost: Decimal
     wavespeed_task_id: str
     poll_interval_seconds: int = 5
     max_attempts: int = 120
     current_attempt: int = 1
     timeout: int = 30
-    final_tokens_cost: float
+    final_tokens_cost: Decimal
     result_url: str | None
 
 

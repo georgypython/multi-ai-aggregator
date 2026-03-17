@@ -1,8 +1,10 @@
 from uuid import UUID
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.core.exceptions.generation import ModelConfigError
+from src.core.models import AIModel
 from src.core.models.enums import ModelProvider, ModelType
 from src.core.schemas.ai import VideoModelDetailResponseSchema, VideoModelPriceResponseSchema
 from src.repositories import AIModelRepository, GenerationRepository
@@ -24,7 +26,7 @@ class VideoConfigurationService:
         self.generation_billing_service = generation_billing_service
         self.video_model_configs = video_model_configs
 
-    async def _get_active_video_model(self, model_id: UUID):
+    async def _get_active_video_model(self, model_id: UUID) -> AIModel:
         ai_model = await self.ai_model_repo.get_one(
             session=self.session,
             id=model_id,
@@ -60,7 +62,7 @@ class VideoConfigurationService:
         model_config: dict,
         duration_seconds: int | None,
         size: str | None,
-    ) -> tuple[int, str, float]:
+    ) -> tuple[int, str, Decimal]:
         durations_seconds = model_config.get("durations_seconds")
         sizes = model_config.get("sizes")
         prices_usd_by_duration = model_config.get("prices_usd_by_duration")
@@ -96,7 +98,12 @@ class VideoConfigurationService:
                 f"Missing price for duration_seconds='{resolved_duration}', size='{resolved_size}'"
             )
 
-        return int(resolved_duration), resolved_size, float(provider_price)
+        if not isinstance(provider_price, (int, float, Decimal)):
+            raise ModelConfigError(
+                f"Invalid provider price for duration_seconds='{resolved_duration}', size='{resolved_size}'"
+            )
+
+        return int(resolved_duration), resolved_size, Decimal(str(provider_price))
 
     async def get_video_model_configuration(
         self,
@@ -145,7 +152,9 @@ class VideoConfigurationService:
             size=size,
         )
         tokens_price = await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
-            provider_cost=provider_price
+            provider_cost=provider_price,
+            model_token_price_id=ai_model.token_price_id,
+            hold_amount=ai_model.min_charge_tokens,
         )
 
         if ai_model.free_requests_limit > 0:
@@ -156,8 +165,7 @@ class VideoConfigurationService:
                 max_count=ai_model.free_requests_limit,
             )
             if generation_count < ai_model.free_requests_limit:
-                provider_price = 0.0
-                tokens_price = 0.0
+                tokens_price = Decimal("0")
 
         return VideoModelPriceResponseSchema(
             ai_model_id=ai_model.id,

@@ -1,4 +1,5 @@
 from uuid import UUID
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,8 +45,8 @@ class UsersService:
             if not user:
                 raise ValueError(f"Active user not found for user_id={user_id}")
 
-            available_tokens = user.balance.available_tokens if user.balance else 0.0
-            hold_tokens = user.balance.hold_tokens if user.balance else 0.0
+            available_tokens = user.balance.available_tokens if user.balance else Decimal("0")
+            hold_tokens = user.balance.hold_tokens if user.balance else Decimal("0")
 
             return UserBalanceResponseSchema(
                 user_id=user.id,

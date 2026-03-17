@@ -1,8 +1,10 @@
 from uuid import UUID
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.core.exceptions.generation import ModelConfigError
+from src.core.models import AIModel
 from src.core.models.enums import ModelProvider, ModelType
 from src.core.schemas.ai import (
     ImageModelDetailResponseSchema,
@@ -27,7 +29,7 @@ class ImageConfigurationService:
         self.generation_billing_service = generation_billing_service
         self.image_model_configs = image_model_configs
 
-    async def _get_active_image_model(self, model_id: UUID):
+    async def _get_active_image_model(self, model_id: UUID) -> AIModel:
         ai_model = await self.ai_model_repo.get_one(
             session=self.session,
             id=model_id,
@@ -64,7 +66,7 @@ class ImageConfigurationService:
         model_config: dict,
         size: str | None,
         quality: str | None,
-    ) -> tuple[str, str, float]:
+    ) -> tuple[str, str, Decimal]:
         sizes = model_config.get("sizes")
         qualities = model_config.get("qualities")
         prices_usd = model_config.get("prices_usd")
@@ -100,7 +102,12 @@ class ImageConfigurationService:
                 f"Missing price for size='{resolved_size}', quality='{resolved_quality}'"
             )
 
-        return resolved_size, resolved_quality, float(provider_price)
+        if not isinstance(provider_price, (int, float, Decimal)):
+            raise ModelConfigError(
+                f"Invalid provider price for size='{resolved_size}', quality='{resolved_quality}'"
+            )
+
+        return resolved_size, resolved_quality, Decimal(str(provider_price))
 
     async def get_image_model_configuration(
         self,
@@ -108,7 +115,6 @@ class ImageConfigurationService:
     ) -> ImageModelDetailResponseSchema:
         ai_model = await self._get_active_image_model(model_id=model_id)
         model_config = self._get_model_config(provider_key=ai_model.provider_key)
-        print(model_config)
         provider = self._resolve_provider(model_config=model_config)
 
         sizes = model_config.get("sizes")
@@ -146,7 +152,9 @@ class ImageConfigurationService:
             quality=quality,
         )
         tokens_price = await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
-            provider_cost=provider_price
+            provider_cost=provider_price,
+            model_token_price_id=ai_model.token_price_id,
+            hold_amount=ai_model.min_charge_tokens,
         )
 
         if ai_model.free_requests_limit > 0:
@@ -157,8 +165,7 @@ class ImageConfigurationService:
                 max_count=ai_model.free_requests_limit,
             )
             if generation_count < ai_model.free_requests_limit:
-                provider_price = 0.0
-                tokens_price = 0.0
+                tokens_price = Decimal("0")
 
         return ImageModelPriceResponseSchema(
             ai_model_id=ai_model.id,

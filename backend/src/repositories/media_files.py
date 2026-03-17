@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -14,7 +15,7 @@ class MediaFilesRepository(AbstractRepository[MediaFile]):
     async def add_uploaded_items(
         self,
         session: AsyncSession,
-        items: list[dict],
+        items: list[dict[str, Any]],
     ) -> list[MediaFile]:
         media_files = [
             MediaFile(**item) for item in items

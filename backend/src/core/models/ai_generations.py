@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING
+from decimal import Decimal
 from uuid import UUID
 from datetime import datetime
 
-from sqlalchemy import Enum, ForeignKey, DateTime
+from sqlalchemy import Enum, ForeignKey, DateTime, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -32,8 +33,12 @@ class AIGeneration(Base, UUIDPKMixin, CreatedAtMixin):
     )
     task_id: Mapped[str | None] = mapped_column(nullable=True)
     result_url: Mapped[str | None] = mapped_column(nullable=True)
-    hold_tokens_amount: Mapped[float] = mapped_column(nullable=False, default=0.0)
-    charged_tokens: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    hold_tokens_amount: Mapped[Decimal] = mapped_column(
+        Numeric(18, 6), nullable=False, default=Decimal("0")
+    )
+    charged_tokens: Mapped[Decimal] = mapped_column(
+        Numeric(18, 6), nullable=False, default=Decimal("0")
+    )
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

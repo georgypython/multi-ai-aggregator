@@ -1,4 +1,5 @@
 from uuid import UUID
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -86,6 +87,7 @@ class LLMGenerationService:
                 ai_model_id=model_id,
                 provider_model_key=ai_model.provider_key,
                 prompt=prompt,
+                model_token_price_id=llm_model.ai_model.token_price_id,
                 min_charge_tokens=ai_model.min_charge_tokens,
                 free_requests_limit=ai_model.free_requests_limit,
                 input_price_per_million_usd=llm_model.input_price_per_million_usd,
@@ -98,18 +100,19 @@ class LLMGenerationService:
         self,
         response: LLMProviderResponseSchema,
         request: LLMRequestDataSchema,
-    ) -> float:
+    ) -> Decimal:
         if (
             request.input_price_per_million_usd is None
             or request.output_price_per_million_usd is None
         ):
             raise RuntimeError("Unable to calculate provider cost without model prices")
 
+        million = Decimal("1000000")
         input_cost = (
-            response.input_tokens / 1_000_000
+            Decimal(response.input_tokens) / million
         ) * request.input_price_per_million_usd
         output_cost = (
-            response.output_tokens / 1_000_000
+            Decimal(response.output_tokens) / million
         ) * request.output_price_per_million_usd
         return input_cost + output_cost
 
@@ -118,7 +121,7 @@ class LLMGenerationService:
         user_id: UUID,
         model_id: UUID,
         prompt: str,
-    ):
+    ) -> GenerationResultResponseDataSchema:
         llm_request_data = await self._create_and_validate_request_llm_data(
             user_id=user_id,
             model_id=model_id,
@@ -165,19 +168,19 @@ class LLMGenerationService:
             assistant_response=llm_response.text,
         )
 
-        provider_cost = 0.0
+        provider_cost = Decimal("0")
         if llm_request_data.min_charge_tokens > 0:
             provider_cost = self._calculate_provider_cost(
                 response=llm_response,
                 request=llm_request_data,
             )
-        llm_response.provider_cost = provider_cost
 
         return await self.generation_billing_service.finish_generation(
             data=GenerationFinishData(
                 ai_model_id=llm_request_data.ai_model_id,
                 generation_id=generation_id,
                 user_id=llm_request_data.user_id,
+                model_token_price_id=llm_request_data.model_token_price_id,
                 generation_type=billing_request_data.generation_type,
                 hold_amount=billing_request_data.hold_amount,
                 provider_cost=provider_cost,

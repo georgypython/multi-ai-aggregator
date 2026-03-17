@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from decimal import Decimal
 
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -120,7 +121,7 @@ class StorageConfig(BaseModel):
 
 
 class AILogicConfig(BaseModel):
-    new_user_free_tokens: float = 300
+    new_user_free_tokens: Decimal = Decimal("300")
 
 
 class Settings(BaseSettings):

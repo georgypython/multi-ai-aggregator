@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
+from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -17,7 +18,11 @@ class UserBalance(Base, UUIDPKMixin, CreatedAtMixin):
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id"), nullable=False, unique=True, index=True
     )
-    available_tokens: Mapped[float] = mapped_column(default=0.0, nullable=False)
-    hold_tokens: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    available_tokens: Mapped[Decimal] = mapped_column(
+        Numeric(18, 6), default=Decimal("0"), nullable=False
+    )
+    hold_tokens: Mapped[Decimal] = mapped_column(
+        Numeric(18, 6), default=Decimal("0"), nullable=False
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="balance")

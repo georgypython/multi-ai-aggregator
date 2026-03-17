@@ -1,10 +1,10 @@
 from uuid import UUID
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.core.config import settings
 from src.core.models.user_balances import UserBalance
 from src.core.models.users import User
 from backend.src.core.exceptions.generation import InsufficientBalanceError
@@ -32,7 +32,7 @@ class UserRepository(AbstractRepository[User]):
     async def get_or_create_by_telegram_id(
         self,
         session: AsyncSession,
-        available_tokens: float = 0,
+        available_tokens: Decimal = Decimal("0"),
         *,
         telegram_id: int,
     ) -> User:
@@ -54,7 +54,7 @@ class UserRepository(AbstractRepository[User]):
                 UserBalance(
                     user_id=user.id,
                     available_tokens=available_tokens,
-                    hold_tokens=0.0,
+                    hold_tokens=Decimal("0"),
                 )
             )
             await session.flush()
@@ -82,7 +82,7 @@ class UserRepository(AbstractRepository[User]):
         session: AsyncSession,
         *,
         user_id: UUID,
-        amount: float,
+        amount: Decimal,
     ) -> UserBalance | None:
         if amount <= 0:
             raise ValueError("amount must be greater than 0")
@@ -96,7 +96,7 @@ class UserRepository(AbstractRepository[User]):
         if balance:
             if balance.available_tokens < amount:
                 raise InsufficientBalanceError(
-                    "amount must be letter than available_tokens"
+                    "amount must be less than or equal to available_tokens"
                 )
 
             balance.available_tokens -= amount
@@ -123,7 +123,7 @@ class UserRepository(AbstractRepository[User]):
         session: AsyncSession,
         *,
         user_id: UUID,
-        amount: float,
+        amount: Decimal,
     ) -> UserBalance | None:
         if amount <= 0:
             raise ValueError("amount must be greater than 0")
@@ -148,8 +148,8 @@ class UserRepository(AbstractRepository[User]):
         session: AsyncSession,
         *,
         user_id: UUID,
-        hold_amount: float,
-        final_charge_amount: float,
+        hold_amount: Decimal,
+        final_charge_amount: Decimal,
     ) -> UserBalance | None:
         if hold_amount < 0:
             raise ValueError("hold_amount must be greater or equal to 0")

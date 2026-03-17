@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +17,7 @@ class LLMConfigurationRepository(AbstractRepository[LLMConfiguration]):
         session: AsyncSession,
         *,
         user_id: UUID,
-        data: dict,
+        data: dict[str, Any],
     ) -> LLMConfiguration:
         llm_config = LLMConfiguration(
             user_id=user_id,

@@ -167,6 +167,7 @@ class ImageGenerationService:
                 user_id=user_id,
                 ai_model_id=model_id,
                 provider_model_key=model_config.request_provider_model_key,
+                model_token_price_id=ai_model.token_price_id,
                 prompt=prompt,
                 media_file_urls=media_file_urls,
                 min_charge_tokens=ai_model.min_charge_tokens,
@@ -256,13 +257,11 @@ class ImageGenerationService:
                 task_id=response_create_data.task_id,
             )
 
-            final_tokens_cost = 0.0
-            if generation_data.hold_amount > 0:
-                final_tokens_cost = (
-                    await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
-                        provider_cost=request_data.provider_cost,
-                    )
-                )
+            final_tokens_cost = await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
+                provider_cost=request_data.provider_cost,
+                model_token_price_id=request_data.model_token_price_id,
+                hold_amount=generation_data.hold_amount,
+            )
 
             await poll_generation_status.kiq(
                 data=PollWaveSpeedGenerationTaskSchema(
@@ -270,6 +269,7 @@ class ImageGenerationService:
                     user_id=request_data.user_id,
                     generation_id=generation.id,
                     generation_type=generation_data.generation_type,
+                    model_token_price_id=request_data.model_token_price_id,
                     hold_amount=generation_data.hold_amount,
                     provider_cost=request_data.provider_cost,
                     wavespeed_task_id=response_create_data.task_id,

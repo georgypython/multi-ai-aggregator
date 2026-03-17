@@ -25,12 +25,6 @@ class LLMConfigurationType(StrEnum):
     TEMPLATE = "template"
 
 
-class PriceType(StrEnum):
-    SUBSCRIPTION = "subscription"
-    ONE_TIME = "one_time"
-    USAGE = "usage"
-
-
 class ModelType(StrEnum):
     LLM = "llm"
     IMAGE = "image"
