@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.logger_setup  import logger
 from backend.src.core.exceptions.generation import (
     ImageGenerationNotCompletedError,
-    ModelConfigError,
     ProviderError,
 )
 from src.core.exceptions.storage import StoragePresignedUrlError
@@ -17,7 +16,6 @@ from src.core.models.enums import (
 from src.core.schemas.ai import (
     ImageRequestDataSchema,
     GenerationResultResponseDataSchema,
-    ModelConfigDataSchema,
     PollWaveSpeedGenerationTaskSchema,
     GenerationRequestSchema,
 )
@@ -25,6 +23,7 @@ from src.repositories import AIModelRepository, UserRepository
 from src.repositories import GenerationRepository
 from src.tasks.generation_tasks import poll_generation_status
 from .generation_billing import GenerationBillingService
+from .image_profile import ImageProfileService
 from .wavespeed import WaveSpeedService
 from .storage import StorageService
 
@@ -37,9 +36,9 @@ class ImageGenerationService:
         ai_model_repo: AIModelRepository,
         generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
+        image_profile_service: ImageProfileService,
         wavespeed_service: WaveSpeedService,
         storage_service: StorageService,
-        image_model_configs: dict[str, dict],
         poll_interval_seconds: int,
         poll_max_attempts: int,
     ):
@@ -48,56 +47,11 @@ class ImageGenerationService:
         self.ai_model_repo = ai_model_repo
         self.generation_repo = generation_repo
         self.generation_billing_service = generation_billing_service
-        self.image_model_configs = image_model_configs
+        self.image_profile_service = image_profile_service
         self.wavespeed_service = wavespeed_service
         self.storage_service = storage_service
         self.poll_interval_seconds = poll_interval_seconds
         self.poll_max_attempts = poll_max_attempts
-
-    def _get_image_model_config_fields(
-        self,
-        provider_model_key: str,
-        size: str | None,
-        quality: str | None,
-        is_image_edit: bool = False,
-    ) -> ModelConfigDataSchema:
-        model_config = self.image_model_configs.get(provider_model_key)
-        if not model_config:
-            raise ModelConfigError(
-                f"Image model config not found for provider_key={provider_model_key}"
-            )
-
-        request_provider_model_key = provider_model_key
-        if is_image_edit:
-            image_edit_model_name = model_config.get("image_edit_model_name")
-            if isinstance(image_edit_model_name, str) and image_edit_model_name.strip():
-                request_provider_model_key = image_edit_model_name
-
-        sizes: list[str] = model_config.get("sizes")
-        qualities: list[str] = model_config.get("qualities")
-        provider_prices: dict[str, dict[str, float]] = model_config.get("prices_usd")
-        model_provider: str = model_config.get("provider")
-
-        if sizes and qualities and provider_prices and model_provider:
-            resolved_size = size or sizes[0]
-            resolved_quality = quality or qualities[0]
-
-            if resolved_size in sizes and resolved_quality in qualities:
-                prices = provider_prices.get(resolved_quality)
-                if prices:
-                    price = prices.get(resolved_size)
-                    if price is not None:
-                        return ModelConfigDataSchema(
-                            request_provider_model_key=request_provider_model_key,
-                            size=resolved_size,
-                            quality=resolved_quality,
-                            provider_cost=price,
-                            provider=model_provider,
-                        )
-
-        raise ModelConfigError(
-            f"Image model config is invalid for provider_key={provider_model_key}"
-        )
         
     async def _create_and_validate_request_image_data(
         self,
@@ -156,23 +110,38 @@ class ImageGenerationService:
                     )
                     media_file_urls = None
 
-            provider_model_key = ai_model.provider_key
-            model_config = self._get_image_model_config_fields(
-                provider_model_key=provider_model_key,
+            raw_profile_price = await self.image_profile_service.get_image_profile_with_raw_price(
+                model_id=model_id,
                 size=size,
                 quality=quality,
-                is_image_edit=True if media_file_urls else False,
             )
+
+            request_provider_model_key = ai_model.provider_key
+            if media_file_urls:
+                image_edit_model_name = raw_profile_price.image_edit_model_name
+                if image_edit_model_name and image_edit_model_name.strip():
+                    request_provider_model_key = image_edit_model_name
+                else:
+                    logger.warning(
+                        "Image edit input was provided but model has no image_edit_model_name; dropping media_file_urls "
+                        f"for model_id={model_id}, user_id={user_id}"
+                    )
+                    media_file_urls = None
+
             return ImageRequestDataSchema(
                 user_id=user_id,
                 ai_model_id=model_id,
-                provider_model_key=model_config.request_provider_model_key,
+                provider_model_key=request_provider_model_key,
                 model_token_price_id=ai_model.token_price_id,
                 prompt=prompt,
                 media_file_urls=media_file_urls,
                 min_charge_tokens=ai_model.min_charge_tokens,
                 free_requests_limit=ai_model.free_requests_limit,
-                **model_config.model_dump(),
+                size=raw_profile_price.size,
+                quality=raw_profile_price.quality,
+                provider_cost=raw_profile_price.provider_cost,
+                provider=raw_profile_price.provider,
+                request_provider_model_key=request_provider_model_key,
             )
 
     async def get_image_generation_content(

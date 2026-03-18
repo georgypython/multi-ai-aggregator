@@ -14,10 +14,10 @@ from backend.src.core.exceptions.generation import (
 from src.core.schemas.ai import (
 	GenerationResultResponseDataSchema,
 	VideoGenerationCreateRequestSchema,
-	VideoModelDetailResponseSchema,
+	VideoModelProfileResponseSchema,
 	VideoModelPriceResponseSchema,
 )
-from src.services.video_configuration import VideoConfigurationService
+from backend.src.services.video_profile import VideoProfileService
 from src.services.video_generation import VideoGenerationService
 
 router = APIRouter(
@@ -27,13 +27,15 @@ router = APIRouter(
 )
 
 
-@router.get("/{model_id}", response_model=VideoModelDetailResponseSchema)
+@router.get("/{model_id}", response_model=VideoModelProfileResponseSchema)
 async def get_video_model_configuration(
-	service: FromDishka[VideoConfigurationService],
+	service: FromDishka[VideoProfileService],
 	model_id: UUID,
 ):
 	try:
-		return await service.get_video_model_configuration(model_id=model_id)
+		return await service.load_video_profile_with_prices_by_ai_model_id(
+			ai_model_id=model_id,
+		)
 	except ValueError as exc:
 		raise HTTPException(
 			status_code=status.HTTP_404_NOT_FOUND,
@@ -48,7 +50,7 @@ async def get_video_model_configuration(
 
 @router.get("/{model_id}/price", response_model=VideoModelPriceResponseSchema)
 async def get_video_model_price(
-	service: FromDishka[VideoConfigurationService],
+	service: FromDishka[VideoProfileService],
 	model_id: UUID,
 	duration_seconds: int | None = None,
 	size: str | None = None,

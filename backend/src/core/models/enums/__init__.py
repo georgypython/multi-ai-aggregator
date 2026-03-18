@@ -4,7 +4,6 @@ from .ai import (
 	ModelProvider,
 	LLMConfigurationType,
 	ModelType,
-	PriceType,
 )
 
 __all__ = (
@@ -12,6 +11,5 @@ __all__ = (
 	"GenerationType",
 	"ModelProvider",
 	"LLMConfigurationType",
-	"PriceType",
 	"ModelType",
 )

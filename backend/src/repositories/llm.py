@@ -4,20 +4,20 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.core.models import LLMModel
+from src.core.models import LLMProfile
 
 from .abstract_repo import AbstractRepository
 
 
-class LLMRepository(AbstractRepository[LLMModel]):
-    model = LLMModel
+class LLMProfileRepository(AbstractRepository[LLMProfile]):
+    model = LLMProfile
 
     async def get_one_with_ai_model(
         self,
         session: AsyncSession,
         *,
         ai_model_id: UUID,
-    ) -> LLMModel | None:
+    ) -> LLMProfile | None:
         stmt = (
             select(self.model)
             .options(

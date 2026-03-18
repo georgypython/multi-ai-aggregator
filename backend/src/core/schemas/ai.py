@@ -145,6 +145,29 @@ class ImageModelDetailResponseSchema(BaseModel):
     qualities: list[str]
     prices_usd: dict[str, dict[str, Decimal]]
 
+class ImagePriceParamsSchema(BaseModel):
+    sizes: list[str]
+    qualities: list[str]
+
+class ImageModelProfileResponseSchema(ImagePriceParamsSchema):
+    id: UUID
+    name: str
+    provider_key: str
+    provider: ModelProvider
+
+class ImageModelRawPriceDataSchema(BaseModel):
+    ai_model_id: UUID
+    size: str
+    quality: str
+    usd_price: Decimal
+
+
+class ImageModelRawDataSchema(BaseModel):
+    size: str
+    quality: str
+    provider_cost: Decimal
+    provider: ModelProvider
+    image_edit_model_name: str | None = None
 
 class ImageModelPriceResponseSchema(BaseModel):
     ai_model_id: UUID
@@ -162,6 +185,32 @@ class VideoModelDetailResponseSchema(BaseModel):
     durations_seconds: list[int]
     sizes: list[str]
     prices_usd_by_duration: dict[str, dict[str, Decimal]]
+
+
+class VideoPriceParamsSchema(BaseModel):
+    durations_seconds: list[int]
+    sizes: list[str]
+
+
+class VideoModelProfileResponseSchema(VideoPriceParamsSchema):
+    id: UUID
+    name: str
+    provider_key: str
+    provider: ModelProvider
+
+
+class VideoModelRawPriceDataSchema(BaseModel):
+    ai_model_id: UUID
+    duration_seconds: int
+    size: str
+    usd_price: Decimal
+
+
+class VideoModelRawDataSchema(BaseModel):
+    duration_seconds: int
+    size: str
+    provider_cost: Decimal
+    provider: ModelProvider
 
 
 class VideoModelPriceResponseSchema(BaseModel):

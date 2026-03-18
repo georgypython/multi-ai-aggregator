@@ -18,7 +18,7 @@ from src.core.schemas.ai import (
 )
 from src.repositories import (
     UserRepository,
-    LLMRepository,
+    LLMProfileRepository,
     ChatMemoryRepository,
 )
 from .openrouter import OpenRouterService
@@ -32,7 +32,7 @@ class LLMGenerationService:
         session: AsyncSession,
         llm_client: OpenRouterService,
         user_repo: UserRepository,
-        llm_repo: LLMRepository,
+        llm_repo: LLMProfileRepository,
         chat_memory_repo: ChatMemoryRepository,
         generation_billing_service: GenerationBillingService,
     ) -> None:
@@ -61,13 +61,13 @@ class LLMGenerationService:
                     f"User balance is not configured for user_id={user_id}"
                 )
 
-            llm_model = await self.llm_repo.get_one_with_ai_model(
+            llm_profile = await self.llm_repo.get_one_with_ai_model(
                 session=self.session, ai_model_id=model_id
             )
-            if not llm_model or not llm_model.ai_model:
+            if not llm_profile or not llm_profile.ai_model:
                 raise ValueError(f"LLMModel not found for ai_model_id={model_id}")
 
-            ai_model = llm_model.ai_model
+            ai_model = llm_profile.ai_model
             if not ai_model.is_active:
                 raise InactiveModelError(f"AIModel innactive for model_id={model_id}")
 
@@ -78,7 +78,7 @@ class LLMGenerationService:
                 instructions = llm_configuration.instructions
                 temperature = (
                     llm_configuration.temperature
-                    if llm_model.is_temperature_support
+                    if llm_profile.is_temperature_support
                     else None
                 )
 
@@ -87,11 +87,11 @@ class LLMGenerationService:
                 ai_model_id=model_id,
                 provider_model_key=ai_model.provider_key,
                 prompt=prompt,
-                model_token_price_id=llm_model.ai_model.token_price_id,
+                model_token_price_id=llm_profile.ai_model.token_price_id,
                 min_charge_tokens=ai_model.min_charge_tokens,
                 free_requests_limit=ai_model.free_requests_limit,
-                input_price_per_million_usd=llm_model.input_price_per_million_usd,
-                output_price_per_million_usd=llm_model.output_price_per_million_usd,
+                input_price_per_million_usd=llm_profile.input_price_per_million_usd,
+                output_price_per_million_usd=llm_profile.output_price_per_million_usd,
                 temperature=temperature if temperature else None,
                 instructions=instructions if instructions else None,
             )

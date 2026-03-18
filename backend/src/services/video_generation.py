@@ -8,20 +8,19 @@ from backend.src.core.exceptions.generation import (
     UserBalanceNotConfiguredError,
     VideoGenerationError,
     VideoGenerationNotCompletedError,
-    ModelConfigError,
 )
 from src.core.models.enums import GenerationStatus, GenerationType, ModelType
 from src.core.schemas.ai import (
     GenerationResultResponseDataSchema,
     GenerationRequestSchema,
     PollWaveSpeedGenerationTaskSchema,
-    VideoModelConfigDataSchema,
     VideoRequestDataSchema,
 )
 from src.repositories import AIModelRepository, UserRepository
 from src.repositories import GenerationRepository
 from src.tasks.generation_tasks import poll_generation_status
 from .generation_billing import GenerationBillingService
+from .video_profile import VideoProfileService
 from .wavespeed import WaveSpeedService
 
 
@@ -33,8 +32,8 @@ class VideoGenerationService:
         ai_model_repo: AIModelRepository,
         generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
+        video_profile_service: VideoProfileService,
         wavespeed_service: WaveSpeedService,
-        video_model_configs: dict[str, dict],
         poll_interval_seconds: int,
         poll_max_attempts: int,
     ):
@@ -43,47 +42,10 @@ class VideoGenerationService:
         self.ai_model_repo = ai_model_repo
         self.generation_repo = generation_repo
         self.generation_billing_service = generation_billing_service
-        self.video_model_configs = video_model_configs
+        self.video_profile_service = video_profile_service
         self.wavespeed_service = wavespeed_service
         self.poll_interval_seconds = poll_interval_seconds
         self.poll_max_attempts = poll_max_attempts
-
-    def _get_video_model_config_fields(
-        self,
-        provider_model_key: str,
-        duration_seconds: int | None,
-        size: str | None,
-    ) -> VideoModelConfigDataSchema:
-        model_config = self.video_model_configs.get(provider_model_key)
-        if not model_config:
-            raise ModelConfigError(
-                f"Video model config not found for provider_key={provider_model_key}"
-            )
-
-        durations_seconds: list[int] = model_config.get("durations_seconds")
-        sizes: list[str] = model_config.get("sizes")
-        provider_prices: dict[str, dict[str, float]] = model_config.get("prices_usd_by_duration")
-        model_provider: str = model_config.get("provider")
-
-        if durations_seconds and sizes and provider_prices and model_provider:
-            resolved_duration_seconds = duration_seconds or durations_seconds[0]
-            resolved_size = size or sizes[0]
-
-            if resolved_duration_seconds in durations_seconds and resolved_size in sizes:
-                duration_prices = provider_prices.get(str(resolved_duration_seconds))
-                if duration_prices:
-                    price = duration_prices.get(resolved_size)
-                    if price is not None:
-                        return VideoModelConfigDataSchema(
-                            duration_seconds=int(resolved_duration_seconds),
-                            size=resolved_size,
-                            provider_cost=price,
-                            provider=model_provider,
-                        )
-
-        raise ModelConfigError(
-            f"Video model config is invalid for provider_key={provider_model_key}"
-        )
 
     async def _create_and_validate_request_video_data(
         self,
@@ -127,22 +89,24 @@ class VideoGenerationService:
                     f"Insufficient active balance for generation: available={user.balance.available_tokens}, required>{ai_model.min_charge_tokens}"
                 )
 
-            provider_model_key = ai_model.provider_key
-            model_config = self._get_video_model_config_fields(
-                provider_model_key=provider_model_key,
+            raw_profile_price = await self.video_profile_service.get_video_profile_with_raw_price(
+                model_id=model_id,
                 duration_seconds=duration_seconds,
                 size=size,
             )
             return VideoRequestDataSchema(
                 user_id=user_id,
                 ai_model_id=model_id,
-                provider_model_key=provider_model_key,
+                provider_model_key=ai_model.provider_key,
                 prompt=prompt,
                 model_token_price_id=ai_model.token_price_id,
                 media_file_id=media_file_id,
                 min_charge_tokens=ai_model.min_charge_tokens,
                 free_requests_limit=ai_model.free_requests_limit,
-                **model_config.model_dump(),
+                duration_seconds=raw_profile_price.duration_seconds,
+                size=raw_profile_price.size,
+                provider_cost=raw_profile_price.provider_cost,
+                provider=raw_profile_price.provider,
             )
 
     async def generate_video(

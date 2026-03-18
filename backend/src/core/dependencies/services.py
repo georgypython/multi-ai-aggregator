@@ -9,25 +9,27 @@ from src.core.utils.image_configs import IMAGE_MODEL_CONFIGS
 from src.core.utils.video_configs import VIDEO_MODEL_CONFIGS
 from src.services.ai_models import AIModelsService
 from src.services.generation_billing import GenerationBillingService
-from src.services.image_configuration import ImageConfigurationService
+from backend.src.services.image_profile import ImageProfileService
 from src.services.image_generation import ImageGenerationService
 from src.services.llm_configuration import LLMConfigurationService
 from src.services.llm_generation import LLMGenerationService
 from src.services.openrouter import OpenRouterService
 from src.services.storage import StorageService
-from src.services.video_configuration import VideoConfigurationService
+from backend.src.services.video_profile import VideoProfileService
 from src.services.video_generation import VideoGenerationService
 from src.services.users import UsersService
 from src.services.wavespeed import WaveSpeedService
 from src.repositories import (
     AIModelRepository,
     UserRepository,
-    LLMRepository,
+    LLMProfileRepository,
     LLMConfigurationRepository,
     GenerationRepository,
     MediaFilesRepository,
     ChatMemoryRepository,
     TokenPriceRepository,
+    ImagePriceRepository,
+    VideoPriceRepository,
 )
 
 class ServicesProvider(Provider):
@@ -103,7 +105,7 @@ class ServicesProvider(Provider):
         session: AsyncSession,
         llm_client: OpenRouterService,
         user_repo: UserRepository,
-        llm_repo: LLMRepository,
+        llm_repo: LLMProfileRepository,
         chat_memory_repo: ChatMemoryRepository,
         generation_billing_service: GenerationBillingService,
     ) -> LLMGenerationService:
@@ -148,6 +150,7 @@ class ServicesProvider(Provider):
         ai_model_repo: AIModelRepository,
         generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
+        image_configuration_service: ImageProfileService,
         wavespeed_service: WaveSpeedService,
         storage_service: StorageService,
     ) -> ImageGenerationService:
@@ -157,9 +160,9 @@ class ServicesProvider(Provider):
             ai_model_repo=ai_model_repo,
             generation_repo=generation_repo,
             generation_billing_service=generation_billing_service,
+            image_profile_service=image_configuration_service,
             wavespeed_service=wavespeed_service,
             storage_service=storage_service,
-            image_model_configs=IMAGE_MODEL_CONFIGS,
             poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
             poll_max_attempts=settings.wavespeed.poll_max_attempts,
         )
@@ -172,6 +175,7 @@ class ServicesProvider(Provider):
         ai_model_repo: AIModelRepository,
         generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
+        video_configuration_service: VideoProfileService,
         wavespeed_service: WaveSpeedService,
     ) -> VideoGenerationService:
         return VideoGenerationService(
@@ -180,8 +184,8 @@ class ServicesProvider(Provider):
             ai_model_repo=ai_model_repo,
             generation_repo=generation_repo,
             generation_billing_service=generation_billing_service,
+            video_profile_service=video_configuration_service,
             wavespeed_service=wavespeed_service,
-            video_model_configs=VIDEO_MODEL_CONFIGS,
             poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
             poll_max_attempts=settings.wavespeed.poll_max_attempts,
         )
@@ -191,15 +195,16 @@ class ServicesProvider(Provider):
         self,
         session: AsyncSession,
         ai_model_repo: AIModelRepository,
+        image_price_repo: ImagePriceRepository,
         generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
-    ) -> ImageConfigurationService:
-        return ImageConfigurationService(
+    ) -> ImageProfileService:
+        return ImageProfileService(
             session=session,
             ai_model_repo=ai_model_repo,
+            image_price_repo=image_price_repo,
             generation_repo=generation_repo,
             generation_billing_service=generation_billing_service,
-            image_model_configs=IMAGE_MODEL_CONFIGS,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -207,15 +212,16 @@ class ServicesProvider(Provider):
         self,
         session: AsyncSession,
         ai_model_repo: AIModelRepository,
+        video_price_repo: VideoPriceRepository,
         generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
-    ) -> VideoConfigurationService:
-        return VideoConfigurationService(
+    ) -> VideoProfileService:
+        return VideoProfileService(
             session=session,
             ai_model_repo=ai_model_repo,
+            video_price_repo=video_price_repo,
             generation_repo=generation_repo,
             generation_billing_service=generation_billing_service,
-            video_model_configs=VIDEO_MODEL_CONFIGS,
         )
 
     @provide(scope=Scope.REQUEST)

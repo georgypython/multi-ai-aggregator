@@ -13,10 +13,10 @@ from backend.src.core.exceptions.generation import (
 from src.core.schemas.ai import (
     GenerationResultResponseDataSchema,
     ImageGenerationCreateRequestSchema,
-    ImageModelDetailResponseSchema,
+    ImageModelProfileResponseSchema,
     ImageModelPriceResponseSchema,
 )
-from src.services.image_configuration import ImageConfigurationService
+from backend.src.services.image_profile import ImageProfileService
 from src.services.image_generation import ImageGenerationService
 
 router = APIRouter(
@@ -91,13 +91,15 @@ async def get_image_generation_status(
         )
 
 
-@router.get("/{model_id}", response_model=ImageModelDetailResponseSchema)
+@router.get("/{model_id}", response_model=ImageModelProfileResponseSchema)
 async def get_image_model_configuration(
-    service: FromDishka[ImageConfigurationService],
+    service: FromDishka[ImageProfileService],
     model_id: UUID,
 ):
     try:
-        return await service.get_image_model_configuration(model_id=model_id)
+        return await service.load_image_profile_with_prices_by_ai_model_id(
+            ai_model_id=model_id
+        )
     except ModelConfigError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -112,7 +114,7 @@ async def get_image_model_configuration(
 
 @router.get("/{model_id}/price", response_model=ImageModelPriceResponseSchema)
 async def get_image_model_price(
-    service: FromDishka[ImageConfigurationService],
+    service: FromDishka[ImageProfileService],
     model_id: UUID,
     size: str | None = None,
     quality: str | None = None,

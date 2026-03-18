@@ -4,12 +4,16 @@ from redis.asyncio import Redis
 from src.repositories import (
     AIModelRepository,
     UserRepository,
-    LLMRepository,
+    LLMProfileRepository,
     LLMConfigurationRepository,
     GenerationRepository,
     MediaFilesRepository,
     ChatMemoryRepository,
     TokenPriceRepository,
+    ImageProfileRepository,
+    ImagePriceRepository,
+    VideoProfileRepository,
+    VideoPriceRepository,
 )
 
 
@@ -29,8 +33,8 @@ class RepositoriesProvider(Provider):
     @provide(scope=Scope.APP)
     def get_llm_repository(
         self,
-    ) -> LLMRepository:
-        return LLMRepository()
+    ) -> LLMProfileRepository:
+        return LLMProfileRepository()
 
     @provide(scope=Scope.APP)
     def get_llm_configuration_repository(
@@ -62,3 +66,27 @@ class RepositoriesProvider(Provider):
         self,
     ) -> TokenPriceRepository:
         return TokenPriceRepository()
+
+    @provide(scope=Scope.APP)
+    def get_image_profile_repository(
+        self,
+    ) -> ImageProfileRepository:
+        return ImageProfileRepository()
+
+    @provide(scope=Scope.APP)
+    def get_image_price_repository(
+        self,
+    ) -> ImagePriceRepository:
+        return ImagePriceRepository()
+
+    @provide(scope=Scope.APP)
+    def get_video_profile_repository(
+        self,
+    ) -> VideoProfileRepository:
+        return VideoProfileRepository()
+
+    @provide(scope=Scope.APP)
+    def get_video_price_repository(
+        self,
+    ) -> VideoPriceRepository:
+        return VideoPriceRepository()
