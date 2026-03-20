@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class LLMProfile(Base, UUIDPKMixin, CreatedAtMixin):
+    """Профиль LLM-модели с ценами входа/выхода и фичами."""
+
     __tablename__ = "llm_profiles"
 
     ai_model_id: Mapped[UUID] = mapped_column(
@@ -33,6 +35,8 @@ class LLMProfile(Base, UUIDPKMixin, CreatedAtMixin):
 
 
 class ImageProfile(Base, UUIDPKMixin, CreatedAtMixin):
+    """Профиль image-модели и ее провайдерские настройки."""
+
     __tablename__ = "image_profiles"
 
     ai_model_id: Mapped[UUID] = mapped_column(
@@ -53,6 +57,8 @@ class ImageProfile(Base, UUIDPKMixin, CreatedAtMixin):
 
 
 class VideoProfile(Base, UUIDPKMixin, CreatedAtMixin):
+    """Профиль video-модели и ее провайдерские настройки."""
+
     __tablename__ = "video_profiles"
 
     ai_model_id: Mapped[UUID] = mapped_column(
@@ -70,6 +76,8 @@ class VideoProfile(Base, UUIDPKMixin, CreatedAtMixin):
 
 
 class ImagePrice(Base, UUIDPKMixin, CreatedAtMixin):
+    """Цена image-генерации для пары quality/size."""
+
     __tablename__ = "image_prices"
     __table_args__ = (
         UniqueConstraint(
@@ -88,6 +96,8 @@ class ImagePrice(Base, UUIDPKMixin, CreatedAtMixin):
 
 
 class VideoPrice(Base, UUIDPKMixin, CreatedAtMixin):
+    """Цена video-генерации для пары duration/size."""
+
     __tablename__ = "video_prices"
     __table_args__ = (
         UniqueConstraint(

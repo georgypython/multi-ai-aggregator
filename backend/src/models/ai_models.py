@@ -11,11 +11,13 @@ from .base import Base
 
 if TYPE_CHECKING:
     from .ai_generations import AIGeneration
-    from .model_configs import ImageProfile, VideoProfile, LLMProfile
+    from .model_profiles import ImageProfile, VideoProfile, LLMProfile
     from .token_prices import TokenPrice
 
 
 class AIModel(Base, UUIDPKMixin, CreatedAtMixin):
+    """Справочник AI-моделей и базовых лимитов/тарифов."""
+
     __tablename__ = "ai_models"
 
     name: Mapped[str] = mapped_column(nullable=False)

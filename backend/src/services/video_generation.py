@@ -150,10 +150,12 @@ class VideoGenerationService:
                 task_id=response_create_data.task_id,
             )
 
-            final_tokens_cost = await self.generation_billing_service.calculate_final_tokens_cost(
-                provider_cost=request_data.provider_cost,
-                model_token_price_id=request_data.model_token_price_id,
-                hold_amount=generation_data.hold_amount,
+            final_tokens_cost = (
+                await self.generation_billing_service.calculate_final_tokens_cost(
+                    provider_cost=request_data.provider_cost,
+                    model_token_price_id=request_data.model_token_price_id,
+                    hold_amount=generation_data.hold_amount,
+                )
             )
 
             await poll_generation_status.kiq(
@@ -199,4 +201,3 @@ class VideoGenerationService:
             status=GenerationStatus.PROCESSING,
             is_free_request=generation_data.hold_amount == 0,
         )
-

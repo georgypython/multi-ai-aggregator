@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class UserBalance(Base, UUIDPKMixin, CreatedAtMixin):
+    """Баланс пользователя: доступные и удержанные токены."""
+
     __tablename__ = "user_balances"
 
     user_id: Mapped[UUID] = mapped_column(

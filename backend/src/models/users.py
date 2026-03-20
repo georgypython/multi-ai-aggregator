@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 
 class User(Base, UUIDPKMixin, CreatedAtMixin):
+    """Пользователь системы, связанный с Telegram ID."""
+
     __tablename__ = "users"
 
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)

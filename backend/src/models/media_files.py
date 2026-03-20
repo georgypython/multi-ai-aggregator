@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class MediaFile(Base, UUIDPKMixin, CreatedAtMixin):
+    """Метаданные загруженного пользователем медиафайла."""
+
     __tablename__ = "media_files"
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False)

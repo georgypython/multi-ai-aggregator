@@ -25,6 +25,7 @@ async def create_or_update_llm_config(
     service: FromDishka[LLMConfigurationService],
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ):
+    """Создает или обновляет LLM-настройки текущего пользователя."""
     try:
         return await service.create_or_update_user_llm_config(
             user_id=user_id,
@@ -42,6 +43,7 @@ async def get_llm_config(
     service: FromDishka[LLMConfigurationService],
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ):
+    """Возвращает сохраненные LLM-настройки текущего пользователя."""
     try:
         return await service.get_user_llm_config(user_id=user_id)
     except ValueError as exc:
@@ -56,6 +58,7 @@ async def get_my_balance(
     service: FromDishka[UsersService],
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ) -> UserBalanceResponseSchema:
+    """Возвращает токен-баланс текущего пользователя."""
     try:
         return await service.get_user_balance(user_id=str(user_id))
     except ValueError as exc:

@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class LLMConfiguration(Base, UUIDPKMixin, CreatedAtMixin):
+    """Пользовательские настройки поведения LLM."""
+
     __tablename__ = "llm_configurations"
 
     name: Mapped[str | None] = mapped_column(nullable=True, default=None)

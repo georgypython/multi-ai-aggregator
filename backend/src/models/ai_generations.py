@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 
 
 class AIGeneration(Base, UUIDPKMixin, CreatedAtMixin):
+    """Запись о запросе генерации и ее биллинговом результате."""
+
     __tablename__ = "ai_generations"
 
     user_id: Mapped[UUID] = mapped_column(

@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class TokenPrice(Base, UUIDPKMixin, CreatedAtMixin):
+    """Курс токена и коэффициенты пересчета стоимости провайдера."""
+
     __tablename__ = "token_prices"
 
     usd_per_token: Mapped[Decimal] = mapped_column(Numeric(18, 10), nullable=False)
