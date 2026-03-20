@@ -11,7 +11,6 @@ from src.keyboards.ai import (
 )
 from src.services.ai import AIService
 
-
 router = Router()
 
 

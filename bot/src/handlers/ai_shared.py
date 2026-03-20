@@ -20,7 +20,9 @@ class AIFlowHelper:
         return [AIModelItem.model_validate(model) for model in raw_models]
 
     @staticmethod
-    def render_models_text(models: list[AIModelItem], current_model_name: str | None) -> str:
+    def render_models_text(
+        models: list[AIModelItem], current_model_name: str | None
+    ) -> str:
         lines = [
             f"текущая модель: <b>{escape(current_model_name or 'не выбрана')} ✅</b>",
             "Список доступных нейросетей:",

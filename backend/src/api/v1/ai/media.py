@@ -4,14 +4,14 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 
 from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
-from src.core.exceptions.storage import (
+from src.exceptions.storage import (
     EmptyFileError,
     FileTooLargeError,
     StorageMetadataPersistError,
     StorageUploadError,
     UnsupportedFileTypeError,
 )
-from src.core.schemas.ai import UploadFileResponseSchema
+from src.schemas.ai import UploadFileResponseSchema
 from src.services.storage import StorageService
 
 router = APIRouter(

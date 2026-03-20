@@ -8,17 +8,17 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.exceptions.storage import (
+from src.exceptions.storage import (
     EmptyFileError,
     FileTooLargeError,
     StoragePresignedUrlError,
     StorageUploadError,
     UnsupportedFileTypeError,
 )
-from src.core.schemas.ai import (
-    UploadFileResponseSchema, 
+from src.schemas.ai import (
+    UploadFileResponseSchema,
     UpdloadFileDataSchema,
-    MediaFileDbDataSchema
+    MediaFileDbDataSchema,
 )
 from src.repositories import MediaFilesRepository
 
@@ -148,44 +148,43 @@ class StorageService:
         )
         return await self._create_presigned_urls_for_media_files(files=media_files)
 
-    async def _create_upload_file_data(self, user_id: UUID, file: UploadFile) -> UpdloadFileDataSchema:
+    async def _create_upload_file_data(
+        self, user_id: UUID, file: UploadFile
+    ) -> UpdloadFileDataSchema:
         expires_at = datetime.now(timezone.utc) + timedelta(
             hours=self.input_retention_hours
         )
 
         content_type = file.content_type
-        if (
-                not content_type
-                or content_type not in self.allowed_image_content_types
-            ):
-                raise UnsupportedFileTypeError(
-                    "Unsupported file type. Allowed: "
-                    + ", ".join(self.allowed_image_content_types)
-                )
-        
+        if not content_type or content_type not in self.allowed_image_content_types:
+            raise UnsupportedFileTypeError(
+                "Unsupported file type. Allowed: "
+                + ", ".join(self.allowed_image_content_types)
+            )
+
         data = await file.read()
         if not data:
-                raise EmptyFileError("Uploaded file is empty")
-        
-        size_bytes=len(data)
+            raise EmptyFileError("Uploaded file is empty")
+
+        size_bytes = len(data)
         if size_bytes > self.max_upload_bytes:
             raise FileTooLargeError("File too large to upload")
-        
+
         file_id = uuid4()
         object_key = f"{self.input_prefix}/{user_id}/{file_id}.{self.image_extensions[content_type]}"
 
         return UpdloadFileDataSchema(
             data=data,
             file=MediaFileDbDataSchema(
-            id=file_id,
-            user_id=user_id,
-            content_type=file.content_type,
-            size_bytes=len(data),
-            object_key=object_key,
-            expires_at=expires_at
+                id=file_id,
+                user_id=user_id,
+                content_type=file.content_type,
+                size_bytes=len(data),
+                object_key=object_key,
+                expires_at=expires_at,
+            ),
         )
-    )
-    
+
     async def upload_image(
         self,
         file: UploadFile,
@@ -208,7 +207,6 @@ class StorageService:
                 content_type=upload_file_data.file.content_type,
             )
 
-                
         return UploadFileResponseSchema(
             media_file_id=upload_file_data.file.id,
         )

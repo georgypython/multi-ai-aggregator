@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .abstract_repo import AbstractRepository
 
-from src.core.models import ImageProfile, ImagePrice
+from src.models import ImageProfile, ImagePrice
 
 
 class ImageProfileRepository(AbstractRepository[ImageProfile]):
@@ -34,6 +34,3 @@ class ImagePriceRepository(AbstractRepository[ImagePrice]):
         )
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
-
-
-

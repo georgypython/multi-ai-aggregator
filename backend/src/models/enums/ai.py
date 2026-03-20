@@ -29,4 +29,3 @@ class ModelType(StrEnum):
     LLM = "llm"
     IMAGE = "image"
     VIDEO = "video"
-    

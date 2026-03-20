@@ -71,9 +71,7 @@ def downgrade() -> None:
     )
     op.add_column(
         "video_models",
-        sa.Column(
-            "min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False
-        ),
+        sa.Column("min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False),
     )
     op.add_column(
         "video_models",
@@ -97,9 +95,7 @@ def downgrade() -> None:
     )
     op.add_column(
         "llm_models",
-        sa.Column(
-            "min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False
-        ),
+        sa.Column("min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False),
     )
     op.add_column(
         "llm_models",
@@ -121,9 +117,7 @@ def downgrade() -> None:
     )
     op.add_column(
         "image_models",
-        sa.Column(
-            "min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False
-        ),
+        sa.Column("min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False),
     )
     op.add_column(
         "image_models",

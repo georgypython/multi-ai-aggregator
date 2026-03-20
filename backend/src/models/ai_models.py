@@ -44,4 +44,3 @@ class AIModel(Base, UUIDPKMixin, CreatedAtMixin):
     )
     generations: Mapped[list["AIGeneration"]] = relationship(back_populates="ai_model")
     token_price: Mapped["TokenPrice"] = relationship(back_populates="ai_models")
-

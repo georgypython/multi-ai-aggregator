@@ -3,20 +3,20 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
-from backend.src.core.exceptions.generation import (
+from src.exceptions.generation import (
     ImageGenerationFinalizeError,
     ImageGenerationNotCompletedError,
     ModelConfigError,
     ProviderError,
     ProviderTimeoutError,
 )
-from src.core.schemas.ai import (
+from src.schemas.ai import (
     GenerationResultResponseDataSchema,
     ImageGenerationCreateRequestSchema,
     ImageModelProfileResponseSchema,
     ImageModelPriceResponseSchema,
 )
-from backend.src.services.image_profile import ImageProfileService
+from src.services.image_profile import ImageProfileService
 from src.services.image_generation import ImageGenerationService
 
 router = APIRouter(
@@ -73,7 +73,9 @@ async def generate_image(
         )
 
 
-@router.get("/generations/{generation_id}", response_model=GenerationResultResponseDataSchema)
+@router.get(
+    "/generations/{generation_id}", response_model=GenerationResultResponseDataSchema
+)
 async def get_image_generation_status(
     service: FromDishka[ImageGenerationService],
     generation_id: UUID,

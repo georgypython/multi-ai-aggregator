@@ -5,11 +5,11 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.models.enums import GenerationStatus, GenerationType
+from src.models.enums import GenerationStatus, GenerationType
 from .abstract_repo import AbstractRepository
 
 
-from src.core.models import AIGeneration
+from src.models import AIGeneration
 
 
 class GenerationRepository(AbstractRepository[AIGeneration]):

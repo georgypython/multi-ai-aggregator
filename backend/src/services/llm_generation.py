@@ -3,13 +3,13 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.models.enums import GenerationType, GenerationStatus
-from backend.src.core.exceptions.generation import (
+from src.models.enums import GenerationType, GenerationStatus
+from src.exceptions.generation import (
     InactiveModelError,
     ProviderError,
     UserBalanceNotConfiguredError,
 )
-from src.core.schemas.ai import (
+from src.schemas.ai import (
     GenerationRequestSchema,
     GenerationFinishData,
     GenerationResultResponseDataSchema,

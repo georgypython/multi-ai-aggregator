@@ -5,9 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.core.models.user_balances import UserBalance
-from src.core.models.users import User
-from backend.src.core.exceptions.generation import InsufficientBalanceError
+from src.models.user_balances import UserBalance
+from src.models.users import User
+from src.exceptions.generation import InsufficientBalanceError
 from .abstract_repo import AbstractRepository
 
 
@@ -165,7 +165,9 @@ class UserRepository(AbstractRepository[User]):
         balance.available_tokens += actual_hold
 
         if balance.available_tokens < final_charge_amount:
-            raise InsufficientBalanceError("insufficient available_tokens for final charge")
+            raise InsufficientBalanceError(
+                "insufficient available_tokens for final charge"
+            )
         balance.available_tokens -= final_charge_amount
 
         await session.flush()

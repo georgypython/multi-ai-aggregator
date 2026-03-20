@@ -175,21 +175,15 @@ def downgrade() -> None:
     )
     op.create_table(
         "image_prices",
-        sa.Column(
-            "size", sa.VARCHAR(length=32), autoincrement=False, nullable=False
-        ),
+        sa.Column("size", sa.VARCHAR(length=32), autoincrement=False, nullable=False),
         sa.Column(
             "quality",
             sa.VARCHAR(length=32),
             autoincrement=False,
             nullable=False,
         ),
-        sa.Column(
-            "style", sa.VARCHAR(length=32), autoincrement=False, nullable=True
-        ),
-        sa.Column(
-            "images_count", sa.INTEGER(), autoincrement=False, nullable=False
-        ),
+        sa.Column("style", sa.VARCHAR(length=32), autoincrement=False, nullable=True),
+        sa.Column("images_count", sa.INTEGER(), autoincrement=False, nullable=False),
         sa.Column("id", sa.UUID(), autoincrement=False, nullable=False),
         sa.Column(
             "created_at",
@@ -198,9 +192,7 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=False,
         ),
-        sa.Column(
-            "ai_model_id", sa.UUID(), autoincrement=False, nullable=False
-        ),
+        sa.Column("ai_model_id", sa.UUID(), autoincrement=False, nullable=False),
         sa.Column(
             "provider_price_usd",
             sa.NUMERIC(precision=12, scale=6),
@@ -213,18 +205,14 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=False,
         ),
-        sa.Column(
-            "min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False
-        ),
+        sa.Column("min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False),
         sa.Column(
             "approximate_const",
             sa.INTEGER(),
             autoincrement=False,
             nullable=True,
         ),
-        sa.Column(
-            "is_active", sa.BOOLEAN(), autoincrement=False, nullable=False
-        ),
+        sa.Column("is_active", sa.BOOLEAN(), autoincrement=False, nullable=False),
         sa.ForeignKeyConstraint(
             ["ai_model_id"],
             ["ai_models.id"],
@@ -266,9 +254,7 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=False,
         ),
-        sa.Column(
-            "ai_model_id", sa.UUID(), autoincrement=False, nullable=False
-        ),
+        sa.Column("ai_model_id", sa.UUID(), autoincrement=False, nullable=False),
         sa.Column(
             "provider_price_usd",
             sa.NUMERIC(precision=12, scale=6),
@@ -281,18 +267,14 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=False,
         ),
-        sa.Column(
-            "min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False
-        ),
+        sa.Column("min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False),
         sa.Column(
             "approximate_const",
             sa.INTEGER(),
             autoincrement=False,
             nullable=True,
         ),
-        sa.Column(
-            "is_active", sa.BOOLEAN(), autoincrement=False, nullable=False
-        ),
+        sa.Column("is_active", sa.BOOLEAN(), autoincrement=False, nullable=False),
         sa.ForeignKeyConstraint(
             ["ai_model_id"],
             ["ai_models.id"],
@@ -335,9 +317,7 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=False,
         ),
-        sa.Column(
-            "ai_model_id", sa.UUID(), autoincrement=False, nullable=False
-        ),
+        sa.Column("ai_model_id", sa.UUID(), autoincrement=False, nullable=False),
         sa.Column(
             "provider_price_usd",
             sa.NUMERIC(precision=12, scale=6),
@@ -350,18 +330,14 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=False,
         ),
-        sa.Column(
-            "min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False
-        ),
+        sa.Column("min_req_tokens", sa.INTEGER(), autoincrement=False, nullable=False),
         sa.Column(
             "approximate_const",
             sa.INTEGER(),
             autoincrement=False,
             nullable=True,
         ),
-        sa.Column(
-            "is_active", sa.BOOLEAN(), autoincrement=False, nullable=False
-        ),
+        sa.Column("is_active", sa.BOOLEAN(), autoincrement=False, nullable=False),
         sa.ForeignKeyConstraint(
             ["ai_model_id"],
             ["ai_models.id"],
@@ -383,14 +359,10 @@ def downgrade() -> None:
         table_name="llm_configurations",
     )
     op.drop_table("llm_configurations")
-    op.drop_index(
-        op.f("ix_video_models_ai_model_id"), table_name="video_models"
-    )
+    op.drop_index(op.f("ix_video_models_ai_model_id"), table_name="video_models")
     op.drop_table("video_models")
     op.drop_index(op.f("ix_llm_models_ai_model_id"), table_name="llm_models")
     op.drop_table("llm_models")
-    op.drop_index(
-        op.f("ix_image_models_ai_model_id"), table_name="image_models"
-    )
+    op.drop_index(op.f("ix_image_models_ai_model_id"), table_name="image_models")
     op.drop_table("image_models")
     # ### end Alembic commands ###

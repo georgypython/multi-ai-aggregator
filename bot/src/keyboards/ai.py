@@ -7,7 +7,6 @@ from aiogram.types import (
 
 from src.core.schemas import AIModelItem
 
-
 MODE_LLM_TEXT = "💬 Чат-нейросети"
 MODE_VIDEO_TEXT = "🎬 Генерация видео"
 MODE_IMAGE_TEXT = "🎨 Генерация изображений"
@@ -49,7 +48,11 @@ def build_ai_models_keyboard(
     buttons = [
         [
             InlineKeyboardButton(
-                text=(f"✅ {model.name}" if str(model.id) == selected_model_id else model.name),
+                text=(
+                    f"✅ {model.name}"
+                    if str(model.id) == selected_model_id
+                    else model.name
+                ),
                 callback_data=f"model:{model.id}",
             )
         ]
@@ -132,7 +135,11 @@ def build_video_durations_keyboard(
     buttons = [
         [
             InlineKeyboardButton(
-                text=(f"✅ {duration}s" if duration == selected_duration_seconds else f"{duration}s"),
+                text=(
+                    f"✅ {duration}s"
+                    if duration == selected_duration_seconds
+                    else f"{duration}s"
+                ),
                 callback_data=f"video_duration:{duration}",
             )
         ]

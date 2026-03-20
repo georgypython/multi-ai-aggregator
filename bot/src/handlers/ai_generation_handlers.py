@@ -12,7 +12,6 @@ from src.handlers.ai_shared import AIFlowHelper
 from src.services.llm_generation import LLMGenerationService
 from src.states import AIFlow
 
-
 router = Router()
 
 
@@ -41,7 +40,9 @@ async def generate_for_selected_model(
         return
 
     if selected_model_type != "llm":
-        await message.answer("Для видео/изображений генерация текста пока не подключена.")
+        await message.answer(
+            "Для видео/изображений генерация текста пока не подключена."
+        )
         return
 
     try:

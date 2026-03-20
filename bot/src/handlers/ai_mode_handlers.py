@@ -11,7 +11,6 @@ from src.keyboards.ai import build_ai_models_keyboard, build_model_types_keyboar
 from src.services.ai import AIService
 from src.states import AIFlow
 
-
 router = Router()
 
 
@@ -46,7 +45,9 @@ async def choose_model_type(
         if exc.response.status_code == 401:
             await message.answer("Ошибка авторизации бота на backend.")
         else:
-            await message.answer(f"Не удалось загрузить модели: HTTP {exc.response.status_code}")
+            await message.answer(
+                f"Не удалось загрузить модели: HTTP {exc.response.status_code}"
+            )
         return
     except Exception:
         logger.exception("Failed to fetch AI models from backend")
@@ -59,7 +60,9 @@ async def choose_model_type(
 
     fsm_data = await state.get_data()
     selected_model_id: str | None = fsm_data.get("selected_model_id")
-    selected_model = next((model for model in models if str(model.id) == selected_model_id), None)
+    selected_model = next(
+        (model for model in models if str(model.id) == selected_model_id), None
+    )
     if selected_model is None:
         selected_model = models[0]
 

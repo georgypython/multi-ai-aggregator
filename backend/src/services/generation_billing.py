@@ -3,13 +3,13 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.src.core.exceptions.generation import (
+from src.exceptions.generation import (
     InsufficientBalanceError,
     UserBalanceNotConfiguredError,
 )
-from src.core.models import AIGeneration
-from src.core.models.enums import GenerationStatus, GenerationType
-from src.core.schemas.ai import (
+from src.models import AIGeneration
+from src.models.enums import GenerationStatus, GenerationType
+from src.schemas.ai import (
     GenerationRequestSchema,
     GenerationFinishData,
     GenerationResultResponseDataSchema,
@@ -66,9 +66,9 @@ class GenerationBillingService:
                     user_id=user_id,
                     ai_model_id=data.ai_model_id,
                     generation_type=data.generation_type,
-                    hold_tokens_amount=data.hold_amount
+                    hold_tokens_amount=data.hold_amount,
                 )
-            
+
             else:
                 if balance.available_tokens < data.hold_amount:
                     raise InsufficientBalanceError(
@@ -87,7 +87,7 @@ class GenerationBillingService:
                     user_id=user_id,
                     ai_model_id=data.ai_model_id,
                     generation_type=data.generation_type,
-                    hold_tokens_amount=data.hold_amount
+                    hold_tokens_amount=data.hold_amount,
                 )
 
     async def set_generation_task_id(
@@ -106,7 +106,7 @@ class GenerationBillingService:
                     f"Generation not found for generation_id={generation_id}"
                 )
             return generation
-        
+
     async def rollback_failed_generation(
         self,
         user_id: UUID,
@@ -141,9 +141,7 @@ class GenerationBillingService:
             raise RuntimeError("Generation completed without result URL")
 
         try:
-            return await self._complete_billing_and_calculate_final_cost(
-                data=data
-            )
+            return await self._complete_billing_and_calculate_final_cost(data=data)
         except Exception as e:
             await self._rollback_by_finish_data(data=data)
             raise RuntimeError("Failed to finalize generation billing") from e
@@ -171,7 +169,7 @@ class GenerationBillingService:
         async with self.session.begin():
             final_tokens_cost = await self.calculate_tokens_cost_from_provider_cost(
                 hold_amount=data.hold_amount,
-                model_token_price_id=data.model_token_price_id, 
+                model_token_price_id=data.model_token_price_id,
                 provider_cost=data.provider_cost,
             )
 
@@ -223,8 +221,10 @@ class GenerationBillingService:
             raise RuntimeError("usd_per_token must be greater than 0")
 
         if hold_amount > 0:
-            provider_cost_multiplier = token_price.provider_cost_multiplier or Decimal("1")
+            provider_cost_multiplier = token_price.provider_cost_multiplier or Decimal(
+                "1"
+            )
             final_usd_cost = provider_cost * provider_cost_multiplier
             return final_usd_cost / token_price.usd_per_token
-        
+
         return hold_amount

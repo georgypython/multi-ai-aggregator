@@ -1,4 +1,4 @@
-from src.core.models import TokenPrice
+from src.models import TokenPrice
 
 from .abstract_repo import AbstractRepository
 

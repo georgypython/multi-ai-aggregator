@@ -87,9 +87,7 @@ def downgrade() -> None:
     )
     op.add_column(
         "image_models",
-        sa.Column(
-            "quality", sa.VARCHAR(), autoincrement=False, nullable=False
-        ),
+        sa.Column("quality", sa.VARCHAR(), autoincrement=False, nullable=False),
     )
     op.add_column(
         "image_models",
@@ -106,9 +104,7 @@ def downgrade() -> None:
     )
     op.add_column(
         "image_models",
-        sa.Column(
-            "images_count", sa.INTEGER(), autoincrement=False, nullable=False
-        ),
+        sa.Column("images_count", sa.INTEGER(), autoincrement=False, nullable=False),
     )
     op.add_column(
         "image_models",

@@ -44,9 +44,7 @@ def downgrade() -> None:
     op.drop_column("llm_models", "is_temperature_support")
     op.add_column(
         "llm_configurations",
-        sa.Column(
-            "llm_model_id", sa.UUID(), autoincrement=False, nullable=False
-        ),
+        sa.Column("llm_model_id", sa.UUID(), autoincrement=False, nullable=False),
     )
     op.create_foreign_key(
         op.f("fk_llm_configurations_llm_model_id_llm_models"),

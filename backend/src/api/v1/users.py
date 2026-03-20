@@ -2,9 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 
 from src.api.dependencies import require_api_key
-from src.core.schemas.ai import UserBalanceResponseSchema
+from src.schemas.ai import UserBalanceResponseSchema
 from src.services.users import UsersService
-
 
 router = APIRouter(
     prefix="/users",

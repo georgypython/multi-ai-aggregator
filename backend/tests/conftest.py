@@ -29,7 +29,9 @@ async def clean_db() -> AsyncGenerator[None, None]:
 
 @pytest_asyncio.fixture
 async def ac() -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         yield client
 
 

@@ -16,8 +16,6 @@ from .video import (
     VideoPriceRepository,
 )
 
-
-
 __all__ = (
     "AbstractRepository",
     "AIModelRepository",

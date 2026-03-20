@@ -15,7 +15,6 @@ from src.services.ai import AIService
 from src.services.video_generation import VideoGenerationService
 from src.states import AIFlow
 
-
 router = Router()
 
 
@@ -39,7 +38,9 @@ async def choose_video_duration(
         await callback.answer("Сначала выбери video-модель", show_alert=False)
         return
 
-    duration_raw = (callback.data or "").split(":", maxsplit=1)[1] if callback.data else None
+    duration_raw = (
+        (callback.data or "").split(":", maxsplit=1)[1] if callback.data else None
+    )
     if not duration_raw:
         await callback.answer("Длительность не распознана", show_alert=False)
         return
@@ -201,13 +202,14 @@ async def generate_video_from_prompt(
                 filename=f"video_{result.generation_id}.mp4",
             ),
             caption=(
-                "Видео готово ✅\n"
-                f"Списано: <b>{result.tokens_cost:.4f} токенов</b>"
+                "Видео готово ✅\n" f"Списано: <b>{result.tokens_cost:.4f} токенов</b>"
             ),
         )
     except TelegramBadRequest:
         if video_bytes is None:
-            logger.exception("Telegram failed to process video and no bytes available for fallback")
+            logger.exception(
+                "Telegram failed to process video and no bytes available for fallback"
+            )
             await message.answer("Не удалось отправить видео. Попробуй позже.")
             await state.set_state(AIFlow.choosing_model)
             return
@@ -219,8 +221,7 @@ async def generate_video_from_prompt(
                 filename=f"video_{result.generation_id}.mp4",
             ),
             caption=(
-                "Видео готово ✅\n"
-                f"Списано: <b>{result.tokens_cost:.4f} токенов</b>"
+                "Видео готово ✅\n" f"Списано: <b>{result.tokens_cost:.4f} токенов</b>"
             ),
         )
     except httpx.HTTPStatusError as exc:

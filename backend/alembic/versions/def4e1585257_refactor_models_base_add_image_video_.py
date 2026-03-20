@@ -120,9 +120,7 @@ def upgrade() -> None:
         sa.Column("image_profile_id", sa.Uuid(), nullable=False),
         sa.Column("quality", sa.String(), nullable=False),
         sa.Column("size", sa.String(), nullable=False),
-        sa.Column(
-            "provider_cost", sa.Numeric(precision=18, scale=10), nullable=False
-        ),
+        sa.Column("provider_cost", sa.Numeric(precision=18, scale=10), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
             "created_at",
@@ -151,9 +149,7 @@ def upgrade() -> None:
         sa.Column("video_profile_id", sa.Uuid(), nullable=False),
         sa.Column("duration_seconds", sa.Integer(), nullable=False),
         sa.Column("size", sa.String(), nullable=False),
-        sa.Column(
-            "provider_cost", sa.Numeric(precision=18, scale=10), nullable=False
-        ),
+        sa.Column("provider_cost", sa.Numeric(precision=18, scale=10), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
             "created_at",
@@ -197,9 +193,7 @@ def upgrade() -> None:
         type_=sa.Numeric(precision=18, scale=6),
         existing_nullable=False,
     )
-    op.add_column(
-        "ai_models", sa.Column("token_price_id", sa.Uuid(), nullable=False)
-    )
+    op.add_column("ai_models", sa.Column("token_price_id", sa.Uuid(), nullable=False))
     op.alter_column(
         "ai_models",
         "min_charge_tokens",
@@ -236,9 +230,7 @@ def upgrade() -> None:
         type_=sa.Numeric(precision=18, scale=10),
         existing_nullable=True,
     )
-    op.drop_index(
-        op.f("ix_token_prices_price_type"), table_name="token_prices"
-    )
+    op.drop_index(op.f("ix_token_prices_price_type"), table_name="token_prices")
     op.drop_column("token_prices", "price_type")
     op.alter_column(
         "user_balances",
@@ -344,9 +336,7 @@ def downgrade() -> None:
     op.drop_column("ai_generations", "hold_tokens_amount")
     op.create_table(
         "llm_models",
-        sa.Column(
-            "ai_model_id", sa.UUID(), autoincrement=False, nullable=False
-        ),
+        sa.Column("ai_model_id", sa.UUID(), autoincrement=False, nullable=False),
         sa.Column(
             "input_price_per_million_usd",
             sa.DOUBLE_PRECISION(precision=53),
@@ -386,24 +376,14 @@ def downgrade() -> None:
         ["ai_model_id"],
         unique=True,
     )
-    op.drop_index(
-        op.f("ix_video_prices_video_profile_id"), table_name="video_prices"
-    )
+    op.drop_index(op.f("ix_video_prices_video_profile_id"), table_name="video_prices")
     op.drop_table("video_prices")
-    op.drop_index(
-        op.f("ix_image_prices_image_profile_id"), table_name="image_prices"
-    )
+    op.drop_index(op.f("ix_image_prices_image_profile_id"), table_name="image_prices")
     op.drop_table("image_prices")
-    op.drop_index(
-        op.f("ix_video_profiles_ai_model_id"), table_name="video_profiles"
-    )
+    op.drop_index(op.f("ix_video_profiles_ai_model_id"), table_name="video_profiles")
     op.drop_table("video_profiles")
-    op.drop_index(
-        op.f("ix_llm_profiles_ai_model_id"), table_name="llm_profiles"
-    )
+    op.drop_index(op.f("ix_llm_profiles_ai_model_id"), table_name="llm_profiles")
     op.drop_table("llm_profiles")
-    op.drop_index(
-        op.f("ix_image_profiles_ai_model_id"), table_name="image_profiles"
-    )
+    op.drop_index(op.f("ix_image_profiles_ai_model_id"), table_name="image_profiles")
     op.drop_table("image_profiles")
     # ### end Alembic commands ###

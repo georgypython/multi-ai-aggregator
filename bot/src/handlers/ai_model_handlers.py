@@ -17,7 +17,6 @@ from src.keyboards.ai import (
 from src.services.ai import AIService
 from src.states import AIFlow
 
-
 router = Router()
 
 
@@ -38,7 +37,9 @@ async def choose_model(
         return
 
     last_models = AIFlowHelper.deserialize_models(last_models_raw)
-    selected_model_id = (callback.data or "").split(":", maxsplit=1)[1] if callback.data else None
+    selected_model_id = (
+        (callback.data or "").split(":", maxsplit=1)[1] if callback.data else None
+    )
     if not selected_model_id:
         await callback.answer("Модель не распознана", show_alert=False)
         return
@@ -92,7 +93,9 @@ async def choose_model(
         except TelegramBadRequest as exc:
             if "message is not modified" not in str(exc):
                 raise
-        await callback.answer(f"Выбрана модель: {selected_model.name}", show_alert=False)
+        await callback.answer(
+            f"Выбрана модель: {selected_model.name}", show_alert=False
+        )
         return
 
     updated_text = AIFlowHelper.render_models_text(
@@ -141,7 +144,9 @@ async def start_generation_flow(
 
     if selected_model_type == "image":
         try:
-            image_config = await ai_service.get_image_model_config(model_id=UUID(selected_model_id))
+            image_config = await ai_service.get_image_model_config(
+                model_id=UUID(selected_model_id)
+            )
         except httpx.HTTPStatusError as exc:
             await callback.answer(
                 f"Ошибка загрузки модели: HTTP {exc.response.status_code}",
@@ -150,7 +155,9 @@ async def start_generation_flow(
             return
         except Exception:
             logger.exception("Failed to load image model config")
-            await callback.answer("Ошибка загрузки конфигурации image модели", show_alert=True)
+            await callback.answer(
+                "Ошибка загрузки конфигурации image модели", show_alert=True
+            )
             return
 
         await state.update_data(
@@ -176,7 +183,9 @@ async def start_generation_flow(
 
     if selected_model_type == "video":
         try:
-            video_config = await ai_service.get_video_model_config(model_id=UUID(selected_model_id))
+            video_config = await ai_service.get_video_model_config(
+                model_id=UUID(selected_model_id)
+            )
         except httpx.HTTPStatusError as exc:
             await callback.answer(
                 f"Ошибка загрузки модели: HTTP {exc.response.status_code}",
@@ -185,7 +194,9 @@ async def start_generation_flow(
             return
         except Exception:
             logger.exception("Failed to load video model config")
-            await callback.answer("Ошибка загрузки конфигурации video модели", show_alert=True)
+            await callback.answer(
+                "Ошибка загрузки конфигурации video модели", show_alert=True
+            )
             return
 
         await state.update_data(
@@ -201,7 +212,9 @@ async def start_generation_flow(
         try:
             await callback.message.edit_text(
                 text,
-                reply_markup=build_video_durations_keyboard(video_config.durations_seconds),
+                reply_markup=build_video_durations_keyboard(
+                    video_config.durations_seconds
+                ),
             )
         except TelegramBadRequest as exc:
             if "message is not modified" not in str(exc):

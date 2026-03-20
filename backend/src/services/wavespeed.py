@@ -2,14 +2,14 @@ from typing import Any
 
 from httpx import AsyncClient, HTTPStatusError, RequestError, TimeoutException
 
-from backend.src.core.exceptions.generation import (
+from src.exceptions.generation import (
     ProviderHTTPError,
     ProviderNetworkError,
     ProviderResponseFormatError,
     ProviderTimeoutError,
 )
-from src.core.models.enums import GenerationStatus, ModelProvider
-from src.core.schemas.ai import (
+from src.models.enums import GenerationStatus, ModelProvider
+from src.schemas.ai import (
     ImageRequestDataSchema,
     WavespeedGenerationResponseSchema,
     VideoRequestDataSchema,
@@ -52,7 +52,9 @@ class WaveSpeedService:
     def _parse_response_data(payload: dict[str, Any]) -> dict[str, Any]:
         data = payload.get("data")
         if not isinstance(data, dict):
-            raise ProviderResponseFormatError("WaveSpeed response has invalid data payload")
+            raise ProviderResponseFormatError(
+                "WaveSpeed response has invalid data payload"
+            )
         return data
 
     @staticmethod
@@ -81,7 +83,9 @@ class WaveSpeedService:
 
         output_url = self._pick_output_url(payload)
         if not output_url:
-            raise ProviderResponseFormatError("WaveSpeed result endpoint returned JSON without outputs")
+            raise ProviderResponseFormatError(
+                "WaveSpeed result endpoint returned JSON without outputs"
+            )
 
         response = await self._request("GET", output_url, headers=self._base_headers)
         if not response.content:
@@ -159,7 +163,9 @@ class WaveSpeedService:
         urls = data.get("urls") if isinstance(data.get("urls"), dict) else {}
         task_id = str(data.get("id") or "")
         if not task_id:
-            raise ProviderResponseFormatError("WaveSpeed response does not contain task id")
+            raise ProviderResponseFormatError(
+                "WaveSpeed response does not contain task id"
+            )
 
         return WavespeedGenerationResponseSchema(
             task_id=task_id,

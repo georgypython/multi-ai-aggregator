@@ -2,18 +2,18 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.logger_setup  import logger
-from backend.src.core.exceptions.generation import (
+from src.core.logger_setup import logger
+from src.exceptions.generation import (
     ImageGenerationNotCompletedError,
     ProviderError,
 )
-from src.core.exceptions.storage import StoragePresignedUrlError
-from src.core.models.enums import (
+from src.exceptions.storage import StoragePresignedUrlError
+from src.models.enums import (
     GenerationStatus,
     GenerationType,
     ModelType,
 )
-from src.core.schemas.ai import (
+from src.schemas.ai import (
     ImageRequestDataSchema,
     GenerationResultResponseDataSchema,
     PollWaveSpeedGenerationTaskSchema,
@@ -52,7 +52,7 @@ class ImageGenerationService:
         self.storage_service = storage_service
         self.poll_interval_seconds = poll_interval_seconds
         self.poll_max_attempts = poll_max_attempts
-        
+
     async def _create_and_validate_request_image_data(
         self,
         user_id: UUID,
@@ -98,9 +98,11 @@ class ImageGenerationService:
             media_file_urls: list[str] | None = None
             if media_file_ids:
                 try:
-                    resolved_media_file_urls = await self.storage_service.get_files_urls(
-                        user_id=user_id,
-                        media_file_ids=media_file_ids,
+                    resolved_media_file_urls = (
+                        await self.storage_service.get_files_urls(
+                            user_id=user_id,
+                            media_file_ids=media_file_ids,
+                        )
                     )
                     if resolved_media_file_urls:
                         media_file_urls = resolved_media_file_urls
@@ -110,10 +112,12 @@ class ImageGenerationService:
                     )
                     media_file_urls = None
 
-            raw_profile_price = await self.image_profile_service.get_image_profile_with_raw_price(
-                model_id=model_id,
-                size=size,
-                quality=quality,
+            raw_profile_price = (
+                await self.image_profile_service.get_image_profile_with_raw_price(
+                    model_id=model_id,
+                    size=size,
+                    quality=quality,
+                )
             )
 
             request_provider_model_key = ai_model.provider_key
@@ -184,7 +188,9 @@ class ImageGenerationService:
         )
 
         if not generation:
-            raise ValueError(f"Image generation not found for generation_id={generation_id}")
+            raise ValueError(
+                f"Image generation not found for generation_id={generation_id}"
+            )
 
         return GenerationResultResponseDataSchema(
             ai_model_id=generation.ai_model_id,
@@ -259,7 +265,7 @@ class ImageGenerationService:
                 generation_id=generation.id,
             )
             raise
-        
+
         except Exception as e:
             await self.generation_billing_service.rollback_failed_generation(
                 user_id=generation_data.user_id,

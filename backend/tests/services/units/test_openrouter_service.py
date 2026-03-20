@@ -51,7 +51,9 @@ async def test_get_llm_response_success_builds_payload_and_parses_response() -> 
     )
     client.post = AsyncMock(return_value=response)
 
-    service = OpenRouterService(client=client, api_key="test-key", base_url="https://openrouter.ai/api/v1")
+    service = OpenRouterService(
+        client=client, api_key="test-key", base_url="https://openrouter.ai/api/v1"
+    )
 
     result = await service.get_llm_response(
         data=data,
@@ -66,7 +68,10 @@ async def test_get_llm_response_success_builds_payload_and_parses_response() -> 
     assert kwargs["json"]["model"] == "openai/gpt-4o-mini"
     assert kwargs["json"]["temperature"] == 0.3
     assert kwargs["json"]["messages"][0]["role"] == "system"
-    assert "Дополнительные предпочтения пользователя" in kwargs["json"]["messages"][0]["content"]
+    assert (
+        "Дополнительные предпочтения пользователя"
+        in kwargs["json"]["messages"][0]["content"]
+    )
     assert "Be concise" in kwargs["json"]["messages"][0]["content"]
 
 
@@ -75,7 +80,9 @@ async def test_get_llm_response_raises_provider_timeout_error() -> None:
     data = _build_request_data()
     client = AsyncMock()
     client.post = AsyncMock(side_effect=TimeoutException("timeout"))
-    service = OpenRouterService(client=client, api_key="test-key", base_url="https://openrouter.ai/api/v1")
+    service = OpenRouterService(
+        client=client, api_key="test-key", base_url="https://openrouter.ai/api/v1"
+    )
 
     with pytest.raises(ProviderTimeoutError):
         await service.get_llm_response(data=data)
@@ -91,7 +98,9 @@ async def test_get_llm_response_raises_provider_http_error() -> None:
     client.post = AsyncMock(
         side_effect=HTTPStatusError("rate limited", request=request, response=response)
     )
-    service = OpenRouterService(client=client, api_key="test-key", base_url="https://openrouter.ai/api/v1")
+    service = OpenRouterService(
+        client=client, api_key="test-key", base_url="https://openrouter.ai/api/v1"
+    )
 
     with pytest.raises(ProviderHTTPError) as exc_info:
         await service.get_llm_response(data=data)
@@ -109,7 +118,9 @@ async def test_get_llm_response_raises_format_error_on_missing_choices() -> None
     response.json = Mock(return_value={"model": "openai/gpt-4o-mini"})
     client.post = AsyncMock(return_value=response)
 
-    service = OpenRouterService(client=client, api_key="test-key", base_url="https://openrouter.ai/api/v1")
+    service = OpenRouterService(
+        client=client, api_key="test-key", base_url="https://openrouter.ai/api/v1"
+    )
 
     with pytest.raises(ProviderResponseFormatError):
         await service.get_llm_response(data=data)

@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.models import MediaFile
+from src.models import MediaFile
 from .abstract_repo import AbstractRepository
 
 
@@ -17,9 +17,7 @@ class MediaFilesRepository(AbstractRepository[MediaFile]):
         session: AsyncSession,
         items: list[dict[str, Any]],
     ) -> list[MediaFile]:
-        media_files = [
-            MediaFile(**item) for item in items
-        ]
+        media_files = [MediaFile(**item) for item in items]
         session.add_all(media_files)
         await session.flush()
         return media_files
@@ -41,4 +39,3 @@ class MediaFilesRepository(AbstractRepository[MediaFile]):
         )
         result = await session.execute(stmt)
         return list(result.scalars().all())
-

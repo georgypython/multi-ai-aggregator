@@ -16,11 +16,10 @@ if TYPE_CHECKING:
 class MediaFile(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "media_files"
 
-    user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id"), nullable=False
-    )
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     generation_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("ai_generations.id"), nullable=True,
+        ForeignKey("ai_generations.id"),
+        nullable=True,
     )
     object_key: Mapped[str] = mapped_column(nullable=False)
     content_type: Mapped[str] = mapped_column(nullable=False)

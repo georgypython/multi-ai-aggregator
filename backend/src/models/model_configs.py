@@ -41,7 +41,9 @@ class ImageProfile(Base, UUIDPKMixin, CreatedAtMixin):
     provider: Mapped[ModelProvider] = mapped_column(
         Enum(ModelProvider, name="model_provider_enum"), nullable=False
     )
-    image_edit_model_name: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    image_edit_model_name: Mapped[str | None] = mapped_column(
+        nullable=True, default=None
+    )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     ai_model: Mapped["AIModel"] = relationship(back_populates="image_profile")
@@ -70,7 +72,9 @@ class VideoProfile(Base, UUIDPKMixin, CreatedAtMixin):
 class ImagePrice(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "image_prices"
     __table_args__ = (
-        UniqueConstraint("image_profile_id", "quality", "size", name="uq_image_price_combo"),
+        UniqueConstraint(
+            "image_profile_id", "quality", "size", name="uq_image_price_combo"
+        ),
     )
 
     image_profile_id: Mapped[UUID] = mapped_column(

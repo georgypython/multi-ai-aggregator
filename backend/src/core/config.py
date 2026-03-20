@@ -144,4 +144,5 @@ class Settings(BaseSettings):
     storage: StorageConfig = StorageConfig()
     ai_logic: AILogicConfig = AILogicConfig()
 
+
 settings = Settings()

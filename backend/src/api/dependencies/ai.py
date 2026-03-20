@@ -4,11 +4,11 @@ from fastapi import HTTPException, Query, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.core.config import settings
-from src.core.models.db_helper import db_helper
+from src.models.db_helper import db_helper
 from src.repositories import UserRepository
 
-
 bearer_scheme = HTTPBearer(auto_error=False)
+
 
 async def require_api_key(
     credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),

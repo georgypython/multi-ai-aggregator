@@ -40,9 +40,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_ai_models")),
-        sa.UniqueConstraint(
-            "provider_key", name=op.f("uq_ai_models_provider_key")
-        ),
+        sa.UniqueConstraint("provider_key", name=op.f("uq_ai_models_provider_key")),
     )
     op.create_table(
         "users",
@@ -133,9 +131,7 @@ def upgrade() -> None:
             name=op.f("fk_image_prices_ai_model_id_ai_models"),
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_image_prices")),
-        sa.UniqueConstraint(
-            "ai_model_id", name=op.f("uq_image_prices_ai_model_id")
-        ),
+        sa.UniqueConstraint("ai_model_id", name=op.f("uq_image_prices_ai_model_id")),
     )
     op.create_table(
         "llm_prices",
@@ -165,9 +161,7 @@ def upgrade() -> None:
             name=op.f("fk_llm_prices_ai_model_id_ai_models"),
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_llm_prices")),
-        sa.UniqueConstraint(
-            "ai_model_id", name=op.f("uq_llm_prices_ai_model_id")
-        ),
+        sa.UniqueConstraint("ai_model_id", name=op.f("uq_llm_prices_ai_model_id")),
     )
     op.create_table(
         "video_prices",
@@ -198,9 +192,7 @@ def upgrade() -> None:
             name=op.f("fk_video_prices_ai_model_id_ai_models"),
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_video_prices")),
-        sa.UniqueConstraint(
-            "ai_model_id", name=op.f("uq_video_prices_ai_model_id")
-        ),
+        sa.UniqueConstraint("ai_model_id", name=op.f("uq_video_prices_ai_model_id")),
     )
     # ### end Alembic commands ###
 
@@ -211,12 +203,8 @@ def downgrade() -> None:
     op.drop_table("video_prices")
     op.drop_table("llm_prices")
     op.drop_table("image_prices")
-    op.drop_index(
-        op.f("ix_ai_generations_user_id"), table_name="ai_generations"
-    )
-    op.drop_index(
-        op.f("ix_ai_generations_ai_model_id"), table_name="ai_generations"
-    )
+    op.drop_index(op.f("ix_ai_generations_user_id"), table_name="ai_generations")
+    op.drop_index(op.f("ix_ai_generations_ai_model_id"), table_name="ai_generations")
     op.drop_table("ai_generations")
     op.drop_table("users")
     op.drop_table("ai_models")

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.core.models import LLMProfile
+from src.models import LLMProfile
 
 from .abstract_repo import AbstractRepository
 

@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
-from backend.src.core.exceptions.generation import (
+from src.exceptions.generation import (
     InactiveModelError,
     InsufficientBalanceError,
     ProviderError,
@@ -13,12 +13,11 @@ from backend.src.core.exceptions.generation import (
     ProviderTimeoutError,
     UserBalanceNotConfiguredError,
 )
-from src.core.schemas.ai import GenerationResultResponseDataSchema
-from src.core.schemas.ai import LLMConfigCreateRequestSchema, LLMConfigResponseSchema
+from src.schemas.ai import GenerationResultResponseDataSchema
+from src.schemas.ai import LLMConfigCreateRequestSchema, LLMConfigResponseSchema
 from src.core.logger_setup import logger
 from src.services.llm_configuration import LLMConfigurationService
 from src.services.llm_generation import LLMGenerationService
-
 
 router = APIRouter(
     prefix="/llm",
@@ -69,7 +68,7 @@ async def get_llm_config(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error: {exc}",
         )
-    
+
 
 @router.post("/generations", response_model=GenerationResultResponseDataSchema)
 async def generate_llm_response(
@@ -134,4 +133,3 @@ async def generate_llm_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error: {exc}",
         )
-

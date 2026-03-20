@@ -8,7 +8,7 @@ from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
-from src.core.models.db_helper import db_helper
+from src.models.db_helper import db_helper
 
 
 class InfrastructureProvider(Provider):

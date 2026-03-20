@@ -2,8 +2,8 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.models.enums import ModelType
-from src.core.schemas.ai import AIModelListItemResponseSchema
+from src.models.enums import ModelType
+from src.schemas.ai import AIModelListItemResponseSchema
 from src.repositories import AIModelRepository, UserRepository
 
 
@@ -39,7 +39,9 @@ class AIModelsService:
             if active_only:
                 filters["is_active"] = True
 
-            ai_models = await self.ai_model_repo.get_all(session=self.session, **filters)
+            ai_models = await self.ai_model_repo.get_all(
+                session=self.session, **filters
+            )
 
         result: list[AIModelListItemResponseSchema] = []
         for ai_model in ai_models:

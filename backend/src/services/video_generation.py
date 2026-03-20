@@ -2,15 +2,15 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.src.core.exceptions.generation import (
+from src.exceptions.generation import (
     InsufficientBalanceError,
     ProviderError,
     UserBalanceNotConfiguredError,
     VideoGenerationError,
     VideoGenerationNotCompletedError,
 )
-from src.core.models.enums import GenerationStatus, GenerationType, ModelType
-from src.core.schemas.ai import (
+from src.models.enums import GenerationStatus, GenerationType, ModelType
+from src.schemas.ai import (
     GenerationResultResponseDataSchema,
     GenerationRequestSchema,
     PollWaveSpeedGenerationTaskSchema,
@@ -89,10 +89,12 @@ class VideoGenerationService:
                     f"Insufficient active balance for generation: available={user.balance.available_tokens}, required>{ai_model.min_charge_tokens}"
                 )
 
-            raw_profile_price = await self.video_profile_service.get_video_profile_with_raw_price(
-                model_id=model_id,
-                duration_seconds=duration_seconds,
-                size=size,
+            raw_profile_price = (
+                await self.video_profile_service.get_video_profile_with_raw_price(
+                    model_id=model_id,
+                    duration_seconds=duration_seconds,
+                    size=size,
+                )
             )
             return VideoRequestDataSchema(
                 user_id=user_id,
@@ -188,9 +190,7 @@ class VideoGenerationService:
                 hold_amount=generation_data.hold_amount,
                 generation_id=generation.id,
             )
-            raise VideoGenerationError(
-                "Unexpected video polling error"
-            ) from e
+            raise VideoGenerationError("Unexpected video polling error") from e
 
         return GenerationResultResponseDataSchema(
             ai_model_id=request_data.ai_model_id,
@@ -223,4 +223,6 @@ class VideoGenerationService:
                 "Video generation content is unavailable: result_url is empty"
             )
 
-        return await self.wavespeed_service.download_video_bytes(url=generation.result_url)
+        return await self.wavespeed_service.download_video_bytes(
+            url=generation.result_url
+        )

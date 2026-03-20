@@ -5,6 +5,7 @@ from logging.handlers import RotatingFileHandler
 
 from .config import settings
 
+
 def setup_logger(
     lvl: int = settings.logger.log_lvl,
     logger_path: Path = settings.logger.logger_path,

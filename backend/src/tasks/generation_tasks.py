@@ -3,13 +3,13 @@ from httpx import AsyncClient
 
 from .broker import broker
 from src.core.logger_setup import logger
-from src.core.models.db_helper import db_helper
-from src.core.models.enums import GenerationStatus
-from src.core.schemas.ai import PollWaveSpeedGenerationTaskSchema
+from src.models.db_helper import db_helper
+from src.models.enums import GenerationStatus
+from src.schemas.ai import PollWaveSpeedGenerationTaskSchema
 from src.repositories import GenerationRepository, TokenPriceRepository, UserRepository
 from src.services.generation_billing import GenerationBillingService
 from src.services.wavespeed import WaveSpeedService
-from src.core.schemas.ai import GenerationFinishData
+from src.schemas.ai import GenerationFinishData
 
 
 async def _complete_generation_polling(
@@ -19,7 +19,7 @@ async def _complete_generation_polling(
     generation_repo = GenerationRepository()
     user_repo = UserRepository()
     token_price_repo = TokenPriceRepository()
-    
+
     async with db_helper.session_factory() as session:
         generation_billing_service = GenerationBillingService(
             session=session,
@@ -29,10 +29,7 @@ async def _complete_generation_polling(
         )
         if status == GenerationStatus.COMPLETED:
             await generation_billing_service.finish_generation(
-                data=GenerationFinishData(
-                    provider_status=status,
-                    **data.model_dump()
-                )
+                data=GenerationFinishData(provider_status=status, **data.model_dump())
             )
             logger.info(
                 "generation_polling_completed generation_id=%s status=%s final_tokens_cost=%s",
@@ -84,7 +81,9 @@ async def poll_generation_status(
                 api_key=api_key,
                 base_url=base_url,
             )
-            generation = await wavespeed.get_generation_status(task_id=data.wavespeed_task_id)
+            generation = await wavespeed.get_generation_status(
+                task_id=data.wavespeed_task_id
+            )
     except Exception as exc:
         logger.exception(
             "poll_generation_status_error generation_id=%s task_id=%s attempt=%s error=%s",
@@ -95,7 +94,9 @@ async def poll_generation_status(
         )
 
         if data.current_attempt >= data.max_attempts:
-            await _complete_generation_polling(status=GenerationStatus.FAILED, data=data)
+            await _complete_generation_polling(
+                status=GenerationStatus.FAILED, data=data
+            )
             return None
 
         await _continue_generation_polling(
@@ -117,7 +118,5 @@ async def poll_generation_status(
         await _complete_generation_polling(status=current_status, data=data)
         return None
 
-    await _continue_generation_polling(
-        data=data, api_key=api_key, base_url=base_url
-    )
+    await _continue_generation_polling(data=data, api_key=api_key, base_url=base_url)
     return None

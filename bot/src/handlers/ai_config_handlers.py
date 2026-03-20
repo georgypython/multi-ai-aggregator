@@ -12,7 +12,6 @@ from src.services.ai import AIService
 from src.services.llm_generation import LLMGenerationService
 from src.states import AIFlow
 
-
 router = Router()
 
 
@@ -45,7 +44,9 @@ async def open_llm_config(
             await callback.answer("Ошибка авторизации бота на backend", show_alert=True)
             return
         else:
-            await callback.answer(f"Ошибка загрузки: HTTP {status_code}", show_alert=True)
+            await callback.answer(
+                f"Ошибка загрузки: HTTP {status_code}", show_alert=True
+            )
             return
     except Exception:
         logger.exception("Failed to fetch LLM config")
@@ -125,7 +126,9 @@ async def save_temperature(
         if exc.response.status_code == 401:
             await message.answer("Ошибка авторизации бота на backend.")
         else:
-            await message.answer(f"Не удалось сохранить температуру: HTTP {exc.response.status_code}")
+            await message.answer(
+                f"Не удалось сохранить температуру: HTTP {exc.response.status_code}"
+            )
         return
     except Exception:
         logger.exception("Failed to save LLM temperature")
@@ -166,7 +169,9 @@ async def save_instructions(
         if exc.response.status_code == 401:
             await message.answer("Ошибка авторизации бота на backend.")
         else:
-            await message.answer(f"Не удалось сохранить инструкции: HTTP {exc.response.status_code}")
+            await message.answer(
+                f"Не удалось сохранить инструкции: HTTP {exc.response.status_code}"
+            )
         return
     except Exception:
         logger.exception("Failed to save LLM instructions")

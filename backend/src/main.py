@@ -9,8 +9,8 @@ from dishka.integrations.fastapi import setup_dishka
 from src.api import router as api_router
 from src.core.config import settings
 from src.core.logger_setup import logger
-from src.core.models.db_helper import db_helper
-from src.core.dependencies.container import container
+from src.models.db_helper import db_helper
+from src.dependencies.container import container
 from src.tasks.broker import broker
 
 
@@ -71,6 +71,7 @@ async def log_request_middleware(request: Request, call_next):
         latency_ms,
     )
     return response
+
 
 setup_dishka(container=container, app=app)
 

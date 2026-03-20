@@ -2,9 +2,9 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.models import LLMConfiguration
-from src.core.models.enums import LLMConfigurationType
-from src.core.schemas.ai import LLMConfigCreateRequestSchema, LLMConfigResponseSchema
+from src.models import LLMConfiguration
+from src.models.enums import LLMConfigurationType
+from src.schemas.ai import LLMConfigCreateRequestSchema, LLMConfigResponseSchema
 from src.repositories import UserRepository, LLMConfigurationRepository
 
 
@@ -19,7 +19,9 @@ class LLMConfigurationService:
         self.user_repo = user_repo
         self.llm_configuration_repo = llm_configuration_repo
 
-    def _build_llm_config_response(self, config: LLMConfiguration) -> LLMConfigResponseSchema:
+    def _build_llm_config_response(
+        self, config: LLMConfiguration
+    ) -> LLMConfigResponseSchema:
         return LLMConfigResponseSchema(
             id=config.id,
             user_id=config.user_id,

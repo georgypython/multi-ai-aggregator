@@ -3,8 +3,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.models import LLMConfiguration
-from src.core.models.enums import LLMConfigurationType
+from src.models import LLMConfiguration
+from src.models.enums import LLMConfigurationType
 
 from .abstract_repo import AbstractRepository
 

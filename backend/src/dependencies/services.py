@@ -9,13 +9,13 @@ from src.core.utils.image_configs import IMAGE_MODEL_CONFIGS
 from src.core.utils.video_configs import VIDEO_MODEL_CONFIGS
 from src.services.ai_models import AIModelsService
 from src.services.generation_billing import GenerationBillingService
-from backend.src.services.image_profile import ImageProfileService
+from src.services.image_profile import ImageProfileService
 from src.services.image_generation import ImageGenerationService
 from src.services.llm_configuration import LLMConfigurationService
 from src.services.llm_generation import LLMGenerationService
 from src.services.openrouter import OpenRouterService
 from src.services.storage import StorageService
-from backend.src.services.video_profile import VideoProfileService
+from src.services.video_profile import VideoProfileService
 from src.services.video_generation import VideoGenerationService
 from src.services.users import UsersService
 from src.services.wavespeed import WaveSpeedService
@@ -31,6 +31,7 @@ from src.repositories import (
     ImagePriceRepository,
     VideoPriceRepository,
 )
+
 
 class ServicesProvider(Provider):
     @provide(scope=Scope.APP)

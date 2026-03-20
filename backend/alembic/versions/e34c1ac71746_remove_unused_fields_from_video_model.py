@@ -46,9 +46,7 @@ def downgrade() -> None:
     )
     op.add_column(
         "video_models",
-        sa.Column(
-            "resolution", sa.VARCHAR(), autoincrement=False, nullable=False
-        ),
+        sa.Column("resolution", sa.VARCHAR(), autoincrement=False, nullable=False),
     )
     op.add_column(
         "video_models",

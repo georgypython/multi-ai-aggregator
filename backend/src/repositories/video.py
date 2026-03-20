@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .abstract_repo import AbstractRepository
 
-from src.core.models import VideoProfile, VideoPrice
+from src.models import VideoProfile, VideoPrice
 
 
 class VideoProfileRepository(AbstractRepository[VideoProfile]):

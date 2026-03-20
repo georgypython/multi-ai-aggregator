@@ -16,7 +16,6 @@ from src.services.ai import AIService
 from src.services.image_generation import ImageGenerationService
 from src.states import AIFlow
 
-
 router = Router()
 
 
@@ -282,7 +281,9 @@ async def _run_image_generation(
     await state.set_state(AIFlow.choosing_model)
 
 
-async def _collect_photo_attachments(messages: list[Message]) -> list[tuple[str, bytes, str]]:
+async def _collect_photo_attachments(
+    messages: list[Message],
+) -> list[tuple[str, bytes, str]]:
     attachments: list[tuple[str, bytes, str]] = []
 
     for item in messages:

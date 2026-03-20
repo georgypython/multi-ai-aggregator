@@ -8,7 +8,6 @@ from .ai_video_handlers import router as video_router
 from .ai_config_handlers import router as config_router
 from .ai_generation_handlers import router as generation_router
 
-
 router = Router()
 
 router.include_router(mode_router)

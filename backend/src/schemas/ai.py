@@ -5,7 +5,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 from uuid import UUID
 
-from src.core.models.enums import (
+from src.models.enums import (
     GenerationType,
     GenerationStatus,
     ModelProvider,
@@ -89,6 +89,7 @@ class WavespeedGenerationResponseSchema(BaseModel):
     created_at: str | None = None
     error: str | None = None
 
+
 class GenerationRequestSchema(BaseModel):
     user_id: UUID
     ai_model_id: UUID
@@ -145,15 +146,18 @@ class ImageModelDetailResponseSchema(BaseModel):
     qualities: list[str]
     prices_usd: dict[str, dict[str, Decimal]]
 
+
 class ImagePriceParamsSchema(BaseModel):
     sizes: list[str]
     qualities: list[str]
+
 
 class ImageModelProfileResponseSchema(ImagePriceParamsSchema):
     id: UUID
     name: str
     provider_key: str
     provider: ModelProvider
+
 
 class ImageModelRawPriceDataSchema(BaseModel):
     ai_model_id: UUID
@@ -168,6 +172,7 @@ class ImageModelRawDataSchema(BaseModel):
     provider_cost: Decimal
     provider: ModelProvider
     image_edit_model_name: str | None = None
+
 
 class ImageModelPriceResponseSchema(BaseModel):
     ai_model_id: UUID

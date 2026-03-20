@@ -36,7 +36,9 @@ class ServicesProvider(Provider):
             await llm_generation_service.aclose()
 
     @provide(scope=Scope.APP)
-    async def get_image_generation_service(self) -> AsyncIterator[ImageGenerationService]:
+    async def get_image_generation_service(
+        self,
+    ) -> AsyncIterator[ImageGenerationService]:
         image_generation_service = ImageGenerationService(
             base_url=settings.ai.ai_api_url,
             api_key=settings.ai.api_key,
@@ -48,7 +50,9 @@ class ServicesProvider(Provider):
             await image_generation_service.aclose()
 
     @provide(scope=Scope.APP)
-    async def get_video_generation_service(self) -> AsyncIterator[VideoGenerationService]:
+    async def get_video_generation_service(
+        self,
+    ) -> AsyncIterator[VideoGenerationService]:
         video_generation_service = VideoGenerationService(
             base_url=settings.ai.ai_api_url,
             api_key=settings.ai.api_key,

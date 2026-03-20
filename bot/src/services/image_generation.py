@@ -22,7 +22,9 @@ class ImageGenerationService(BaseBackendService):
             "quality": quality,
         }
         if media_file_ids:
-            payload["media_file_ids"] = [str(media_file_id) for media_file_id in media_file_ids]
+            payload["media_file_ids"] = [
+                str(media_file_id) for media_file_id in media_file_ids
+            ]
 
         response = await self._client.post(
             f"{self._base_url}/api/v1/ai/image/generations",

@@ -3,10 +3,10 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.src.core.exceptions.generation import ModelConfigError
-from src.core.models import AIModel, ImagePrice, ImageProfile
-from src.core.models.enums import ModelType
-from src.core.schemas.ai import (
+from src.exceptions.generation import ModelConfigError
+from src.models import AIModel, ImagePrice, ImageProfile
+from src.models.enums import ModelType
+from src.schemas.ai import (
     ImageModelPriceResponseSchema,
     ImageModelProfileResponseSchema,
     ImagePriceParamsSchema,
@@ -36,7 +36,9 @@ class ImageProfileService:
         self.generation_repo = generation_repo
         self.generation_billing_service = generation_billing_service
 
-    def _validate_image_model(self, ai_model_id: UUID, ai_model: AIModel | None) -> AIModel:
+    def _validate_image_model(
+        self, ai_model_id: UUID, ai_model: AIModel | None
+    ) -> AIModel:
         if not ai_model:
             raise ValueError(f"AIModel not found for model_id={ai_model_id}")
 
@@ -44,28 +46,26 @@ class ImageProfileService:
             raise ValueError(f"AIModel inactive for model_id={ai_model_id}")
 
         if ai_model.model_type != ModelType.IMAGE:
-            raise ModelConfigError(f"AIModel is not image type for model_id={ai_model_id}")
-        
-        return ai_model
-    
-    def _validate_image_profile_with_prices(self, image_profile: ImageProfile | None) -> ImageProfile:
-        if not image_profile:
             raise ModelConfigError(
-                f"ImageProfile is not configured"
+                f"AIModel is not image type for model_id={ai_model_id}"
             )
+
+        return ai_model
+
+    def _validate_image_profile_with_prices(
+        self, image_profile: ImageProfile | None
+    ) -> ImageProfile:
+        if not image_profile:
+            raise ModelConfigError(f"ImageProfile is not configured")
 
         if not image_profile.is_active:
-            raise ModelConfigError(
-                f"ImageProfile is inactive"
-            )
+            raise ModelConfigError(f"ImageProfile is inactive")
 
         if not image_profile.prices:
-            raise ModelConfigError(
-                f"ImagePrice configs are missing"
-            )
-        
+            raise ModelConfigError(f"ImagePrice configs are missing")
+
         return image_profile
-    
+
     def _build_image_model_qualities_and_sizes(
         self, image_prices: list[ImagePrice]
     ) -> ImagePriceParamsSchema:
@@ -80,13 +80,11 @@ class ImageProfileService:
         resolved_qualities = sorted(qualities)
 
         if not resolved_sizes or not resolved_qualities:
-            raise ModelConfigError(
-                f"ImageProfile pricing config is invalid"
-            )
+            raise ModelConfigError(f"ImageProfile pricing config is invalid")
         return ImagePriceParamsSchema(
             sizes=resolved_sizes, qualities=resolved_qualities
         )
-    
+
     async def _get_raw_image_price_data(
         self,
         model_id: UUID,
@@ -94,7 +92,9 @@ class ImageProfileService:
         size: str | None,
         quality: str | None,
     ) -> ImageModelRawPriceDataSchema:
-        image_profile = self._validate_image_profile_with_prices(image_profile=image_profile)
+        image_profile = self._validate_image_profile_with_prices(
+            image_profile=image_profile
+        )
 
         price_params = self._build_image_model_qualities_and_sizes(
             image_prices=image_profile.prices,
@@ -111,14 +111,14 @@ class ImageProfileService:
             raise ModelConfigError(
                 f"Missing price for size='{resolved_size}', quality='{resolved_quality}'"
             )
-        
+
         return ImageModelRawPriceDataSchema(
             ai_model_id=model_id,
             quality=resolved_quality,
             size=resolved_size,
             usd_price=image_price.provider_cost,
         )
-    
+
     async def load_image_profile_with_prices_by_ai_model_id(
         self,
         ai_model_id: UUID,
@@ -127,7 +127,9 @@ class ImageProfileService:
             session=self.session,
             ai_model_id=ai_model_id,
         )
-        ai_model = self._validate_image_model(ai_model_id=ai_model_id, ai_model=ai_model)
+        ai_model = self._validate_image_model(
+            ai_model_id=ai_model_id, ai_model=ai_model
+        )
 
         image_profile = self._validate_image_profile_with_prices(
             image_profile=ai_model.image_profile
@@ -144,7 +146,7 @@ class ImageProfileService:
             provider=image_profile.provider,
             **price_params.model_dump(),
         )
-    
+
     async def get_image_model_price(
         self,
         user_id: UUID,
@@ -159,7 +161,10 @@ class ImageProfileService:
         ai_model = self._validate_image_model(ai_model_id=model_id, ai_model=ai_model)
 
         raw_price_data = await self._get_raw_image_price_data(
-            model_id=model_id, image_profile=ai_model.image_profile, size=size, quality=quality
+            model_id=model_id,
+            image_profile=ai_model.image_profile,
+            size=size,
+            quality=quality,
         )
         provider_price = raw_price_data.usd_price
         tokens_price = await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(

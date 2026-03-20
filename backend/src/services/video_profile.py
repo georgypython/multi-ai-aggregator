@@ -3,17 +3,21 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.src.core.exceptions.generation import ModelConfigError
-from src.core.models import AIModel, VideoPrice, VideoProfile
-from src.core.models.enums import ModelType
-from src.core.schemas.ai import (
+from src.exceptions.generation import ModelConfigError
+from src.models import AIModel, VideoPrice, VideoProfile
+from src.models.enums import ModelType
+from src.schemas.ai import (
     VideoModelPriceResponseSchema,
     VideoModelProfileResponseSchema,
     VideoPriceParamsSchema,
     VideoModelRawPriceDataSchema,
     VideoModelRawDataSchema,
 )
-from src.repositories import AIModelRepository, GenerationRepository, VideoPriceRepository
+from src.repositories import (
+    AIModelRepository,
+    GenerationRepository,
+    VideoPriceRepository,
+)
 from .generation_billing import GenerationBillingService
 
 
@@ -32,7 +36,9 @@ class VideoProfileService:
         self.generation_repo = generation_repo
         self.generation_billing_service = generation_billing_service
 
-    def _validate_video_model(self, ai_model_id: UUID, ai_model: AIModel | None) -> AIModel:
+    def _validate_video_model(
+        self, ai_model_id: UUID, ai_model: AIModel | None
+    ) -> AIModel:
         if not ai_model:
             raise ValueError(f"AIModel not found for model_id={ai_model_id}")
 
@@ -40,25 +46,23 @@ class VideoProfileService:
             raise ValueError(f"AIModel inactive for model_id={ai_model_id}")
 
         if ai_model.model_type != ModelType.VIDEO:
-            raise ModelConfigError(f"AIModel is not video type for model_id={ai_model_id}")
+            raise ModelConfigError(
+                f"AIModel is not video type for model_id={ai_model_id}"
+            )
 
         return ai_model
 
-    def _validate_video_profile_with_prices(self, video_profile: VideoProfile | None) -> VideoProfile:
+    def _validate_video_profile_with_prices(
+        self, video_profile: VideoProfile | None
+    ) -> VideoProfile:
         if not video_profile:
-            raise ModelConfigError(
-                "VideoProfile is not configured"
-            )
+            raise ModelConfigError("VideoProfile is not configured")
 
         if not video_profile.is_active:
-            raise ModelConfigError(
-                "VideoProfile is inactive"
-            )
+            raise ModelConfigError("VideoProfile is inactive")
 
         if not video_profile.prices:
-            raise ModelConfigError(
-                "VideoPrice configs are missing"
-            )
+            raise ModelConfigError("VideoPrice configs are missing")
 
         return video_profile
 
@@ -76,9 +80,7 @@ class VideoProfileService:
         resolved_sizes = sorted(sizes)
 
         if not resolved_durations or not resolved_sizes:
-            raise ModelConfigError(
-                "VideoProfile pricing config is invalid"
-            )
+            raise ModelConfigError("VideoProfile pricing config is invalid")
 
         return VideoPriceParamsSchema(
             durations_seconds=resolved_durations,
@@ -92,7 +94,9 @@ class VideoProfileService:
         duration_seconds: int | None,
         size: str | None,
     ) -> VideoModelRawPriceDataSchema:
-        video_profile = self._validate_video_profile_with_prices(video_profile=video_profile)
+        video_profile = self._validate_video_profile_with_prices(
+            video_profile=video_profile
+        )
 
         price_params = self._build_video_model_durations_and_sizes(
             video_prices=video_profile.prices,
@@ -126,7 +130,9 @@ class VideoProfileService:
             session=self.session,
             ai_model_id=ai_model_id,
         )
-        ai_model = self._validate_video_model(ai_model_id=ai_model_id, ai_model=ai_model)
+        ai_model = self._validate_video_model(
+            ai_model_id=ai_model_id, ai_model=ai_model
+        )
 
         video_profile = self._validate_video_profile_with_prices(
             video_profile=ai_model.video_profile,

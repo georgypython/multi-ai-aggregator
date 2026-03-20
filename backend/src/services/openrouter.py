@@ -1,12 +1,12 @@
 from httpx import AsyncClient, HTTPStatusError, RequestError, TimeoutException
 
-from backend.src.core.exceptions.generation import (
+from src.exceptions.generation import (
     ProviderHTTPError,
     ProviderNetworkError,
     ProviderResponseFormatError,
     ProviderTimeoutError,
 )
-from src.core.schemas.ai import LLMProviderResponseSchema, LLMRequestDataSchema
+from src.schemas.ai import LLMProviderResponseSchema, LLMRequestDataSchema
 
 
 class OpenRouterService:

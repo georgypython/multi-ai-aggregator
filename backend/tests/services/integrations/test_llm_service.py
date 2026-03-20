@@ -5,7 +5,14 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.models import AIModel, LLMConfiguration, LLMModel, User, UserBalance, AIGeneration
+from src.core.models import (
+    AIModel,
+    LLMConfiguration,
+    LLMModel,
+    User,
+    UserBalance,
+    AIGeneration,
+)
 from src.core.models.enums import GenerationStatus, LLMConfigurationType, ModelType
 from src.core.schemas.ai import GenerationRequestSchema
 from src.repositories.generation import GenerationRepository
@@ -16,7 +23,6 @@ from src.services.generation_billing import GenerationBillingService
 from src.services.llm_generation import LLMGenerationService
 
 pytestmark = pytest.mark.asyncio
-
 
 
 async def test_create_and_validate_request_llm_data_uses_user_llm_configuration(
@@ -121,7 +127,9 @@ async def test_prepare_generation_and_freeze_user_tokens_creates_processing_gene
     db_session.add(user)
     await db_session.flush()
 
-    db_session.add(UserBalance(user_id=user.id, available_tokens=100.0, hold_tokens=0.0))
+    db_session.add(
+        UserBalance(user_id=user.id, available_tokens=100.0, hold_tokens=0.0)
+    )
     await db_session.flush()
     await db_session.commit()
 
@@ -148,14 +156,18 @@ async def test_prepare_generation_and_freeze_user_tokens_creates_processing_gene
         free_requests_limit=0,
     )
 
-    result = await generation_billing.prepare_generation_and_freeze_user_tokens(data=data)
+    result = await generation_billing.prepare_generation_and_freeze_user_tokens(
+        data=data
+    )
 
     assert isinstance(result, AIGeneration)
     assert result.user_id == user.id
     assert result.ai_model_id == llm_model.ai_model_id
     assert result.status == GenerationStatus.PROCESSING
 
-    balance = await db_session.scalar(select(UserBalance).where(UserBalance.user_id == user.id))
+    balance = await db_session.scalar(
+        select(UserBalance).where(UserBalance.user_id == user.id)
+    )
     assert balance is not None
     assert balance.available_tokens == 85.0
     assert balance.hold_tokens == 15.0
