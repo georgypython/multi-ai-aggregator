@@ -2,6 +2,7 @@ import asyncio
 from httpx import AsyncClient
 
 from .broker import broker
+from src.core.config import settings
 from src.core.logger_setup import logger
 from src.models.db_helper import db_helper
 from src.models.enums import GenerationStatus
@@ -26,6 +27,7 @@ async def _complete_generation_polling(
             user_repo=user_repo,
             generation_repo=generation_repo,
             token_price_repo=token_price_repo,
+            token_scale=settings.billing.token_scale_decimal,
         )
         if status == GenerationStatus.COMPLETED:
             await generation_billing_service.finish_generation(

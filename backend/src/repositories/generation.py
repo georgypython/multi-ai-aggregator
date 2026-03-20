@@ -94,6 +94,7 @@ class GenerationRepository(AbstractRepository[AIGeneration]):
                 (
                     GenerationStatus.PROCESSING,
                     GenerationStatus.COMPLETED,
+                    GenerationStatus.FAILED,
                 )
             ),
         )

@@ -41,6 +41,7 @@ class GenerationResultResponseDataSchema(BaseModel):
     generation_id: UUID
     tokens_cost: Decimal
     status: GenerationStatus
+    is_free_request: bool
     text: str | None = None
 
 

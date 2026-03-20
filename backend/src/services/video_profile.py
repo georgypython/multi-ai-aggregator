@@ -171,7 +171,7 @@ class VideoProfileService:
         )
 
         provider_price = raw_price_data.usd_price
-        tokens_price = await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
+        tokens_price = await self.generation_billing_service.calculate_final_tokens_cost(
             provider_cost=provider_price,
             model_token_price_id=ai_model.token_price_id,
             hold_amount=ai_model.min_charge_tokens,

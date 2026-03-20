@@ -89,6 +89,7 @@ class ServicesProvider(Provider):
             user_repo=user_repo,
             generation_repo=generation_repo,
             token_price_repo=token_price_repo,
+            token_scale=settings.billing.token_scale_decimal,
         )
 
     @provide(scope=Scope.REQUEST)

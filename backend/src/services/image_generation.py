@@ -90,11 +90,6 @@ class ImageGenerationService:
             if not ai_model.is_active:
                 raise ValueError(f"AIModel inactive for model_id={model_id}")
 
-            if user.balance.available_tokens <= ai_model.min_charge_tokens:
-                raise ValueError(
-                    f"Insufficient active balance for generation: available={user.balance.available_tokens}, required>{ai_model.min_charge_tokens}"
-                )
-
             media_file_urls: list[str] | None = None
             if media_file_ids:
                 try:
@@ -161,11 +156,17 @@ class ImageGenerationService:
             user_id, model_id, prompt, size, quality, media_file_ids
         )
 
+        hold_amount = await self.generation_billing_service.calculate_hold_tokens_cost_from_providers_cost(
+            provider_cost=request_data.provider_cost,
+            model_token_price_id=request_data.model_token_price_id,
+            min_hold_amount=request_data.min_charge_tokens,
+        )
+
         generation_data = GenerationRequestSchema(
             user_id=user_id,
             ai_model_id=model_id,
             generation_type=GenerationType.IMAGE,
-            hold_amount=request_data.min_charge_tokens,
+            hold_amount=hold_amount,
             free_requests_limit=request_data.free_requests_limit,
         )
         generation = await self.generation_billing_service.prepare_generation_and_freeze_user_tokens(
@@ -180,7 +181,7 @@ class ImageGenerationService:
                 task_id=response_create_data.task_id,
             )
 
-            final_tokens_cost = await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
+            final_tokens_cost = await self.generation_billing_service.calculate_final_tokens_cost(
                 provider_cost=request_data.provider_cost,
                 model_token_price_id=request_data.model_token_price_id,
                 hold_amount=generation_data.hold_amount,
@@ -230,4 +231,5 @@ class ImageGenerationService:
             generation_id=generation.id,
             tokens_cost=final_tokens_cost,
             status=GenerationStatus.PROCESSING,
+            is_free_request=generation_data.hold_amount == 0,
         )

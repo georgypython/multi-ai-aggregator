@@ -124,6 +124,14 @@ class AILogicConfig(BaseModel):
     new_user_free_tokens: Decimal = Decimal("300")
 
 
+class BillingConfig(BaseModel):
+    token_scale: str = "0.000001"
+
+    @property
+    def token_scale_decimal(self) -> Decimal:
+        return Decimal(self.token_scale)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=BASE_PATH / ".env",
@@ -143,6 +151,7 @@ class Settings(BaseSettings):
     rabbitmq: RabbitMQConfig = RabbitMQConfig()
     storage: StorageConfig = StorageConfig()
     ai_logic: AILogicConfig = AILogicConfig()
+    billing: BillingConfig = BillingConfig()
 
 
 settings = Settings()

@@ -45,6 +45,7 @@ class GenerationInfoService:
 			generation_id=generation.id,
 			tokens_cost=generation.charged_tokens,
 			status=generation.status,
+			is_free_request=generation.hold_tokens_amount == 0,
 		)
 
 	async def get_media_generation_content(

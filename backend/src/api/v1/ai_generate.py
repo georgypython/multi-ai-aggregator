@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
 from src.exceptions.generation import (
-	ImageGenerationFinalizeError,
 	ImageGenerationNotCompletedError,
 	InactiveModelError,
 	InsufficientBalanceError,
@@ -14,7 +13,6 @@ from src.exceptions.generation import (
 	ProviderError,
 	ProviderTimeoutError,
 	UserBalanceNotConfiguredError,
-	VideoGenerationNotCompletedError,
 )
 from src.schemas import (
 	GenerationResultResponseDataSchema,
@@ -57,11 +55,6 @@ async def generate_image(
 	except ImageGenerationNotCompletedError as exc:
 		raise HTTPException(
 			status_code=status.HTTP_502_BAD_GATEWAY,
-			detail=str(exc),
-		)
-	except ImageGenerationFinalizeError as exc:
-		raise HTTPException(
-			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
 			detail=str(exc),
 		)
 	except ValueError as exc:
@@ -162,7 +155,7 @@ async def generate_video(
 			status_code=status.HTTP_504_GATEWAY_TIMEOUT,
 			detail=str(exc),
 		)
-	except (ProviderError, VideoGenerationNotCompletedError) as exc:
+	except ProviderError as exc:
 		raise HTTPException(
 			status_code=status.HTTP_502_BAD_GATEWAY,
 			detail=str(exc),

@@ -3,10 +3,9 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.exceptions.generation import (
-    InsufficientBalanceError,
     ProviderError,
     UserBalanceNotConfiguredError,
-    VideoGenerationError,
+    AIGenerationError,
 )
 from src.models.enums import GenerationStatus, GenerationType, ModelType
 from src.schemas import (
@@ -83,11 +82,6 @@ class VideoGenerationService:
             if not ai_model.is_active:
                 raise ValueError(f"AIModel inactive for model_id={model_id}")
 
-            if user.balance.available_tokens <= ai_model.min_charge_tokens:
-                raise InsufficientBalanceError(
-                    f"Insufficient active balance for generation: available={user.balance.available_tokens}, required>{ai_model.min_charge_tokens}"
-                )
-
             raw_profile_price = (
                 await self.video_profile_service.get_video_profile_with_raw_price(
                     model_id=model_id,
@@ -131,11 +125,17 @@ class VideoGenerationService:
         if request_data.media_file_id:
             pass
 
+        hold_amount = await self.generation_billing_service.calculate_hold_tokens_cost_from_providers_cost(
+            provider_cost=request_data.provider_cost,
+            model_token_price_id=request_data.model_token_price_id,
+            min_hold_amount=request_data.min_charge_tokens,
+        )
+
         generation_data = GenerationRequestSchema(
             user_id=user_id,
             ai_model_id=model_id,
             generation_type=GenerationType.VIDEO,
-            hold_amount=request_data.min_charge_tokens,
+            hold_amount=hold_amount,
             free_requests_limit=request_data.free_requests_limit,
         )
         generation = await self.generation_billing_service.prepare_generation_and_freeze_user_tokens(
@@ -150,7 +150,7 @@ class VideoGenerationService:
                 task_id=response_create_data.task_id,
             )
 
-            final_tokens_cost = await self.generation_billing_service.calculate_tokens_cost_from_provider_cost(
+            final_tokens_cost = await self.generation_billing_service.calculate_final_tokens_cost(
                 provider_cost=request_data.provider_cost,
                 model_token_price_id=request_data.model_token_price_id,
                 hold_amount=generation_data.hold_amount,
@@ -189,7 +189,7 @@ class VideoGenerationService:
                 hold_amount=generation_data.hold_amount,
                 generation_id=generation.id,
             )
-            raise VideoGenerationError("Unexpected video polling error") from e
+            raise AIGenerationError("Unexpected video polling error") from e
 
         return GenerationResultResponseDataSchema(
             ai_model_id=request_data.ai_model_id,
@@ -197,5 +197,6 @@ class VideoGenerationService:
             generation_id=generation.id,
             tokens_cost=final_tokens_cost,
             status=GenerationStatus.PROCESSING,
+            is_free_request=generation_data.hold_amount == 0,
         )
 

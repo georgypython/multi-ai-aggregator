@@ -1,5 +1,5 @@
 from uuid import UUID
-from decimal import Decimal
+from decimal import Decimal, ROUND_CEILING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,11 +28,19 @@ class GenerationBillingService:
         user_repo: UserRepository,
         generation_repo: GenerationRepository,
         token_price_repo: TokenPriceRepository,
+        token_scale: Decimal,
     ) -> None:
         self.session = session
         self.user_repo = user_repo
         self.generation_repo = generation_repo
         self.token_price_repo = token_price_repo
+        self._token_scale = token_scale
+
+    def _round_tokens_up(self, tokens_cost: Decimal) -> Decimal:
+        return tokens_cost.quantize(
+            self._token_scale,
+            rounding=ROUND_CEILING,
+        )
 
     async def prepare_generation_and_freeze_user_tokens(
         self, data: GenerationRequestSchema
@@ -167,7 +175,7 @@ class GenerationBillingService:
         data: GenerationFinishData,
     ) -> GenerationResultResponseDataSchema:
         async with self.session.begin():
-            final_tokens_cost = await self.calculate_tokens_cost_from_provider_cost(
+            final_tokens_cost = await self.calculate_final_tokens_cost(
                 hold_amount=data.hold_amount,
                 model_token_price_id=data.model_token_price_id,
                 provider_cost=data.provider_cost,
@@ -201,14 +209,14 @@ class GenerationBillingService:
             generation_id=data.generation_id,
             tokens_cost=final_tokens_cost,
             status=completed_generation.status,
+            is_free_request=data.hold_amount == 0,
             text=data.text,
         )
 
-    async def calculate_tokens_cost_from_provider_cost(
+    async def _calculate_tokens_cost_from_providers_cost(
         self,
         provider_cost: Decimal,
         model_token_price_id: UUID,
-        hold_amount: Decimal,
     ) -> Decimal:
         token_price = await self.token_price_repo.get_one(
             session=self.session,
@@ -220,11 +228,34 @@ class GenerationBillingService:
         if token_price.usd_per_token <= 0:
             raise RuntimeError("usd_per_token must be greater than 0")
 
+        provider_cost_multiplier = token_price.provider_cost_multiplier or Decimal("1")
+        final_usd_cost = provider_cost * provider_cost_multiplier
+        return final_usd_cost / token_price.usd_per_token
+
+    async def calculate_hold_tokens_cost_from_providers_cost(
+        self,
+        provider_cost: Decimal,
+        model_token_price_id: UUID,
+        min_hold_amount: Decimal,
+    ) -> Decimal:
+        expected_tokens_cost = await self._calculate_tokens_cost_from_providers_cost(
+            provider_cost=provider_cost,
+            model_token_price_id=model_token_price_id,
+        )
+        rounded_expected_tokens_cost = self._round_tokens_up(expected_tokens_cost)
+        return max(min_hold_amount, rounded_expected_tokens_cost)
+
+    async def calculate_final_tokens_cost(
+        self,
+        provider_cost: Decimal,
+        model_token_price_id: UUID,
+        hold_amount: Decimal,
+    ) -> Decimal:
         if hold_amount > 0:
-            provider_cost_multiplier = token_price.provider_cost_multiplier or Decimal(
-                "1"
+            final_tokens_cost = await self._calculate_tokens_cost_from_providers_cost(
+                provider_cost=provider_cost,
+                model_token_price_id=model_token_price_id,
             )
-            final_usd_cost = provider_cost * provider_cost_multiplier
-            return final_usd_cost / token_price.usd_per_token
+            return self._round_tokens_up(final_tokens_cost)
 
         return hold_amount
