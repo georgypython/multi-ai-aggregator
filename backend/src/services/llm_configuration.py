@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import LLMConfiguration
 from src.models.enums import LLMConfigurationType
-from src.schemas.ai import LLMConfigCreateRequestSchema, LLMConfigResponseSchema
+from src.schemas import LLMConfigCreateRequestSchema, LLMConfigResponseSchema
 from src.repositories import UserRepository, LLMConfigurationRepository
 
 

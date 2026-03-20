@@ -5,10 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from dishka import Provider, Scope, provide
 
 from src.core.config import settings
-from src.core.utils.image_configs import IMAGE_MODEL_CONFIGS
-from src.core.utils.video_configs import VIDEO_MODEL_CONFIGS
 from src.services.ai_models import AIModelsService
 from src.services.generation_billing import GenerationBillingService
+from src.services.generation_info import GenerationInfoService
 from src.services.image_profile import ImageProfileService
 from src.services.image_generation import ImageGenerationService
 from src.services.llm_configuration import LLMConfigurationService
@@ -34,14 +33,6 @@ from src.repositories import (
 
 
 class ServicesProvider(Provider):
-    @provide(scope=Scope.APP)
-    def get_image_model_configs(self) -> dict[str, dict]:
-        return IMAGE_MODEL_CONFIGS
-
-    @provide(scope=Scope.APP)
-    def get_video_model_configs(self) -> dict[str, dict]:
-        return VIDEO_MODEL_CONFIGS
-
     @provide(scope=Scope.APP)
     def get_openrouter_service(
         self,
@@ -98,6 +89,19 @@ class ServicesProvider(Provider):
             user_repo=user_repo,
             generation_repo=generation_repo,
             token_price_repo=token_price_repo,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_generation_info_service(
+        self,
+        session: AsyncSession,
+        generation_repo: GenerationRepository,
+        wavespeed_service: WaveSpeedService,
+    ) -> GenerationInfoService:
+        return GenerationInfoService(
+            session=session,
+            generation_repo=generation_repo,
+            wavespeed_service=wavespeed_service,
         )
 
     @provide(scope=Scope.REQUEST)

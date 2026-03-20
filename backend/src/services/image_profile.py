@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.exceptions.generation import ModelConfigError
 from src.models import AIModel, ImagePrice, ImageProfile
 from src.models.enums import ModelType
-from src.schemas.ai import (
+from src.schemas import (
     ImageModelPriceResponseSchema,
     ImageModelProfileResponseSchema,
     ImagePriceParamsSchema,

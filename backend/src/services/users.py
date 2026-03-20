@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.schemas.ai import UserBalanceResponseSchema
+from src.schemas import UserBalanceResponseSchema
 from src.repositories import UserRepository
 
 

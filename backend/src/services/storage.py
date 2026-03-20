@@ -15,7 +15,7 @@ from src.exceptions.storage import (
     StorageUploadError,
     UnsupportedFileTypeError,
 )
-from src.schemas.ai import (
+from src.schemas import (
     UploadFileResponseSchema,
     UpdloadFileDataSchema,
     MediaFileDbDataSchema,

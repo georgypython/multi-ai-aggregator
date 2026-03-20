@@ -5,11 +5,11 @@ from .broker import broker
 from src.core.logger_setup import logger
 from src.models.db_helper import db_helper
 from src.models.enums import GenerationStatus
-from src.schemas.ai import PollWaveSpeedGenerationTaskSchema
+from src.schemas import PollWaveSpeedGenerationTaskSchema
 from src.repositories import GenerationRepository, TokenPriceRepository, UserRepository
 from src.services.generation_billing import GenerationBillingService
 from src.services.wavespeed import WaveSpeedService
-from src.schemas.ai import GenerationFinishData
+from src.schemas import GenerationFinishData
 
 
 async def _complete_generation_polling(

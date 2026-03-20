@@ -13,7 +13,7 @@ from src.models.enums import (
     GenerationType,
     ModelType,
 )
-from src.schemas.ai import (
+from src.schemas import (
     ImageRequestDataSchema,
     GenerationResultResponseDataSchema,
     PollWaveSpeedGenerationTaskSchema,
@@ -147,58 +147,6 @@ class ImageGenerationService:
                 provider=raw_profile_price.provider,
                 request_provider_model_key=request_provider_model_key,
             )
-
-    async def get_image_generation_content(
-        self,
-        user_id: UUID,
-        generation_id: UUID,
-    ) -> bytes:
-        generation = await self.generation_repo.get_one(
-            session=self.session,
-            id=generation_id,
-            user_id=user_id,
-            generation_type=GenerationType.IMAGE,
-            status=GenerationStatus.COMPLETED,
-        )
-
-        if not generation:
-            raise ValueError(
-                f"Completed image generation not found for generation_id={generation_id}"
-            )
-
-        if not generation.result_url:
-            raise ImageGenerationNotCompletedError(
-                "Image generation content is unavailable: result_url is empty"
-            )
-
-        result_url = generation.result_url
-
-        return await self.wavespeed_service.download_image_bytes(url=result_url)
-
-    async def get_image_generation_status(
-        self,
-        user_id: UUID,
-        generation_id: UUID,
-    ) -> GenerationResultResponseDataSchema:
-        generation = await self.generation_repo.get_one(
-            session=self.session,
-            id=generation_id,
-            user_id=user_id,
-            generation_type=GenerationType.IMAGE,
-        )
-
-        if not generation:
-            raise ValueError(
-                f"Image generation not found for generation_id={generation_id}"
-            )
-
-        return GenerationResultResponseDataSchema(
-            ai_model_id=generation.ai_model_id,
-            user_id=generation.user_id,
-            generation_id=generation.id,
-            tokens_cost=generation.charged_tokens,
-            status=generation.status,
-        )
 
     async def generate_image(
         self,

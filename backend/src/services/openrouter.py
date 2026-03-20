@@ -6,7 +6,7 @@ from src.exceptions.generation import (
     ProviderResponseFormatError,
     ProviderTimeoutError,
 )
-from src.schemas.ai import LLMProviderResponseSchema, LLMRequestDataSchema
+from src.schemas import LLMProviderResponseSchema, LLMRequestDataSchema
 
 
 class OpenRouterService:

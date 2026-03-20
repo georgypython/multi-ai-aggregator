@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.enums import ModelType
-from src.schemas.ai import AIModelListItemResponseSchema
+from src.schemas import AIModelListItemResponseSchema
 from src.repositories import AIModelRepository, UserRepository
 
 

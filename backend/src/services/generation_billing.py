@@ -9,7 +9,7 @@ from src.exceptions.generation import (
 )
 from src.models import AIGeneration
 from src.models.enums import GenerationStatus, GenerationType
-from src.schemas.ai import (
+from src.schemas import (
     GenerationRequestSchema,
     GenerationFinishData,
     GenerationResultResponseDataSchema,

@@ -7,10 +7,9 @@ from src.exceptions.generation import (
     ProviderError,
     UserBalanceNotConfiguredError,
     VideoGenerationError,
-    VideoGenerationNotCompletedError,
 )
 from src.models.enums import GenerationStatus, GenerationType, ModelType
-from src.schemas.ai import (
+from src.schemas import (
     GenerationResultResponseDataSchema,
     GenerationRequestSchema,
     PollWaveSpeedGenerationTaskSchema,
@@ -172,7 +171,7 @@ class VideoGenerationService:
                     current_attempt=1,
                     timeout=30,
                     final_tokens_cost=final_tokens_cost,
-                    result_url=response_create_data.result_url or "",
+                    result_url=response_create_data.result_url,
                 ),
                 api_key=self.wavespeed_service._api_key,
                 base_url=self.wavespeed_service._base_url,
@@ -200,29 +199,3 @@ class VideoGenerationService:
             status=GenerationStatus.PROCESSING,
         )
 
-    async def get_video_generation_content(
-        self,
-        user_id: UUID,
-        generation_id: UUID,
-    ) -> bytes:
-        generation = await self.generation_repo.get_one(
-            session=self.session,
-            id=generation_id,
-            user_id=user_id,
-            generation_type=GenerationType.VIDEO,
-            status=GenerationStatus.COMPLETED,
-        )
-
-        if not generation:
-            raise ValueError(
-                f"Completed video generation not found for generation_id={generation_id}"
-            )
-
-        if not generation.result_url:
-            raise VideoGenerationNotCompletedError(
-                "Video generation content is unavailable: result_url is empty"
-            )
-
-        return await self.wavespeed_service.download_video_bytes(
-            url=generation.result_url
-        )

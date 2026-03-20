@@ -9,7 +9,7 @@ from src.exceptions.generation import (
     ProviderError,
     UserBalanceNotConfiguredError,
 )
-from src.schemas.ai import (
+from src.schemas import (
     GenerationRequestSchema,
     GenerationFinishData,
     GenerationResultResponseDataSchema,

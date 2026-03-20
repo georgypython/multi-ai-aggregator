@@ -9,7 +9,7 @@ from src.exceptions.generation import (
     ProviderTimeoutError,
 )
 from src.models.enums import GenerationStatus, ModelProvider
-from src.schemas.ai import (
+from src.schemas import (
     ImageRequestDataSchema,
     WavespeedGenerationResponseSchema,
     VideoRequestDataSchema,

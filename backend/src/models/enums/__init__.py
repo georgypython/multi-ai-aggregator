@@ -11,5 +11,5 @@ __all__ = (
     "GenerationType",
     "ModelProvider",
     "LLMConfigurationType",
-    "ModelType",
+    "ModelType"
 )
