@@ -1,22 +1,16 @@
 from decimal import Decimal
 from typing import Any
-from uuid import UUID
 
 from pydantic import BaseModel
 
+from .generations import GenerationRequestSchema
 
-class LLMRequestDataSchema(BaseModel):
-    user_id: UUID
-    ai_model_id: UUID
-    provider_model_key: str
-    prompt: str
-    model_token_price_id: UUID
-    min_charge_tokens: Decimal
-    free_requests_limit: int = 0
+
+class LLMRequestDataSchema(GenerationRequestSchema):
     input_price_per_million_usd: Decimal | None = None
     output_price_per_million_usd: Decimal | None = None
-    temperature: float | None
-    instructions: str | None
+    temperature: float | None = None
+    instructions: str | None = None
 
 
 class LLMGenerationCreateRequestSchema(BaseModel):

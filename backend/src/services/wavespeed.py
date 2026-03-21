@@ -22,10 +22,12 @@ class WaveSpeedService:
         client: AsyncClient,
         api_key: str,
         base_url: str,
+        webhook_url: str,
     ) -> None:
         self.client = client
         self._api_key = api_key
         self._base_url = base_url.rstrip("/")
+        self._webhook_url = webhook_url
         self._base_headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
@@ -132,11 +134,10 @@ class WaveSpeedService:
             "duration": request_data.duration_seconds,
         }
 
-        if request_data.provider == ModelProvider.OPENAI:
-            payload["size"] = request_data.size
-        elif request_data.provider == ModelProvider.GOOGLE:
-            payload["aspect_ratio"] = request_data.size
-        else:
+        if request_data.media_file_url:
+            payload["image"] = request_data.media_file_url
+
+        if request_data.provider not in (ModelProvider.OPENAI, ModelProvider.GOOGLE):
             raise ProviderResponseFormatError(
                 f"Unsupported WaveSpeed provider: {request_data.provider}"
             )
@@ -151,6 +152,8 @@ class WaveSpeedService:
         provider_model_key: str,
         payload: dict[str, Any],
     ) -> WavespeedGenerationResponseSchema:
+        payload["webhook_url"] = self._webhook_url
+
         response = await self._request(
             "POST",
             f"{self._base_url}/api/v3/{provider_model_key}",

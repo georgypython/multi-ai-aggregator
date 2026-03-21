@@ -61,6 +61,8 @@ class OpenRouterConfig(BaseModel):
 class WaveSpeedConfig(BaseModel):
     base_url: str = "https://api.wavespeed.ai"
     api_key: str = "API_KEY_HERE"
+    webhook_secret: str = "whsec_YOUR_WEBHOOK_SECRET"
+    wavespeed_webhook_url: str = "https://your-webhook-url"
     poll_interval_seconds: int = 5
     poll_max_attempts: int = 120
 

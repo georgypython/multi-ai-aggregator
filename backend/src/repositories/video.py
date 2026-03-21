@@ -15,13 +15,12 @@ class VideoProfileRepository(AbstractRepository[VideoProfile]):
 class VideoPriceRepository(AbstractRepository[VideoPrice]):
     model = VideoPrice
 
-    async def get_one_by_ai_model_duration_size(
+    async def get_one_by_ai_model_duration(
         self,
         session: AsyncSession,
         *,
         ai_model_id: UUID,
         duration_seconds: int,
-        size: str,
     ) -> VideoPrice | None:
         stmt = (
             select(self.model)
@@ -29,7 +28,6 @@ class VideoPriceRepository(AbstractRepository[VideoPrice]):
             .where(
                 VideoProfile.ai_model_id == ai_model_id,
                 self.model.duration_seconds == duration_seconds,
-                self.model.size == size,
             )
         )
         result = await session.execute(stmt)

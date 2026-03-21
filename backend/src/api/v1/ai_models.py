@@ -134,7 +134,6 @@ async def get_video_price(
     model_id: UUID,
     service: FromDishka[VideoProfileService],
     duration_seconds: int | None = None,
-    size: str | None = None,
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ):
     """Считает цену video-генерации с учетом параметров."""
@@ -143,7 +142,6 @@ async def get_video_price(
             user_id=user_id,
             model_id=model_id,
             duration_seconds=duration_seconds,
-            size=size,
         )
     except ModelConfigError as exc:
         raise HTTPException(

@@ -16,16 +16,14 @@ from src.models.enums import (
 from src.schemas import (
     ImageRequestDataSchema,
     GenerationResultResponseDataSchema,
-    PollWaveSpeedGenerationTaskSchema,
-    GenerationRequestSchema,
 )
 from src.repositories import AIModelRepository, UserRepository
 from src.repositories import GenerationRepository
-from src.tasks.generation_tasks import poll_generation_status
 from .generation_billing import GenerationBillingService
 from .image_profile import ImageProfileService
 from .wavespeed import WaveSpeedService
 from .storage import StorageService
+from .video_profile import VideoProfileService
 
 
 class ImageGenerationService:
@@ -39,8 +37,6 @@ class ImageGenerationService:
         image_profile_service: ImageProfileService,
         wavespeed_service: WaveSpeedService,
         storage_service: StorageService,
-        poll_interval_seconds: int,
-        poll_max_attempts: int,
     ):
         self.session = session
         self.user_repo = user_repo
@@ -50,8 +46,6 @@ class ImageGenerationService:
         self.image_profile_service = image_profile_service
         self.wavespeed_service = wavespeed_service
         self.storage_service = storage_service
-        self.poll_interval_seconds = poll_interval_seconds
-        self.poll_max_attempts = poll_max_attempts
 
     async def _create_and_validate_request_image_data(
         self,
@@ -115,11 +109,11 @@ class ImageGenerationService:
                 )
             )
 
-            request_provider_model_key = ai_model.provider_key
+            provider_model_key = ai_model.provider_key
             if media_file_urls:
                 image_edit_model_name = raw_profile_price.image_edit_model_name
                 if image_edit_model_name and image_edit_model_name.strip():
-                    request_provider_model_key = image_edit_model_name
+                    provider_model_key = image_edit_model_name
                 else:
                     logger.warning(
                         "Image edit input was provided but model has no image_edit_model_name; dropping media_file_urls "
@@ -130,17 +124,17 @@ class ImageGenerationService:
             return ImageRequestDataSchema(
                 user_id=user_id,
                 ai_model_id=model_id,
-                provider_model_key=request_provider_model_key,
+                generation_type=GenerationType.IMAGE,
+                provider_model_key=provider_model_key,
                 model_token_price_id=ai_model.token_price_id,
+                hold_amount=ai_model.min_charge_tokens,
                 prompt=prompt,
                 media_file_urls=media_file_urls,
-                min_charge_tokens=ai_model.min_charge_tokens,
                 free_requests_limit=ai_model.free_requests_limit,
                 size=raw_profile_price.size,
                 quality=raw_profile_price.quality,
                 provider_cost=raw_profile_price.provider_cost,
                 provider=raw_profile_price.provider,
-                request_provider_model_key=request_provider_model_key,
             )
 
     async def generate_image(
@@ -156,21 +150,14 @@ class ImageGenerationService:
             user_id, model_id, prompt, size, quality, media_file_ids
         )
 
-        hold_amount = await self.generation_billing_service.calculate_hold_tokens_cost_from_providers_cost(
+        calc_hold_amount = await self.generation_billing_service.calculate_hold_tokens_cost_from_providers_cost(
             provider_cost=request_data.provider_cost,
             model_token_price_id=request_data.model_token_price_id,
-            min_hold_amount=request_data.min_charge_tokens,
         )
 
-        generation_data = GenerationRequestSchema(
-            user_id=user_id,
-            ai_model_id=model_id,
-            generation_type=GenerationType.IMAGE,
-            hold_amount=hold_amount,
-            free_requests_limit=request_data.free_requests_limit,
-        )
+        request_data.hold_amount = calc_hold_amount
         generation = await self.generation_billing_service.prepare_generation_and_freeze_user_tokens(
-            data=generation_data
+            data=request_data
         )
         try:
             response_create_data = await self.wavespeed_service.create_image_generation(
@@ -181,46 +168,19 @@ class ImageGenerationService:
                 task_id=response_create_data.task_id,
             )
 
-            final_tokens_cost = (
-                await self.generation_billing_service.calculate_final_tokens_cost(
-                    provider_cost=request_data.provider_cost,
-                    model_token_price_id=request_data.model_token_price_id,
-                    hold_amount=generation_data.hold_amount,
-                )
-            )
-
-            await poll_generation_status.kiq(
-                data=PollWaveSpeedGenerationTaskSchema(
-                    ai_model_id=request_data.ai_model_id,
-                    user_id=request_data.user_id,
-                    generation_id=generation.id,
-                    generation_type=generation_data.generation_type,
-                    model_token_price_id=request_data.model_token_price_id,
-                    hold_amount=generation_data.hold_amount,
-                    provider_cost=request_data.provider_cost,
-                    wavespeed_task_id=response_create_data.task_id,
-                    poll_interval_seconds=self.poll_interval_seconds,
-                    max_attempts=self.poll_max_attempts,
-                    current_attempt=1,
-                    timeout=30,
-                    final_tokens_cost=final_tokens_cost,
-                    result_url=response_create_data.result_url,
-                ),
-                api_key=self.wavespeed_service._api_key,
-                base_url=self.wavespeed_service._base_url,
-            )
+            final_tokens_cost = request_data.hold_amount
         except ProviderError:
             await self.generation_billing_service.rollback_failed_generation(
-                user_id=generation_data.user_id,
-                hold_amount=generation_data.hold_amount,
+                user_id=request_data.user_id,
+                hold_amount=request_data.hold_amount,
                 generation_id=generation.id,
             )
             raise
 
         except Exception as e:
             await self.generation_billing_service.rollback_failed_generation(
-                user_id=generation_data.user_id,
-                hold_amount=generation_data.hold_amount,
+                user_id=request_data.user_id,
+                hold_amount=request_data.hold_amount,
                 generation_id=generation.id,
             )
             raise ImageGenerationNotCompletedError(
@@ -233,5 +193,5 @@ class ImageGenerationService:
             generation_id=generation.id,
             tokens_cost=final_tokens_cost,
             status=GenerationStatus.PROCESSING,
-            is_free_request=generation_data.hold_amount == 0,
+            is_free_request=request_data.hold_amount == 0,
         )

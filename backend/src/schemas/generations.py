@@ -3,7 +3,16 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from src.models.enums import GenerationStatus, GenerationType
+from src.models.enums import GenerationStatus, GenerationType, ModelType
+
+
+class GenerationCreateRequestSchema(BaseModel):
+    prompt: str
+    model_type: ModelType
+    size: str | None
+    quality: str | None
+    duration_seconds: int | None
+    media_file_ids: list[UUID] | None = None
 
 
 class GenerationRequestSchema(BaseModel):
@@ -11,6 +20,9 @@ class GenerationRequestSchema(BaseModel):
     ai_model_id: UUID
     generation_type: GenerationType
     hold_amount: Decimal
+    prompt: str
+    provider_model_key: str
+    model_token_price_id: UUID
     free_requests_limit: int = 0
 
 
@@ -27,9 +39,8 @@ class GenerationFinishData(BaseModel):
     generation_id: UUID
     user_id: UUID
     generation_type: GenerationType
-    model_token_price_id: UUID
     hold_amount: Decimal
-    provider_cost: Decimal
+    final_tokens_cost: Decimal
     provider_status: GenerationStatus
     result_url: str | None = None
     text: str | None = None

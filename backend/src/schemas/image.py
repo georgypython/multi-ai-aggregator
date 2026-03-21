@@ -5,24 +5,16 @@ from pydantic import BaseModel
 
 from src.models.enums import ModelProvider
 
+from .generations import GenerationRequestSchema
 
-class ModelConfigDataSchema(BaseModel):
-    request_provider_model_key: str
+
+class ImageRequestDataSchema(GenerationRequestSchema):
     size: str
     quality: str
     provider_cost: Decimal
     provider: ModelProvider
-
-
-class ImageRequestDataSchema(ModelConfigDataSchema):
-    user_id: UUID
-    ai_model_id: UUID
-    provider_model_key: str
-    prompt: str
-    model_token_price_id: UUID
     media_file_urls: list[str] | None = None
-    min_charge_tokens: Decimal
-    free_requests_limit: int = 0
+    provider_model_key: str
 
 
 class ImageGenerationCreateRequestSchema(BaseModel):

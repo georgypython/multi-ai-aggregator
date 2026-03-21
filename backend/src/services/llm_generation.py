@@ -10,7 +10,6 @@ from src.exceptions.generation import (
     UserBalanceNotConfiguredError,
 )
 from src.schemas import (
-    GenerationRequestSchema,
     GenerationFinishData,
     GenerationResultResponseDataSchema,
     LLMRequestDataSchema,
@@ -85,10 +84,11 @@ class LLMGenerationService:
             return LLMRequestDataSchema(
                 user_id=user_id,
                 ai_model_id=model_id,
+                generation_type=GenerationType.LLM,
                 provider_model_key=ai_model.provider_key,
                 prompt=prompt,
                 model_token_price_id=llm_profile.ai_model.token_price_id,
-                min_charge_tokens=ai_model.min_charge_tokens,
+                hold_amount=ai_model.min_charge_tokens,
                 free_requests_limit=ai_model.free_requests_limit,
                 input_price_per_million_usd=llm_profile.input_price_per_million_usd,
                 output_price_per_million_usd=llm_profile.output_price_per_million_usd,
@@ -127,18 +127,11 @@ class LLMGenerationService:
             model_id=model_id,
             prompt=prompt,
         )
-        billing_request_data = GenerationRequestSchema(
-            user_id=llm_request_data.user_id,
-            ai_model_id=llm_request_data.ai_model_id,
-            generation_type=GenerationType.LLM,
-            hold_amount=llm_request_data.min_charge_tokens,
-            free_requests_limit=llm_request_data.free_requests_limit,
-        )
 
         chat_history = await self.chat_memory_repo.get_chat_history(user_id=user_id)
 
         generation = await self.generation_billing_service.prepare_generation_and_freeze_user_tokens(
-            data=billing_request_data
+            data=llm_request_data
         )
         generation_id = generation.id
         try:
@@ -148,15 +141,15 @@ class LLMGenerationService:
             )
         except ProviderError:
             await self.generation_billing_service.rollback_failed_generation(
-                user_id=billing_request_data.user_id,
-                hold_amount=billing_request_data.hold_amount,
+                user_id=llm_request_data.user_id,
+                hold_amount=llm_request_data.hold_amount,
                 generation_id=generation_id,
             )
             raise
         except Exception as e:
             await self.generation_billing_service.rollback_failed_generation(
-                user_id=billing_request_data.user_id,
-                hold_amount=billing_request_data.hold_amount,
+                user_id=llm_request_data.user_id,
+                hold_amount=llm_request_data.hold_amount,
                 generation_id=generation_id,
             )
             logger.exception("Unexpected LLM provider error for user_id=%s", user_id)
@@ -169,10 +162,18 @@ class LLMGenerationService:
         )
 
         provider_cost = Decimal("0")
-        if llm_request_data.min_charge_tokens > 0:
+        final_tokens_cost = llm_request_data.hold_amount
+        if llm_request_data.hold_amount > 0:
             provider_cost = self._calculate_provider_cost(
                 response=llm_response,
                 request=llm_request_data,
+            )
+            final_tokens_cost = (
+                await self.generation_billing_service.calculate_final_tokens_cost(
+                    hold_amount=llm_request_data.hold_amount,
+                    model_token_price_id=llm_request_data.model_token_price_id,
+                    provider_cost=provider_cost,
+                )
             )
 
         return await self.generation_billing_service.finish_generation(
@@ -180,10 +181,9 @@ class LLMGenerationService:
                 ai_model_id=llm_request_data.ai_model_id,
                 generation_id=generation_id,
                 user_id=llm_request_data.user_id,
-                model_token_price_id=llm_request_data.model_token_price_id,
-                generation_type=billing_request_data.generation_type,
-                hold_amount=billing_request_data.hold_amount,
-                provider_cost=provider_cost,
+                generation_type=llm_request_data.generation_type,
+                hold_amount=llm_request_data.hold_amount,
+                final_tokens_cost=final_tokens_cost,
                 provider_status=GenerationStatus.COMPLETED,
                 text=llm_response.text,
             )

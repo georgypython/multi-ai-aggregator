@@ -67,6 +67,9 @@ class VideoProfile(Base, UUIDPKMixin, CreatedAtMixin):
     provider: Mapped[ModelProvider] = mapped_column(
         Enum(ModelProvider, name="model_provider_enum"), nullable=False
     )
+    image_edit_model_name: Mapped[str | None] = mapped_column(
+        nullable=True, default=None
+    )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     ai_model: Mapped["AIModel"] = relationship(back_populates="video_profile")
@@ -96,12 +99,12 @@ class ImagePrice(Base, UUIDPKMixin, CreatedAtMixin):
 
 
 class VideoPrice(Base, UUIDPKMixin, CreatedAtMixin):
-    """Цена video-генерации для пары duration/size."""
+    """Цена video-генерации для duration."""
 
     __tablename__ = "video_prices"
     __table_args__ = (
         UniqueConstraint(
-            "video_profile_id", "duration_seconds", "size", name="uq_video_price_combo"
+            "video_profile_id", "duration_seconds", name="uq_video_price_combo"
         ),
     )
 
@@ -109,7 +112,6 @@ class VideoPrice(Base, UUIDPKMixin, CreatedAtMixin):
         ForeignKey("video_profiles.id"), nullable=False, index=True
     )
     duration_seconds: Mapped[int] = mapped_column(nullable=False)
-    size: Mapped[str] = mapped_column(nullable=False)
     provider_cost: Mapped[Decimal] = mapped_column(Numeric(18, 10), nullable=False)
 
     video_profile: Mapped["VideoProfile"] = relationship(back_populates="prices")

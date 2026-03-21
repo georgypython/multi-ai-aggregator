@@ -66,25 +66,21 @@ class VideoProfileService:
 
         return video_profile
 
-    def _build_video_model_durations_and_sizes(
+    def _build_video_model_durations(
         self, video_prices: list[VideoPrice]
     ) -> VideoPriceParamsSchema:
         durations_seconds: set[int] = set()
-        sizes: set[str] = set()
 
         for price in video_prices:
             durations_seconds.add(price.duration_seconds)
-            sizes.add(price.size)
 
         resolved_durations = sorted(durations_seconds)
-        resolved_sizes = sorted(sizes)
 
-        if not resolved_durations or not resolved_sizes:
+        if not resolved_durations:
             raise ModelConfigError("VideoProfile pricing config is invalid")
 
         return VideoPriceParamsSchema(
             durations_seconds=resolved_durations,
-            sizes=resolved_sizes,
         )
 
     async def _get_raw_video_price_data(
@@ -92,33 +88,29 @@ class VideoProfileService:
         model_id: UUID,
         video_profile: VideoProfile | None,
         duration_seconds: int | None,
-        size: str | None,
     ) -> VideoModelRawPriceDataSchema:
         video_profile = self._validate_video_profile_with_prices(
             video_profile=video_profile
         )
 
-        price_params = self._build_video_model_durations_and_sizes(
+        price_params = self._build_video_model_durations(
             video_prices=video_profile.prices,
         )
         resolved_duration = duration_seconds or price_params.durations_seconds[0]
-        resolved_size = size or price_params.sizes[0]
 
-        video_price = await self.video_price_repo.get_one_by_ai_model_duration_size(
+        video_price = await self.video_price_repo.get_one_by_ai_model_duration(
             session=self.session,
             ai_model_id=model_id,
             duration_seconds=resolved_duration,
-            size=resolved_size,
         )
         if not video_price:
             raise ModelConfigError(
-                f"Missing price for duration_seconds='{resolved_duration}', size='{resolved_size}'"
+                f"Missing price for duration_seconds='{resolved_duration}'"
             )
 
         return VideoModelRawPriceDataSchema(
             ai_model_id=model_id,
             duration_seconds=resolved_duration,
-            size=resolved_size,
             usd_price=video_price.provider_cost,
         )
 
@@ -138,7 +130,7 @@ class VideoProfileService:
             video_profile=ai_model.video_profile,
         )
 
-        price_params = self._build_video_model_durations_and_sizes(
+        price_params = self._build_video_model_durations(
             video_prices=video_profile.prices,
         )
 
@@ -155,7 +147,6 @@ class VideoProfileService:
         user_id: UUID,
         model_id: UUID,
         duration_seconds: int | None,
-        size: str | None,
     ) -> VideoModelPriceResponseSchema:
         ai_model = await self.ai_model_repo.get_one_with_video_profile_and_prices(
             session=self.session,
@@ -167,7 +158,6 @@ class VideoProfileService:
             model_id=model_id,
             video_profile=ai_model.video_profile,
             duration_seconds=duration_seconds,
-            size=size,
         )
 
         provider_price = raw_price_data.usd_price
@@ -193,7 +183,6 @@ class VideoProfileService:
             ai_model_id=ai_model.id,
             provider_key=ai_model.provider_key,
             duration_seconds=raw_price_data.duration_seconds,
-            size=raw_price_data.size,
             tokens_price=tokens_price,
         )
 
@@ -201,7 +190,6 @@ class VideoProfileService:
         self,
         model_id: UUID,
         duration_seconds: int | None,
-        size: str | None,
     ) -> VideoModelRawDataSchema:
         ai_model = await self.ai_model_repo.get_one_with_video_profile_and_prices(
             session=self.session,
@@ -216,12 +204,11 @@ class VideoProfileService:
             model_id=model_id,
             video_profile=video_profile,
             duration_seconds=duration_seconds,
-            size=size,
         )
 
         return VideoModelRawDataSchema(
             duration_seconds=raw_price_data.duration_seconds,
-            size=raw_price_data.size,
             provider_cost=raw_price_data.usd_price,
             provider=video_profile.provider,
+            image_edit_model_name=video_profile.image_edit_model_name,
         )

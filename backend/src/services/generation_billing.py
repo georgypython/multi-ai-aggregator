@@ -175,11 +175,7 @@ class GenerationBillingService:
         data: GenerationFinishData,
     ) -> GenerationResultResponseDataSchema:
         async with self.session.begin():
-            final_tokens_cost = await self.calculate_final_tokens_cost(
-                hold_amount=data.hold_amount,
-                model_token_price_id=data.model_token_price_id,
-                provider_cost=data.provider_cost,
-            )
+            final_tokens_cost = data.final_tokens_cost
 
             balance = await self.user_repo.settle_hold_tokens(
                 session=self.session,
@@ -236,14 +232,13 @@ class GenerationBillingService:
         self,
         provider_cost: Decimal,
         model_token_price_id: UUID,
-        min_hold_amount: Decimal,
     ) -> Decimal:
         expected_tokens_cost = await self._calculate_tokens_cost_from_providers_cost(
             provider_cost=provider_cost,
             model_token_price_id=model_token_price_id,
         )
         rounded_expected_tokens_cost = self._round_tokens_up(expected_tokens_cost)
-        return max(min_hold_amount, rounded_expected_tokens_cost)
+        return rounded_expected_tokens_cost
 
     async def calculate_final_tokens_cost(
         self,

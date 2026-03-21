@@ -8,6 +8,7 @@ from src.core.config import settings
 from src.services.ai_models import AIModelsService
 from src.services.generation_billing import GenerationBillingService
 from src.services.generation_info import GenerationInfoService
+from src.services.generation_webhook import GenerationWebhookService
 from src.services.image_profile import ImageProfileService
 from src.services.image_generation import ImageGenerationService
 from src.services.llm_configuration import LLMConfigurationService
@@ -33,6 +34,19 @@ from src.repositories import (
 
 
 class ServicesProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    def get_generation_webhook_service(
+        self,
+        session: AsyncSession,
+        generation_repo: GenerationRepository,
+        generation_billing_service: GenerationBillingService,
+    ) -> GenerationWebhookService:
+        return GenerationWebhookService(
+            session=session,
+            generation_repo=generation_repo,
+            generation_billing_service=generation_billing_service,
+        )
+
     @provide(scope=Scope.APP)
     def get_openrouter_service(
         self,
@@ -53,6 +67,7 @@ class ServicesProvider(Provider):
             client=client,
             api_key=settings.wavespeed.api_key,
             base_url=settings.wavespeed.base_url,
+            webhook_url=settings.wavespeed.wavespeed_webhook_url,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -169,8 +184,6 @@ class ServicesProvider(Provider):
             image_profile_service=image_configuration_service,
             wavespeed_service=wavespeed_service,
             storage_service=storage_service,
-            poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
-            poll_max_attempts=settings.wavespeed.poll_max_attempts,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -183,6 +196,7 @@ class ServicesProvider(Provider):
         generation_billing_service: GenerationBillingService,
         video_configuration_service: VideoProfileService,
         wavespeed_service: WaveSpeedService,
+        storage_service: StorageService,
     ) -> VideoGenerationService:
         return VideoGenerationService(
             session=session,
@@ -192,8 +206,7 @@ class ServicesProvider(Provider):
             generation_billing_service=generation_billing_service,
             video_profile_service=video_configuration_service,
             wavespeed_service=wavespeed_service,
-            poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
-            poll_max_attempts=settings.wavespeed.poll_max_attempts,
+            storage_service=storage_service,
         )
 
     @provide(scope=Scope.REQUEST)

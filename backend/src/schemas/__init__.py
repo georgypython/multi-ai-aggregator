@@ -15,7 +15,6 @@ from src.schemas.image import (
     ImageModelRawPriceDataSchema,
     ImagePriceParamsSchema,
     ImageRequestDataSchema,
-    ModelConfigDataSchema,
 )
 from src.schemas.llm import (
     LLMGenerationCreateRequestSchema,
@@ -31,7 +30,6 @@ from src.schemas.media import (
 from src.schemas.user import UserBalanceResponseSchema
 from src.schemas.video import (
     VideoGenerationCreateRequestSchema,
-    VideoModelConfigDataSchema,
     VideoModelDetailResponseSchema,
     VideoModelPriceResponseSchema,
     VideoModelProfileResponseSchema,
@@ -40,7 +38,10 @@ from src.schemas.video import (
     VideoPriceParamsSchema,
     VideoRequestDataSchema,
 )
-from src.schemas.wavespeed import WavespeedGenerationResponseSchema
+from src.schemas.wavespeed import (
+    WavespeedGenerationResponseSchema,
+    WavespeedWebhookPayloadSchema,
+)
 
 __all__ = [
     "AIModelListItemResponseSchema",
@@ -57,7 +58,6 @@ __all__ = [
     "ImageModelRawPriceDataSchema",
     "ImagePriceParamsSchema",
     "ImageRequestDataSchema",
-    "ModelConfigDataSchema",
     "LLMGenerationCreateRequestSchema",
     "LLMProviderResponseSchema",
     "LLMRequestDataSchema",
@@ -68,7 +68,6 @@ __all__ = [
     "UploadFileResponseSchema",
     "UserBalanceResponseSchema",
     "VideoGenerationCreateRequestSchema",
-    "VideoModelConfigDataSchema",
     "VideoModelDetailResponseSchema",
     "VideoModelPriceResponseSchema",
     "VideoModelProfileResponseSchema",
@@ -77,4 +76,5 @@ __all__ = [
     "VideoPriceParamsSchema",
     "VideoRequestDataSchema",
     "WavespeedGenerationResponseSchema",
+    "WavespeedWebhookPayloadSchema",
 ]
