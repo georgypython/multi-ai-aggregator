@@ -64,7 +64,7 @@ async def get_image_profile(
         )
     except ModelConfigError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         )
     except ValueError as exc:
@@ -86,7 +86,7 @@ async def get_video_profile(
         )
     except ModelConfigError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         )
     except ValueError as exc:
@@ -114,7 +114,7 @@ async def get_image_price(
         )
     except ModelConfigError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         )
     except ValueError as exc:
@@ -145,7 +145,7 @@ async def get_video_price(
         )
     except ModelConfigError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         )
     except ValueError as exc:

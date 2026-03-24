@@ -23,9 +23,13 @@ class AIModelRepository(AbstractRepository[AIModel]):
         stmt = select(self.model).where(self.model.id == ai_model_id)
 
         if model_type == ModelType.IMAGE:
-            stmt = stmt.options(selectinload(self.model.image_profile))
+            stmt = stmt.options(
+                selectinload(self.model.image_profile).selectinload(ImageProfile.prices)
+            )
         elif model_type == ModelType.VIDEO:
-            stmt = stmt.options(selectinload(self.model.video_profile))
+            stmt = stmt.options(
+                selectinload(self.model.video_profile).selectinload(VideoProfile.prices)
+            )
         elif model_type == ModelType.LLM:
             stmt = stmt.options(selectinload(self.model.llm_profile))
         else:
@@ -34,26 +38,3 @@ class AIModelRepository(AbstractRepository[AIModel]):
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_one_with_image_profile_and_prices(
-        self,
-        session: AsyncSession,
-        *,
-        ai_model_id: UUID,
-    ) -> AIModel | None:
-        return await self.get_one_with_profile(
-            session=session,
-            ai_model_id=ai_model_id,
-            model_type=ModelType.IMAGE,
-        )
-
-    async def get_one_with_video_profile_and_prices(
-        self,
-        session: AsyncSession,
-        *,
-        ai_model_id: UUID,
-    ) -> AIModel | None:
-        return await self.get_one_with_profile(
-            session=session,
-            ai_model_id=ai_model_id,
-            model_type=ModelType.VIDEO,
-        )

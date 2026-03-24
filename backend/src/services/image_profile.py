@@ -123,9 +123,10 @@ class ImageProfileService:
         self,
         ai_model_id: UUID,
     ) -> ImageModelProfileResponseSchema:
-        ai_model = await self.ai_model_repo.get_one_with_image_profile_and_prices(
+        ai_model = await self.ai_model_repo.get_one_with_profile(
             session=self.session,
             ai_model_id=ai_model_id,
+            model_type=ModelType.IMAGE,
         )
         ai_model = self._validate_image_model(
             ai_model_id=ai_model_id, ai_model=ai_model
@@ -154,9 +155,10 @@ class ImageProfileService:
         size: str | None,
         quality: str | None,
     ) -> ImageModelPriceResponseSchema:
-        ai_model = await self.ai_model_repo.get_one_with_image_profile_and_prices(
+        ai_model = await self.ai_model_repo.get_one_with_profile(
             session=self.session,
             ai_model_id=model_id,
+            model_type=ModelType.IMAGE,
         )
         ai_model = self._validate_image_model(ai_model_id=model_id, ai_model=ai_model)
 
@@ -199,9 +201,10 @@ class ImageProfileService:
         size: str | None,
         quality: str | None,
     ) -> ImageModelRawDataSchema:
-        ai_model = await self.ai_model_repo.get_one_with_image_profile_and_prices(
+        ai_model = await self.ai_model_repo.get_one_with_profile(
             session=self.session,
             ai_model_id=model_id,
+            model_type=ModelType.IMAGE,
         )
         ai_model = self._validate_image_model(ai_model_id=model_id, ai_model=ai_model)
 

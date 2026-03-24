@@ -52,7 +52,7 @@ async def generate_image(
         )
     except ModelConfigError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         )
     except ImageGenerationNotCompletedError as exc:
@@ -141,7 +141,7 @@ async def generate_video(
         )
     except ModelConfigError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         )
     except InsufficientBalanceError as exc:

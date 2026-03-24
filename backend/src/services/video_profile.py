@@ -118,9 +118,10 @@ class VideoProfileService:
         self,
         ai_model_id: UUID,
     ) -> VideoModelProfileResponseSchema:
-        ai_model = await self.ai_model_repo.get_one_with_video_profile_and_prices(
+        ai_model = await self.ai_model_repo.get_one_with_profile(
             session=self.session,
             ai_model_id=ai_model_id,
+            model_type=ModelType.VIDEO,
         )
         ai_model = self._validate_video_model(
             ai_model_id=ai_model_id, ai_model=ai_model
@@ -148,9 +149,10 @@ class VideoProfileService:
         model_id: UUID,
         duration_seconds: int | None,
     ) -> VideoModelPriceResponseSchema:
-        ai_model = await self.ai_model_repo.get_one_with_video_profile_and_prices(
+        ai_model = await self.ai_model_repo.get_one_with_profile(
             session=self.session,
             ai_model_id=model_id,
+            model_type=ModelType.VIDEO,
         )
         ai_model = self._validate_video_model(ai_model_id=model_id, ai_model=ai_model)
 
@@ -191,9 +193,10 @@ class VideoProfileService:
         model_id: UUID,
         duration_seconds: int | None,
     ) -> VideoModelRawDataSchema:
-        ai_model = await self.ai_model_repo.get_one_with_video_profile_and_prices(
+        ai_model = await self.ai_model_repo.get_one_with_profile(
             session=self.session,
             ai_model_id=model_id,
+            model_type=ModelType.VIDEO,
         )
         ai_model = self._validate_video_model(ai_model_id=model_id, ai_model=ai_model)
 

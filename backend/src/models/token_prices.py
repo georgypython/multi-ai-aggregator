@@ -25,6 +25,6 @@ class TokenPrice(Base, UUIDPKMixin, CreatedAtMixin):
     )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
-    ai_models: Mapped[list["AIModel | None"]] = relationship(
+    ai_models: Mapped[list["AIModel"]] = relationship(
         back_populates="token_price"
     )
