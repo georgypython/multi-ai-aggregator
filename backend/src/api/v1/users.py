@@ -6,7 +6,7 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from src.api.dependencies import (
     TgRateLimiter,
     require_api_key,
-    resolve_user_id_by_telegram_id,
+    resolve_whitelisted_user_id_by_telegram_id,
 )
 from src.schemas import (
     LLMConfigCreateRequestSchema,
@@ -37,7 +37,7 @@ router = APIRouter(
 async def create_or_update_llm_config(
     payload: LLMConfigCreateRequestSchema,
     service: FromDishka[LLMConfigurationService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Создает или обновляет LLM-настройки текущего пользователя."""
     try:
@@ -65,7 +65,7 @@ async def create_or_update_llm_config(
 )
 async def get_llm_config(
     service: FromDishka[LLMConfigurationService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Возвращает сохраненные LLM-настройки текущего пользователя."""
     try:
@@ -88,7 +88,7 @@ async def get_llm_config(
 )
 async def get_my_balance(
     service: FromDishka[UsersService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ) -> UserBalanceResponseSchema:
     """Возвращает токен-баланс текущего пользователя."""
     try:

@@ -15,7 +15,25 @@ router = Router()
 
 
 @router.message(CommandStart())
-async def start(message: Message, state: FSMContext) -> None:
+async def start(
+    message: Message,
+    state: FSMContext,
+    ai_service: FromDishka[AIService],
+) -> None:
+    if message.from_user is None:
+        return
+
+    try:
+        await ai_service.get_user_balance(tg_user_id=message.from_user.id)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 403:
+            return
+        return
+    except Exception:
+        logger.exception("Failed to check whitelist access on /start")
+        await message.answer("Сервис сейчас временно недоступен. Попробуй чуть позже.")
+        return
+
     await state.clear()
     await state.set_state(AIFlow.choosing_mode)
     await message.answer(
@@ -42,6 +60,8 @@ async def choose_model_type(
             model_type=model_type,
         )
     except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 403:
+            return
         if exc.response.status_code == 401:
             await message.answer(
                 "Сервис сейчас временно недоступен. Попробуй чуть позже."

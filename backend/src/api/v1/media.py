@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from src.api.dependencies import (
     TgRateLimiter,
     require_api_key,
-    resolve_user_id_by_telegram_id,
+    resolve_whitelisted_user_id_by_telegram_id,
 )
 from src.exceptions.storage import (
     EmptyFileError,
@@ -39,7 +39,7 @@ router = APIRouter(
 async def upload_image(
     storage_service: FromDishka[StorageService],
     file: UploadFile = File(...),
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Загружает пользовательское изображение во временное хранилище."""
     try:

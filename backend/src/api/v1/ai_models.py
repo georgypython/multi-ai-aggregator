@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from src.api.dependencies import (
     TgRateLimiter,
     require_api_key,
-    resolve_user_id_by_telegram_id,
+    resolve_whitelisted_user_id_by_telegram_id,
 )
 from src.core.logger_setup import logger
 from src.exceptions.generation import ModelConfigError
@@ -42,7 +42,7 @@ async def get_ai_models_list(
     service: FromDishka[AIModelsService],
     model_type: ModelType | None = None,
     active_only: bool = True,
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ) -> list[AIModelListItemResponseSchema]:
     """Возвращает список доступных AI-моделей для пользователя."""
     try:
@@ -76,6 +76,7 @@ async def get_ai_models_list(
 async def get_image_profile(
     model_id: UUID,
     service: FromDishka[ImageProfileService],
+    _user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Возвращает профиль и варианты параметров image-модели."""
     try:
@@ -106,6 +107,7 @@ async def get_image_profile(
 async def get_video_profile(
     model_id: UUID,
     service: FromDishka[VideoProfileService],
+    _user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Возвращает профиль и варианты параметров video-модели."""
     try:
@@ -138,7 +140,7 @@ async def get_image_price(
     service: FromDishka[ImageProfileService],
     size: str | None = None,
     quality: str | None = None,
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Считает цену image-генерации с учетом выбранных параметров."""
     try:
@@ -178,7 +180,7 @@ async def get_video_price(
     model_id: UUID,
     service: FromDishka[VideoProfileService],
     duration_seconds: int | None = None,
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Считает цену video-генерации с учетом параметров."""
     try:

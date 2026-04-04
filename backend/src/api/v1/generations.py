@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from src.api.dependencies import (
     TgRateLimiter,
     require_api_key,
-    resolve_user_id_by_telegram_id,
+    resolve_whitelisted_user_id_by_telegram_id,
 )
 from src.exceptions.generation import (
     MediaGenerationNotCompletedError,
@@ -37,7 +37,7 @@ router = APIRouter(
 async def get_generation_status(
     generation_id: UUID,
     service: FromDishka[GenerationInfoService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Возвращает текущий статус и стоимость генерации."""
     try:
@@ -65,7 +65,7 @@ async def get_generation_status(
 async def get_generation_content(
     generation_id: UUID,
     service: FromDishka[GenerationInfoService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Возвращает бинарный результат завершенной media-генерации."""
     try:

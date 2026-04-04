@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from src.api.dependencies import (
     TgRateLimiter,
     require_api_key,
-    resolve_user_id_by_telegram_id,
+    resolve_whitelisted_user_id_by_telegram_id,
 )
 from src.exceptions.generation import (
     ImageGenerationNotCompletedError,
@@ -48,7 +48,7 @@ async def generate_image(
     model_id: UUID,
     payload: ImageGenerationCreateRequestSchema,
     service: FromDishka[ImageGenerationService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Запускает генерацию изображения для выбранной модели."""
     try:
@@ -100,7 +100,7 @@ async def generate_llm(
     model_id: UUID,
     payload: LLMGenerationCreateRequestSchema,
     service: FromDishka[LLMGenerationService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Генерирует текстовый ответ LLM для пользователя."""
     try:
@@ -149,7 +149,7 @@ async def generate_video(
     model_id: UUID,
     payload: VideoGenerationCreateRequestSchema,
     service: FromDishka[VideoGenerationService],
-    user_id: UUID = Depends(resolve_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Запускает генерацию видео для выбранной модели."""
     try:

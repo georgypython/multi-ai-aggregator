@@ -61,3 +61,25 @@ async def resolve_user_id_by_telegram_id(
             )
             await session.flush()
         return user.id
+
+
+async def resolve_whitelisted_user_id_by_telegram_id(
+    tg_user_id: int = Query(..., ge=1),
+    session: AsyncSession = Depends(get_session),
+) -> UUID:
+    async with session.begin():
+        stmt = select(User).where(
+            User.telegram_id == tg_user_id,
+            User.is_active.is_(True),
+            User.is_whitelist.is_(True),
+        )
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied",
+            )
+
+        return user.id

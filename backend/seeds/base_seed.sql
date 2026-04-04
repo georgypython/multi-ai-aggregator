@@ -1,6 +1,6 @@
 -- Base seed for local/dev environment (current DB schema)
 -- Contains common AI models, token prices, llm/image/video profiles and all image/video prices.
--- No users, balances, or user-specific configurations are created.
+-- Also seeds one whitelisted Telegram user for manual smoke checks.
 
 BEGIN;
 
@@ -10,6 +10,8 @@ BEGIN;
 -- Token prices:   44444444-4444-4444-4444-444444444441 .. 44444444-4444-4444-4444-444444444443
 -- Image profiles: 66666666-6666-6666-6666-666666666231 .. 66666666-6666-6666-6666-666666666233
 -- Video profiles: 77777777-7777-7777-7777-777777777227 .. 77777777-7777-7777-7777-777777777228
+-- Seed user:      55555555-5555-5555-5555-555555550001 (tg: 5854450847)
+-- Seed balance:   55555555-5555-5555-5555-555555550101
 
 -- Providers covered by this seed:
 -- LLM:   openai/gpt-4o-mini, openai/gpt-5.2, openai/gpt-5.1, openai/gpt-5.3-chat, openai/gpt-5.4, openai/gpt-4, x-ai/grok-4, anthropic/claude-sonnet-4.5
@@ -544,5 +546,38 @@ VALUES
     ('99999999-9999-9999-9999-000000000007', '77777777-7777-7777-7777-777777777228', 4, 1.60),
     ('99999999-9999-9999-9999-000000000009', '77777777-7777-7777-7777-777777777228', 6, 2.40),
     ('99999999-9999-9999-9999-000000000011', '77777777-7777-7777-7777-777777777228', 8, 3.20);
+
+-- Whitelisted Telegram user for local/dev smoke checks
+INSERT INTO users (
+    id,
+    telegram_id,
+    is_active,
+    is_whitelist
+)
+VALUES (
+    '55555555-5555-5555-5555-555555550001',
+    5854450847,
+    TRUE,
+    TRUE
+)
+ON CONFLICT (telegram_id) DO UPDATE SET
+    is_active = EXCLUDED.is_active,
+    is_whitelist = EXCLUDED.is_whitelist;
+
+INSERT INTO user_balances (
+    id,
+    user_id,
+    available_tokens,
+    hold_tokens
+)
+VALUES (
+    '55555555-5555-5555-5555-555555550101',
+    (SELECT id FROM users WHERE telegram_id = 5854450847),
+    1000,
+    0
+)
+ON CONFLICT (user_id) DO UPDATE SET
+    available_tokens = EXCLUDED.available_tokens,
+    hold_tokens = EXCLUDED.hold_tokens;
 
 COMMIT;

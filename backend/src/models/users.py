@@ -21,6 +21,7 @@ class User(Base, UUIDPKMixin, CreatedAtMixin):
 
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    is_whitelist: Mapped[bool | None] = mapped_column(nullable=True)
 
     balance: Mapped["UserBalance | None"] = relationship(
         back_populates="user", cascade="all, delete-orphan", uselist=False
