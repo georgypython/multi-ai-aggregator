@@ -1,4 +1,3 @@
-import httpx
 from uuid import UUID
 
 from src.services.common import BaseBackendService
@@ -21,8 +20,8 @@ class AIService(BaseBackendService):
         model_type: str | None = "llm",
         active_only: bool = True,
     ) -> list[AIModelItem]:
-        params: dict[str, str | bool] = {
-            "tg_user_id": str(tg_user_id),
+        params: dict[str, int | str | bool] = {
+            "tg_user_id": tg_user_id,
             "active_only": active_only,
         }
         if model_type is not None:
@@ -40,8 +39,8 @@ class AIService(BaseBackendService):
 
     async def get_llm_config(self, tg_user_id: int) -> LLMConfigResult:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/ai/llm/configs",
-            params={"tg_user_id": str(tg_user_id)},
+            f"{self._base_url}/api/v1/users/me/llm-config",
+            params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )
         response.raise_for_status()
@@ -49,10 +48,12 @@ class AIService(BaseBackendService):
 
     async def get_image_model_config(
         self,
+        tg_user_id: int,
         model_id: UUID,
     ) -> ImageModelConfigResult:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/ai/image/{model_id}",
+            f"{self._base_url}/api/v1/ai/{model_id}/profile/image",
+            params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )
         response.raise_for_status()
@@ -66,9 +67,9 @@ class AIService(BaseBackendService):
         quality: str,
     ) -> ImageModelPriceResult:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/ai/image/{model_id}/price",
+            f"{self._base_url}/api/v1/ai/{model_id}/price/image",
             params={
-                "tg_user_id": str(tg_user_id),
+                "tg_user_id": tg_user_id,
                 "size": size,
                 "quality": quality,
             },
@@ -79,10 +80,12 @@ class AIService(BaseBackendService):
 
     async def get_video_model_config(
         self,
+        tg_user_id: int,
         model_id: UUID,
     ) -> VideoModelConfigResult:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/ai/video/{model_id}",
+            f"{self._base_url}/api/v1/ai/{model_id}/profile/video",
+            params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )
         response.raise_for_status()
@@ -93,14 +96,12 @@ class AIService(BaseBackendService):
         tg_user_id: int,
         model_id: UUID,
         duration_seconds: int,
-        size: str,
     ) -> VideoModelPriceResult:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/ai/video/{model_id}/price",
+            f"{self._base_url}/api/v1/ai/{model_id}/price/video",
             params={
-                "tg_user_id": str(tg_user_id),
+                "tg_user_id": tg_user_id,
                 "duration_seconds": duration_seconds,
-                "size": size,
             },
             headers=self._base_headers,
         )
@@ -109,10 +110,11 @@ class AIService(BaseBackendService):
 
     async def get_user_balance(
         self,
-        user_id: str,
+        tg_user_id: int,
     ) -> UserBalanceResult:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/users/{user_id}/balance",
+            f"{self._base_url}/api/v1/users/me/balance",
+            params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )
         response.raise_for_status()

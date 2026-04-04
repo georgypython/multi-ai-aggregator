@@ -28,7 +28,7 @@ async def open_llm_config(
     fsm_data = await state.get_data()
     selected_model_type = fsm_data.get("selected_model_type")
     if selected_model_type != "llm":
-        await callback.answer("Настройка доступна только для LLM", show_alert=False)
+        await callback.answer("Настройки доступны только для LLM", show_alert=False)
         return
 
     try:
@@ -41,11 +41,14 @@ async def open_llm_config(
             temperature = None
             instructions = None
         elif status_code == 401:
-            await callback.answer("Ошибка авторизации бота на backend", show_alert=True)
+            await callback.answer(
+                "Сервис сейчас временно недоступен. Попробуй чуть позже.",
+                show_alert=True,
+            )
             return
         else:
             await callback.answer(
-                f"Ошибка загрузки: HTTP {status_code}", show_alert=True
+                "Не удалось загрузить настройки. Попробуй позже.", show_alert=True
             )
             return
     except Exception:
@@ -78,7 +81,12 @@ async def ask_temperature(
         return
 
     await state.set_state(AIFlow.editing_llm_temperature)
-    await callback.message.answer("Введи температуру в диапазоне от 0.0 до 2.0")
+    await callback.message.answer(
+        "<b>Температура</b>\n"
+        "Введи число от 0.0 до 2.0\n"
+        "• 0.0-1.0: более точно 🎯\n"
+        "• 1.0-2.0: более креативно ✨"
+    )
     await callback.answer()
 
 
@@ -92,7 +100,10 @@ async def ask_instructions(
         return
 
     await state.set_state(AIFlow.editing_llm_instructions)
-    await callback.message.answer("Введи инструкции для ИИ (обычный текст)")
+    await callback.message.answer(
+        "<b>Инструкции для ИИ</b>\n"
+        "Напиши, как ассистент должен отвечать: стиль, тон, формат ✍️"
+    )
     await callback.answer()
 
 
@@ -103,7 +114,7 @@ async def save_temperature(
     state: FSMContext,
 ) -> None:
     if message.from_user is None:
-        await message.answer("Не удалось определить Telegram пользователя")
+        await message.answer("Не удалось определить пользователя. Попробуй еще раз.")
         return
 
     raw_value = (message.text or "").strip().replace(",", ".")
@@ -124,11 +135,11 @@ async def save_temperature(
         )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 401:
-            await message.answer("Ошибка авторизации бота на backend.")
-        else:
             await message.answer(
-                f"Не удалось сохранить температуру: HTTP {exc.response.status_code}"
+                "Сервис сейчас временно недоступен. Попробуй чуть позже."
             )
+        else:
+            await message.answer("Не удалось сохранить температуру. Попробуй позже.")
         return
     except Exception:
         logger.exception("Failed to save LLM temperature")
@@ -152,7 +163,7 @@ async def save_instructions(
     state: FSMContext,
 ) -> None:
     if message.from_user is None:
-        await message.answer("Не удалось определить Telegram пользователя")
+        await message.answer("Не удалось определить пользователя. Попробуй еще раз.")
         return
 
     instructions = (message.text or "").strip()
@@ -167,11 +178,11 @@ async def save_instructions(
         )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 401:
-            await message.answer("Ошибка авторизации бота на backend.")
-        else:
             await message.answer(
-                f"Не удалось сохранить инструкции: HTTP {exc.response.status_code}"
+                "Сервис сейчас временно недоступен. Попробуй чуть позже."
             )
+        else:
+            await message.answer("Не удалось сохранить инструкции. Попробуй позже.")
         return
     except Exception:
         logger.exception("Failed to save LLM instructions")

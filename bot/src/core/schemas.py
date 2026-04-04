@@ -1,6 +1,14 @@
+from enum import StrEnum
 from uuid import UUID
 
 from pydantic import BaseModel
+
+
+class GenerationStatus(StrEnum):
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELED = "canceled"
 
 
 class AIModelItem(BaseModel):
@@ -27,6 +35,7 @@ class LLMConfigResult(BaseModel):
     configuration_type: str
     temperature: float | None = None
     instructions: str | None = None
+    created_at: str | None = None
 
 
 class ImageModelConfigResult(BaseModel):
@@ -36,7 +45,6 @@ class ImageModelConfigResult(BaseModel):
     provider: str
     sizes: list[str]
     qualities: list[str]
-    prices_usd: dict[str, dict[str, float]]
 
 
 class ImageModelPriceResult(BaseModel):
@@ -53,15 +61,12 @@ class VideoModelConfigResult(BaseModel):
     provider_key: str
     provider: str
     durations_seconds: list[int]
-    sizes: list[str]
-    prices_usd_by_duration: dict[str, dict[str, float]]
 
 
 class VideoModelPriceResult(BaseModel):
     ai_model_id: UUID
     provider_key: str
     duration_seconds: int
-    size: str
     tokens_price: float
 
 
@@ -70,8 +75,7 @@ class ImageGenerationResult(BaseModel):
     user_id: UUID
     generation_id: UUID
     tokens_cost: float
-    status: str
-    text: str | None = None
+    status: GenerationStatus
 
 
 class UploadMediaImagesResult(BaseModel):
@@ -83,6 +87,7 @@ class VideoGenerationResult(BaseModel):
     user_id: UUID
     generation_id: UUID
     tokens_cost: float
+    status: GenerationStatus
 
 
 class UserBalanceResult(BaseModel):

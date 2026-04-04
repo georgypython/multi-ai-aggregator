@@ -10,6 +10,7 @@ from aiogram.types.input_file import BufferedInputFile
 from dishka.integrations.aiogram import FromDishka
 import httpx
 
+from src.core.schemas import GenerationStatus
 from src.core.logger import logger
 from src.keyboards.ai import build_image_qualities_keyboard
 from src.services.ai import AIService
@@ -31,12 +32,12 @@ async def choose_image_size(
     fsm_data = await state.get_data()
     selected_model_type = fsm_data.get("selected_model_type")
     if selected_model_type != "image":
-        await callback.answer("Это не image flow", show_alert=False)
+        await callback.answer("Сейчас открыт другой режим", show_alert=False)
         return
 
     sizes: list[str] = fsm_data.get("selected_image_sizes", [])
     if not sizes:
-        await callback.answer("Сначала выбери image-модель", show_alert=False)
+        await callback.answer("Сначала выбери модель изображения", show_alert=False)
         return
 
     size = (callback.data or "").split(":", maxsplit=1)[1] if callback.data else None
@@ -53,11 +54,13 @@ async def choose_image_size(
 
     qualities: list[str] = fsm_data.get("selected_image_qualities", [])
     if not qualities:
-        await callback.answer("Не найдены quality для модели", show_alert=True)
+        await callback.answer(
+            "Не удалось загрузить параметры качества", show_alert=True
+        )
         return
 
     await callback.message.edit_text(
-        f"Размер: <b>{escape(size)}</b>\nВыбери quality:",
+        f"<b>Шаг 2/2</b>\nРазмер: <b>{escape(size)}</b>\nТеперь выбери качество:",
         reply_markup=build_image_qualities_keyboard(qualities),
     )
     await callback.answer("Размер выбран", show_alert=False)
@@ -79,7 +82,7 @@ async def choose_image_quality(
     selected_size = fsm_data.get("selected_image_size")
 
     if selected_model_type != "image" or not selected_model_id:
-        await callback.answer("Сначала выбери image-модель", show_alert=False)
+        await callback.answer("Сначала выбери модель изображения", show_alert=False)
         return
     if not selected_size:
         await callback.answer("Сначала выбери размер", show_alert=False)
@@ -87,7 +90,7 @@ async def choose_image_quality(
 
     quality = (callback.data or "").split(":", maxsplit=1)[1] if callback.data else None
     if not quality:
-        await callback.answer("Quality не распознан", show_alert=False)
+        await callback.answer("Качество не распознано", show_alert=False)
         return
 
     try:
@@ -99,13 +102,13 @@ async def choose_image_quality(
         )
     except httpx.HTTPStatusError as exc:
         await callback.answer(
-            f"Ошибка цены: HTTP {exc.response.status_code}",
+            "Не удалось рассчитать стоимость. Попробуй еще раз.",
             show_alert=True,
         )
         return
     except Exception:
         logger.exception("Failed to get image model price")
-        await callback.answer("Ошибка при расчете цены", show_alert=True)
+        await callback.answer("Не удалось рассчитать стоимость", show_alert=True)
         return
 
     await state.update_data(
@@ -115,14 +118,14 @@ async def choose_image_quality(
     await state.set_state(AIFlow.waiting_image_prompt)
 
     text = (
-        "Параметры изображения выбраны:\n"
-        f"• size: <b>{escape(selected_size)}</b>\n"
-        f"• quality: <b>{escape(quality)}</b>\n"
-        f"• стоимость: <b>{price_info.tokens_price:.4f} токенов</b>\n\n"
-        "Напишите промпт для генерации изображения."
+        "<b>Параметры изображения готовы 🖼️</b>\n"
+        f"• Размер: <b>{escape(selected_size)}</b>\n"
+        f"• Качество: <b>{escape(quality)}</b>\n"
+        f"• Стоимость: <b>{price_info.tokens_price:.4f} токенов</b>\n\n"
+        "Отправь промпт текстом или фото с подписью."
     )
     await callback.message.edit_text(text)
-    await callback.answer("Quality выбран", show_alert=False)
+    await callback.answer("Качество выбрано", show_alert=False)
 
 
 async def _run_image_generation(
@@ -133,7 +136,7 @@ async def _run_image_generation(
     image_attachments: list[tuple[str, bytes, str]] | None = None,
 ) -> None:
     if message.from_user is None:
-        await message.answer("Не удалось определить Telegram пользователя")
+        await message.answer("Не удалось определить пользователя. Попробуй еще раз.")
         return
 
     fsm_data = await state.get_data()
@@ -143,10 +146,10 @@ async def _run_image_generation(
     selected_quality = fsm_data.get("selected_image_quality")
 
     if selected_model_type != "image" or not selected_model_id:
-        await message.answer("Сначала выбери image-модель.")
+        await message.answer("Сначала выбери модель изображения.")
         return
     if not selected_size or not selected_quality:
-        await message.answer("Сначала выбери size и quality.")
+        await message.answer("Сначала выбери размер и качество.")
         return
 
     media_file_ids: list[UUID] | None = None
@@ -160,20 +163,26 @@ async def _run_image_generation(
         except httpx.HTTPStatusError as exc:
             status_code = exc.response.status_code
             if status_code == 413:
-                await message.answer("Одно из изображений слишком большое.")
+                await message.answer(
+                    "Файл слишком большой. Попробуй изображение меньшего размера."
+                )
             elif status_code == 400:
-                await message.answer("Некорректный формат изображения для загрузки.")
+                await message.answer("Неподдерживаемый формат изображения.")
             elif status_code == 401:
-                await message.answer("Ошибка авторизации бота на backend.")
+                await message.answer(
+                    "Сервис сейчас временно недоступен. Попробуй чуть позже."
+                )
             else:
-                await message.answer(f"Ошибка загрузки изображений: HTTP {status_code}")
+                await message.answer(
+                    "Не удалось загрузить изображение. Попробуй позже."
+                )
             return
         except Exception:
             logger.exception("Failed to upload images before generation")
-            await message.answer("Ошибка загрузки изображений. Попробуй позже.")
+            await message.answer("Не удалось загрузить изображение. Попробуй позже.")
             return
 
-    await message.answer("Генерирую изображение, подожди немного…")
+    await message.answer("Принял запрос ✨ Запускаю генерацию изображения...")
 
     try:
         result = await image_generation_service.generate_image(
@@ -187,18 +196,24 @@ async def _run_image_generation(
     except httpx.HTTPStatusError as exc:
         status_code = exc.response.status_code
         if status_code == 402:
-            await message.answer("Недостаточно токенов для этой генерации.")
+            await message.answer("Недостаточно токенов для этой генерации 💸")
         elif status_code == 401:
-            await message.answer("Ошибка авторизации бота на backend.")
+            await message.answer(
+                "Сервис сейчас временно недоступен. Попробуй чуть позже."
+            )
         else:
-            await message.answer(f"Ошибка генерации изображения: HTTP {status_code}")
+            await message.answer(
+                "Не удалось запустить генерацию изображения. Попробуй позже."
+            )
         return
     except Exception:
         logger.exception("Failed to generate image")
-        await message.answer("Ошибка генерации изображения. Попробуй позже.")
+        await message.answer(
+            "Не удалось запустить генерацию изображения. Попробуй позже."
+        )
         return
 
-    await message.answer("Генерация запущена. Ожидаю завершение…")
+    await message.answer("Генерация запущена ⏳ Обычно это занимает до минуты.")
 
     try:
         final_status = await image_generation_service.wait_for_image_generation_status(
@@ -208,35 +223,35 @@ async def _run_image_generation(
     except httpx.HTTPStatusError as exc:
         logger.exception("Backend failed while polling image generation status")
         await message.answer(
-            f"Не удалось проверить статус генерации: HTTP {exc.response.status_code}"
+            "Не удалось проверить прогресс генерации. Попробуй немного позже."
         )
         return
     except TimeoutError:
         await message.answer(
-            "Генерация зависла в статусе processing слишком долго. Попробуй ещё раз или проверь backend/worker логи."
+            "Генерация заняла слишком много времени. Попробуй еще раз чуть позже."
         )
         return
     except Exception:
         logger.exception("Failed while polling image generation status")
-        await message.answer("Ошибка при проверке статуса генерации.")
+        await message.answer("Не удалось проверить прогресс генерации. Попробуй позже.")
         return
 
-    if final_status.status == "failed":
-        await message.answer("Генерация завершилась с ошибкой ❌")
-        return
-
-    if final_status.status == "canceled":
-        await message.answer("Генерация была отменена ❌")
-        return
-
-    if final_status.status != "completed":
+    if final_status.status == GenerationStatus.FAILED:
         await message.answer(
-            f"Генерация пока не завершена (status={final_status.status})."
+            "Не удалось завершить генерацию изображения ❌ Попробуй другой запрос."
         )
         return
 
+    if final_status.status == GenerationStatus.CANCELED:
+        await message.answer("Генерация была отменена ❌")
+        return
+
+    if final_status.status != GenerationStatus.COMPLETED:
+        await message.answer("Изображение еще готовится. Проверь чуть позже ⏳")
+        return
+
     await message.answer(
-        "Готово ✅\n"
+        "<b>Готово ✅</b>\n"
         f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>\n"
         "Отправляю изображение..."
     )
@@ -253,7 +268,7 @@ async def _run_image_generation(
                 filename=f"image_{result.generation_id}.jpg",
             ),
             caption=(
-                "Изображение готово ✅\n"
+                "<b>Изображение готово ✅</b>\n"
                 f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>"
             ),
         )
@@ -265,15 +280,13 @@ async def _run_image_generation(
                 filename=f"image_{result.generation_id}.jpg",
             ),
             caption=(
-                "Изображение готово ✅\n"
+                "<b>Изображение готово ✅</b>\n"
                 f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>"
             ),
         )
     except httpx.HTTPStatusError as exc:
         logger.exception("Backend failed to return generated image content")
-        await message.answer(
-            f"Не удалось получить изображение с backend: HTTP {exc.response.status_code}"
-        )
+        await message.answer("Не удалось получить готовое изображение. Попробуй позже.")
     except Exception:
         logger.exception("Failed to download/send generated image")
         await message.answer("Не удалось отправить изображение. Попробуй позже.")

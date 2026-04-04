@@ -19,7 +19,7 @@ async def start(message: Message, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(AIFlow.choosing_mode)
     await message.answer(
-        "Выбери режим:",
+        "<b>Привет! 👋</b> Выбери режим, с которым хочешь поработать:",
         reply_markup=build_model_types_keyboard(),
     )
 
@@ -31,7 +31,7 @@ async def choose_model_type(
     state: FSMContext,
 ) -> None:
     if message.from_user is None:
-        await message.answer("Не удалось определить Telegram пользователя")
+        await message.answer("Не удалось определить пользователя. Попробуй еще раз.")
         return
 
     model_type = AIFlowHelper.MODE_TEXT_TO_TYPE.get(message.text or "", "llm")
@@ -43,19 +43,23 @@ async def choose_model_type(
         )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 401:
-            await message.answer("Ошибка авторизации бота на backend.")
+            await message.answer(
+                "Сервис сейчас временно недоступен. Попробуй чуть позже."
+            )
         else:
             await message.answer(
-                f"Не удалось загрузить модели: HTTP {exc.response.status_code}"
+                "Не удалось загрузить список моделей. Попробуй чуть позже."
             )
         return
     except Exception:
         logger.exception("Failed to fetch AI models from backend")
-        await message.answer("Не удалось загрузить модели. Попробуй позже.")
+        await message.answer(
+            "Не удалось загрузить модели. Попробуй еще раз через минуту 🙏"
+        )
         return
 
     if not models:
-        await message.answer("Для этого раздела пока нет доступных моделей.")
+        await message.answer("В этом режиме пока нет доступных моделей 💤")
         return
 
     fsm_data = await state.get_data()

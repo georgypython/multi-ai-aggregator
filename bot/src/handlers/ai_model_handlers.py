@@ -94,7 +94,7 @@ async def choose_model(
             if "message is not modified" not in str(exc):
                 raise
         await callback.answer(
-            f"Выбрана модель: {selected_model.name}", show_alert=False
+            f"Выбрана модель: {selected_model.name} ✅", show_alert=False
         )
         return
 
@@ -118,7 +118,7 @@ async def choose_model(
 
     await state.set_state(AIFlow.choosing_model)
     await callback.answer(
-        f"Выбрана модель: {selected_model.name}. Нажми «Генерация».",
+        f"Модель «{selected_model.name}» выбрана. Нажми «Генерация» 🚀",
         show_alert=False,
     )
 
@@ -139,24 +139,26 @@ async def start_generation_flow(
     selected_model_name = fsm_data.get("selected_model_name")
 
     if not selected_model_id or selected_model_type not in ("image", "video"):
-        await callback.answer("Сначала выбери image/video модель", show_alert=False)
+        await callback.answer(
+            "Сначала выбери модель изображения или видео", show_alert=False
+        )
         return
 
     if selected_model_type == "image":
         try:
             image_config = await ai_service.get_image_model_config(
-                model_id=UUID(selected_model_id)
+                tg_user_id=callback.from_user.id, model_id=UUID(selected_model_id)
             )
         except httpx.HTTPStatusError as exc:
             await callback.answer(
-                f"Ошибка загрузки модели: HTTP {exc.response.status_code}",
+                "Не удалось загрузить параметры модели.",
                 show_alert=True,
             )
             return
         except Exception:
             logger.exception("Failed to load image model config")
             await callback.answer(
-                "Ошибка загрузки конфигурации image модели", show_alert=True
+                "Не удалось загрузить параметры модели", show_alert=True
             )
             return
 
@@ -167,8 +169,8 @@ async def start_generation_flow(
         await state.set_state(AIFlow.choosing_image_size)
 
         text = (
-            f"Выбрана image-модель: <b>{selected_model_name}</b>\n"
-            f"Выбери размер изображения:"
+            f"<b>Image-модель:</b> {selected_model_name} 🖼️\n"
+            "Шаг 1/2: выбери размер изображения."
         )
         try:
             await callback.message.edit_text(
@@ -178,36 +180,35 @@ async def start_generation_flow(
         except TelegramBadRequest as exc:
             if "message is not modified" not in str(exc):
                 raise
-        await callback.answer("Выбери размер", show_alert=False)
+        await callback.answer("Размеры загружены 🖼️", show_alert=False)
         return
 
     if selected_model_type == "video":
         try:
             video_config = await ai_service.get_video_model_config(
-                model_id=UUID(selected_model_id)
+                tg_user_id=callback.from_user.id, model_id=UUID(selected_model_id)
             )
         except httpx.HTTPStatusError as exc:
             await callback.answer(
-                f"Ошибка загрузки модели: HTTP {exc.response.status_code}",
+                "Не удалось загрузить параметры модели.",
                 show_alert=True,
             )
             return
         except Exception:
             logger.exception("Failed to load video model config")
             await callback.answer(
-                "Ошибка загрузки конфигурации video модели", show_alert=True
+                "Не удалось загрузить параметры модели", show_alert=True
             )
             return
 
         await state.update_data(
             selected_video_durations_seconds=video_config.durations_seconds,
-            selected_video_sizes=video_config.sizes,
         )
         await state.set_state(AIFlow.choosing_video_duration)
 
         text = (
-            f"Выбрана video-модель: <b>{selected_model_name}</b>\n"
-            f"Выбери длительность видео:"
+            f"<b>Video-модель:</b> {selected_model_name} 🎬\n"
+            "Шаг 1/1: выбери длительность видео."
         )
         try:
             await callback.message.edit_text(
@@ -219,5 +220,5 @@ async def start_generation_flow(
         except TelegramBadRequest as exc:
             if "message is not modified" not in str(exc):
                 raise
-        await callback.answer("Выбери длительность", show_alert=False)
+        await callback.answer("Длительности загружены 🎬", show_alert=False)
         return

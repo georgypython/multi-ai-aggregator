@@ -1,8 +1,14 @@
 import asyncio
 from uuid import UUID
 
+import httpx
+
 from src.services.common import BaseBackendService
-from src.core.schemas import ImageGenerationResult, UploadMediaImagesResult
+from src.core.schemas import (
+    GenerationStatus,
+    ImageGenerationResult,
+    UploadMediaImagesResult,
+)
 
 
 class ImageGenerationService(BaseBackendService):
@@ -16,7 +22,6 @@ class ImageGenerationService(BaseBackendService):
         media_file_ids: list[UUID] | None = None,
     ) -> ImageGenerationResult:
         payload: dict[str, object] = {
-            "model_id": str(model_id),
             "prompt": prompt,
             "size": size,
             "quality": quality,
@@ -27,8 +32,8 @@ class ImageGenerationService(BaseBackendService):
             ]
 
         response = await self._client.post(
-            f"{self._base_url}/api/v1/ai/image/generations",
-            params={"tg_user_id": str(tg_user_id)},
+            f"{self._base_url}/api/v1/ai/{model_id}/generate/image",
+            params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
             json=payload,
         )
@@ -42,8 +47,8 @@ class ImageGenerationService(BaseBackendService):
     ) -> UploadMediaImagesResult:
         filename, file_bytes, content_type = file
         response = await self._client.post(
-            f"{self._base_url}/api/v1/ai/media/images",
-            params={"tg_user_id": str(tg_user_id)},
+            f"{self._base_url}/api/v1/media/images",
+            params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
             files={"file": (filename, file_bytes, content_type)},
         )
@@ -56,8 +61,8 @@ class ImageGenerationService(BaseBackendService):
         generation_id: UUID,
     ) -> bytes:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/ai/image/generations/{generation_id}/content",
-            params={"tg_user_id": str(tg_user_id)},
+            f"{self._base_url}/api/v1/generations/{generation_id}/content",
+            params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )
         response.raise_for_status()
@@ -73,8 +78,8 @@ class ImageGenerationService(BaseBackendService):
         generation_id: UUID,
     ) -> ImageGenerationResult:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/ai/image/generations/{generation_id}",
-            params={"tg_user_id": str(tg_user_id)},
+            f"{self._base_url}/api/v1/generations/{generation_id}",
+            params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )
         response.raise_for_status()
@@ -88,12 +93,23 @@ class ImageGenerationService(BaseBackendService):
         max_attempts: int = 60,
     ) -> ImageGenerationResult:
         for _ in range(max_attempts):
-            result = await self.get_image_generation_status(
-                tg_user_id=tg_user_id,
-                generation_id=generation_id,
-            )
+            try:
+                result = await self.get_image_generation_status(
+                    tg_user_id=tg_user_id,
+                    generation_id=generation_id,
+                )
+            except httpx.HTTPStatusError as exc:
+                # Tolerate transient not-found during first polls.
+                if exc.response.status_code == 404:
+                    await asyncio.sleep(poll_interval_seconds)
+                    continue
+                raise
 
-            if result.status in ("completed", "failed", "canceled"):
+            if result.status in (
+                GenerationStatus.COMPLETED,
+                GenerationStatus.FAILED,
+                GenerationStatus.CANCELED,
+            ):
                 return result
 
             await asyncio.sleep(poll_interval_seconds)

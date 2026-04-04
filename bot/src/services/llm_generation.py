@@ -1,7 +1,5 @@
 from uuid import UUID
 
-import httpx
-
 from src.services.common import BaseBackendService
 from src.core.schemas import LLMConfigResult, LLMGenerationResult
 
@@ -14,12 +12,9 @@ class LLMGenerationService(BaseBackendService):
         prompt: str,
     ) -> LLMGenerationResult:
         response = await self._client.post(
-            f"{self._base_url}/api/v1/ai/llm/generations",
-            params={
-                "tg_user_id": str(tg_user_id),
-                "model_id": str(model_id),
-                "prompt": prompt,
-            },
+            f"{self._base_url}/api/v1/ai/{model_id}/generate/llm",
+            params={"tg_user_id": tg_user_id},
+            json={"prompt": prompt},
             headers=self._base_headers,
         )
         response.raise_for_status()
@@ -38,8 +33,8 @@ class LLMGenerationService(BaseBackendService):
             payload["instructions"] = instructions
 
         response = await self._client.post(
-            f"{self._base_url}/api/v1/ai/llm/configs",
-            params={"tg_user_id": str(tg_user_id)},
+            f"{self._base_url}/api/v1/users/me/llm-config",
+            params={"tg_user_id": tg_user_id},
             json=payload,
             headers=self._base_headers,
         )

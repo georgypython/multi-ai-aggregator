@@ -24,17 +24,20 @@ class AIFlowHelper:
         models: list[AIModelItem], current_model_name: str | None
     ) -> str:
         lines = [
-            f"текущая модель: <b>{escape(current_model_name or 'не выбрана')} ✅</b>",
-            "Список доступных нейросетей:",
+            "<b>Выбор модели 🤖</b>",
+            f"Текущая: <b>{escape(current_model_name or 'не выбрана')}</b>",
             "",
+            "<b>Доступные модели:</b>",
             "<blockquote>",
         ]
         for model in models:
             description = model.description or ""
             lines.append(f"• <b>{escape(model.name)}</b>")
-            lines.append(f"  {escape(description)}")
+            if description:
+                lines.append(f"  {escape(description)}")
             lines.append("")
         lines.append("</blockquote>")
+        lines.append("Выбери модель ниже и продолжай 👇")
         return "\n".join(lines).rstrip()
 
     @staticmethod
@@ -49,10 +52,10 @@ class AIFlowHelper:
 
         return "\n".join(
             [
-                "<b>Настройка инструкции для ИИ</b>",
+                "<b>Настройки ИИ-ассистента ⚙️</b>",
                 "",
                 "<b>Параметры:</b>",
-                "• <b>Температура</b> — креативность ответа. Ниже = стабильнее, выше = разнообразнее.",
+                "• <b>Температура</b> — креативность ответа. Ниже — стабильнее, выше — разнообразнее.",
                 "• <b>Инструкции</b> — постоянный стиль и правила ответа модели.",
                 "",
                 "<b>Пример:</b>",

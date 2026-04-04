@@ -20,21 +20,23 @@ async def show_balance(
     ai_service: FromDishka[AIService],
 ) -> None:
     if message.from_user is None:
-        await message.answer("Не удалось определить Telegram пользователя")
+        await message.answer("Не удалось определить пользователя. Попробуй еще раз.")
         return
 
     tg_user_id = message.from_user.id
 
     try:
-        balance = await ai_service.get_user_balance(user_id=str(tg_user_id))
+        balance = await ai_service.get_user_balance(tg_user_id=tg_user_id)
     except httpx.HTTPStatusError as exc:
         status_code = exc.response.status_code
         if status_code == 401:
-            await message.answer("Ошибка авторизации бота на backend.")
+            await message.answer(
+                "Сервис сейчас временно недоступен. Попробуй чуть позже."
+            )
         elif status_code == 404:
             await message.answer("Профиль пользователя не найден.")
         else:
-            await message.answer(f"Не удалось получить баланс: HTTP {status_code}")
+            await message.answer("Не удалось получить баланс. Попробуй позже.")
         return
     except Exception:
         logger.exception("Failed to load user balance")
@@ -42,9 +44,10 @@ async def show_balance(
         return
 
     text = (
-        "<b>💰 Баланс</b>\n"
-        f"<blockquote>{balance.available_tokens:.4f} токенов</blockquote>\n"
-        "Пополните баланс по кнопке ниже 👇"
+        "<b>Баланс аккаунта 💰</b>\n"
+        f"<blockquote>{balance.available_tokens:.4f} токенов доступно</blockquote>\n"
+        f"В холде: <b>{balance.hold_tokens:.4f}</b>\n\n"
+        "Чтобы продолжить генерации без пауз, держи небольшой запас токенов."
     )
 
     await message.answer(text, reply_markup=build_balance_keyboard())
@@ -52,9 +55,12 @@ async def show_balance(
 
 @router.callback_query(F.data == "balance:top_up")
 async def top_up_balance(callback: CallbackQuery) -> None:
-    await callback.answer("Пополнение скоро будет доступно", show_alert=True)
+    await callback.answer("Пополнение скоро будет доступно 💳", show_alert=True)
 
 
 @router.message(F.text == REFERRAL_BUTTON_TEXT)
 async def referral_program_info(message: Message) -> None:
-    await message.answer("Реферальная программа скоро будет доступна.")
+    await message.answer(
+        "<b>Реферальная программа 🎁</b>\n"
+        "Скоро запустим бонусы за приглашения. Следи за обновлениями ✨"
+    )
