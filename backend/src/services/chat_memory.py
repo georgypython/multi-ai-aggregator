@@ -6,7 +6,7 @@ from redis.asyncio import Redis
 from src.core.config import settings
 
 
-class ChatMemoryRepository:
+class ChatMemoryService:
     def __init__(self, redis_client: Redis) -> None:
         self.redis = redis_client
         self._ttl_seconds = settings.redis.chat_history_ttl_seconds

@@ -1,6 +1,8 @@
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.core.logger_setup import logger
 from src.exceptions.generation import (
@@ -9,39 +11,42 @@ from src.exceptions.generation import (
     AIGenerationError,
 )
 from src.exceptions.storage import StoragePresignedUrlError
+from src.models import AIModel, User
 from src.models.enums import GenerationStatus, GenerationType, ModelType
 from src.schemas import (
     GenerationResultResponseDataSchema,
     VideoRequestDataSchema,
 )
-from src.repositories import AIModelRepository, UserRepository
-from src.repositories import GenerationRepository
+from src.services.db_access import DBAccessService
 from .generation_billing import GenerationBillingService
 from .storage import StorageService
 from .video_profile import VideoProfileService
 from .wavespeed import WaveSpeedService
 
 
-class VideoGenerationService:
+class VideoGenerationService(DBAccessService):
     def __init__(
         self,
         session: AsyncSession,
-        user_repo: UserRepository,
-        ai_model_repo: AIModelRepository,
-        generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
         video_profile_service: VideoProfileService,
         wavespeed_service: WaveSpeedService,
         storage_service: StorageService,
     ):
         self.session = session
-        self.user_repo = user_repo
-        self.ai_model_repo = ai_model_repo
-        self.generation_repo = generation_repo
         self.generation_billing_service = generation_billing_service
         self.video_profile_service = video_profile_service
         self.wavespeed_service = wavespeed_service
         self.storage_service = storage_service
+
+    async def _get_user_with_balance(self, *, user_id: UUID) -> User | None:
+        stmt = (
+            select(User)
+            .options(selectinload(User.balance))
+            .filter_by(id=user_id, is_active=True)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def _create_and_validate_request_video_data(
         self,
@@ -49,15 +54,10 @@ class VideoGenerationService:
         model_id: UUID,
         prompt: str,
         duration_seconds: int | None,
-        size: str | None,
         media_file_id: UUID | None,
     ) -> VideoRequestDataSchema:
         async with self.session.begin():
-            user = await self.user_repo.get_one_with_balance(
-                session=self.session,
-                id=user_id,
-                is_active=True,
-            )
+            user = await self._get_user_with_balance(user_id=user_id)
             if not user:
                 raise ValueError(f"Active user not found for user_id={user_id}")
 
@@ -66,8 +66,8 @@ class VideoGenerationService:
                     f"User balance is not configured for user_id={user_id}"
                 )
 
-            ai_model = await self.ai_model_repo.get_one(
-                session=self.session,
+            ai_model = await self.get_one(
+                model=AIModel,
                 id=model_id,
                 is_active=True,
             )
@@ -148,10 +148,11 @@ class VideoGenerationService:
             media_file_id=media_file_id,
         )
 
-        calc_hold_amount = await self.generation_billing_service.calculate_hold_tokens_cost_from_providers_cost(
-            provider_cost=request_data.provider_cost,
-            model_token_price_id=request_data.model_token_price_id,
-        )
+        async with self.session.begin():
+            calc_hold_amount = await self.generation_billing_service.calculate_hold_tokens_cost_from_providers_cost(
+                provider_cost=request_data.provider_cost,
+                model_token_price_id=request_data.model_token_price_id,
+            )
 
         request_data.hold_amount = calc_hold_amount
 

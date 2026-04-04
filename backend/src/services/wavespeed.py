@@ -152,12 +152,11 @@ class WaveSpeedService:
         provider_model_key: str,
         payload: dict[str, Any],
     ) -> WavespeedGenerationResponseSchema:
-        payload["webhook_url"] = self._webhook_url
-
         response = await self._request(
             "POST",
             f"{self._base_url}/api/v3/{provider_model_key}",
             headers=self._base_headers,
+            params={"webhook": self._webhook_url},
             json=payload,
         )
         response_data = response.json()

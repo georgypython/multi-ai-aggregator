@@ -1,9 +1,12 @@
 from uuid import UUID
 from decimal import Decimal
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.models.enums import GenerationType, GenerationStatus
+from src.models import LLMProfile, User
 from src.exceptions.generation import (
     InactiveModelError,
     ProviderError,
@@ -15,32 +18,50 @@ from src.schemas import (
     LLMRequestDataSchema,
     LLMProviderResponseSchema,
 )
-from src.repositories import (
-    UserRepository,
-    LLMProfileRepository,
-    ChatMemoryRepository,
-)
 from .openrouter import OpenRouterService
 from .generation_billing import GenerationBillingService
 from src.core.logger_setup import logger
+from src.services.chat_memory import ChatMemoryService
+from src.services.db_access import DBAccessService
 
 
-class LLMGenerationService:
+class LLMGenerationService(DBAccessService):
     def __init__(
         self,
         session: AsyncSession,
         llm_client: OpenRouterService,
-        user_repo: UserRepository,
-        llm_repo: LLMProfileRepository,
-        chat_memory_repo: ChatMemoryRepository,
+        chat_memory_service: ChatMemoryService,
         generation_billing_service: GenerationBillingService,
     ) -> None:
         self.session = session
         self.llm_client = llm_client
-        self.user_repo = user_repo
-        self.llm_repo = llm_repo
-        self.chat_memory_repo = chat_memory_repo
+        self.chat_memory_service = chat_memory_service
         self.generation_billing_service = generation_billing_service
+
+    async def _get_user_with_balance_and_llm_config(
+        self, *, user_id: UUID
+    ) -> User | None:
+        stmt = (
+            select(User)
+            .options(
+                selectinload(User.balance),
+                selectinload(User.llm_configuration),
+            )
+            .filter_by(id=user_id, is_active=True)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def _get_llm_profile_with_ai_model(
+        self, *, ai_model_id: UUID
+    ) -> LLMProfile | None:
+        stmt = (
+            select(LLMProfile)
+            .options(selectinload(LLMProfile.ai_model))
+            .where(LLMProfile.ai_model_id == ai_model_id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def _create_and_validate_request_llm_data(
         self,
@@ -49,9 +70,7 @@ class LLMGenerationService:
         prompt: str,
     ) -> LLMRequestDataSchema:
         async with self.session.begin():
-            user = await self.user_repo.get_one_with_balance_and_llm_configuration(
-                session=self.session, id=user_id, is_active=True
-            )
+            user = await self._get_user_with_balance_and_llm_config(user_id=user_id)
             if not user:
                 raise ValueError(f"Active user not found for user_id={user_id}")
 
@@ -60,8 +79,8 @@ class LLMGenerationService:
                     f"User balance is not configured for user_id={user_id}"
                 )
 
-            llm_profile = await self.llm_repo.get_one_with_ai_model(
-                session=self.session, ai_model_id=model_id
+            llm_profile = await self._get_llm_profile_with_ai_model(
+                ai_model_id=model_id
             )
             if not llm_profile or not llm_profile.ai_model:
                 raise ValueError(f"LLMModel not found for ai_model_id={model_id}")
@@ -128,7 +147,7 @@ class LLMGenerationService:
             prompt=prompt,
         )
 
-        chat_history = await self.chat_memory_repo.get_chat_history(user_id=user_id)
+        chat_history = await self.chat_memory_service.get_chat_history(user_id=user_id)
 
         generation = await self.generation_billing_service.prepare_generation_and_freeze_user_tokens(
             data=llm_request_data
@@ -155,7 +174,7 @@ class LLMGenerationService:
             logger.exception("Unexpected LLM provider error for user_id=%s", user_id)
             raise RuntimeError(f"Unexpected LLM provider error: {e}")
 
-        await self.chat_memory_repo.append_user_and_assistant_messages(
+        await self.chat_memory_service.append_user_and_assistant_messages(
             user_id=user_id,
             user_prompt=prompt,
             assistant_response=llm_response.text,
@@ -168,13 +187,14 @@ class LLMGenerationService:
                 response=llm_response,
                 request=llm_request_data,
             )
-            final_tokens_cost = (
-                await self.generation_billing_service.calculate_final_tokens_cost(
-                    hold_amount=llm_request_data.hold_amount,
-                    model_token_price_id=llm_request_data.model_token_price_id,
-                    provider_cost=provider_cost,
+            async with self.session.begin():
+                final_tokens_cost = (
+                    await self.generation_billing_service.calculate_final_tokens_cost(
+                        hold_amount=llm_request_data.hold_amount,
+                        model_token_price_id=llm_request_data.model_token_price_id,
+                        provider_cost=provider_cost,
+                    )
                 )
-            )
 
         return await self.generation_billing_service.finish_generation(
             data=GenerationFinishData(

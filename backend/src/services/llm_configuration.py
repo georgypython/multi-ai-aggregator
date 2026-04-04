@@ -2,22 +2,18 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models import LLMConfiguration
+from src.models import LLMConfiguration, User
 from src.models.enums import LLMConfigurationType
 from src.schemas import LLMConfigCreateRequestSchema, LLMConfigResponseSchema
-from src.repositories import UserRepository, LLMConfigurationRepository
+from src.services.db_access import DBAccessService
 
 
-class LLMConfigurationService:
+class LLMConfigurationService(DBAccessService):
     def __init__(
         self,
         session: AsyncSession,
-        user_repo: UserRepository,
-        llm_configuration_repo: LLMConfigurationRepository,
     ) -> None:
         self.session = session
-        self.user_repo = user_repo
-        self.llm_configuration_repo = llm_configuration_repo
 
     def _build_llm_config_response(
         self, config: LLMConfiguration
@@ -37,27 +33,28 @@ class LLMConfigurationService:
         user_id: UUID,
         payload: LLMConfigCreateRequestSchema,
     ) -> LLMConfigResponseSchema:
-        user = await self.user_repo.get_one(
-            session=self.session,
+        user = await self.get_one(
+            model=User,
             id=user_id,
             is_active=True,
         )
         if not user:
             raise ValueError(f"Active user not found for user_id={user_id}")
 
-        llm_config = await self.llm_configuration_repo.get_one(
-            session=self.session,
+        llm_config = await self.get_one(
+            model=LLMConfiguration,
             user_id=user_id,
             configuration_type=LLMConfigurationType.USER,
         )
 
         payload_data = payload.model_dump(exclude_unset=True)
         if not llm_config:
-            llm_config = self.llm_configuration_repo.add_user_config(
-                session=self.session,
+            llm_config = LLMConfiguration(
                 user_id=user_id,
-                data=payload_data,
+                configuration_type=LLMConfigurationType.USER,
+                **payload_data,
             )
+            self.session.add(llm_config)
         else:
             for key, value in payload_data.items():
                 setattr(llm_config, key, value)
@@ -71,16 +68,16 @@ class LLMConfigurationService:
         self,
         user_id: UUID,
     ) -> LLMConfigResponseSchema:
-        user = await self.user_repo.get_one(
-            session=self.session,
+        user = await self.get_one(
+            model=User,
             id=user_id,
             is_active=True,
         )
         if not user:
             raise ValueError(f"Active user not found for user_id={user_id}")
 
-        config = await self.llm_configuration_repo.get_one(
-            session=self.session,
+        config = await self.get_one(
+            model=LLMConfiguration,
             user_id=user_id,
             configuration_type=LLMConfigurationType.USER,
         )

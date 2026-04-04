@@ -1,11 +1,13 @@
 from uuid import UUID
 from decimal import Decimal
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.exceptions.generation import ModelConfigError
-from src.models import AIModel, VideoPrice, VideoProfile
-from src.models.enums import ModelType
+from src.models import AIModel, AIGeneration, VideoPrice, VideoProfile
+from src.models.enums import GenerationStatus, ModelType
 from src.schemas import (
     VideoModelPriceResponseSchema,
     VideoModelProfileResponseSchema,
@@ -13,28 +15,79 @@ from src.schemas import (
     VideoModelRawPriceDataSchema,
     VideoModelRawDataSchema,
 )
-from src.repositories import (
-    AIModelRepository,
-    GenerationRepository,
-    VideoPriceRepository,
-)
+from src.services.db_access import DBAccessService
 from .generation_billing import GenerationBillingService
 
 
-class VideoProfileService:
+class VideoProfileService(DBAccessService):
     def __init__(
         self,
         session: AsyncSession,
-        ai_model_repo: AIModelRepository,
-        video_price_repo: VideoPriceRepository,
-        generation_repo: GenerationRepository,
         generation_billing_service: GenerationBillingService,
     ) -> None:
         self.session = session
-        self.ai_model_repo = ai_model_repo
-        self.video_price_repo = video_price_repo
-        self.generation_repo = generation_repo
         self.generation_billing_service = generation_billing_service
+
+    async def _get_ai_model_with_profile(
+        self,
+        *,
+        ai_model_id: UUID,
+        model_type: ModelType,
+    ) -> AIModel | None:
+        stmt = select(AIModel).where(AIModel.id == ai_model_id)
+
+        if model_type == ModelType.VIDEO:
+            stmt = stmt.options(
+                selectinload(AIModel.video_profile).selectinload(VideoProfile.prices)
+            )
+        else:
+            raise ValueError(f"Unsupported model_type={model_type}")
+
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def _get_video_price_by_model_duration(
+        self,
+        *,
+        ai_model_id: UUID,
+        duration_seconds: int,
+    ) -> VideoPrice | None:
+        stmt = (
+            select(VideoPrice)
+            .join(VideoProfile, VideoPrice.video_profile_id == VideoProfile.id)
+            .where(
+                VideoProfile.ai_model_id == ai_model_id,
+                VideoPrice.duration_seconds == duration_seconds,
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def _count_generations_by_user_and_model(
+        self,
+        *,
+        user_id: UUID,
+        ai_model_id: UUID,
+        max_count: int,
+    ) -> int:
+        base_stmt = (
+            select(AIGeneration.id)
+            .where(
+                AIGeneration.user_id == user_id,
+                AIGeneration.ai_model_id == ai_model_id,
+                AIGeneration.status.in_(
+                    (
+                        GenerationStatus.PROCESSING,
+                        GenerationStatus.COMPLETED,
+                        GenerationStatus.FAILED,
+                    )
+                ),
+            )
+            .limit(max_count)
+        )
+        stmt = select(func.count()).select_from(base_stmt.subquery())
+        result = await self.session.execute(stmt)
+        return int(result.scalar_one() or 0)
 
     def _validate_video_model(
         self, ai_model_id: UUID, ai_model: AIModel | None
@@ -98,8 +151,7 @@ class VideoProfileService:
         )
         resolved_duration = duration_seconds or price_params.durations_seconds[0]
 
-        video_price = await self.video_price_repo.get_one_by_ai_model_duration(
-            session=self.session,
+        video_price = await self._get_video_price_by_model_duration(
             ai_model_id=model_id,
             duration_seconds=resolved_duration,
         )
@@ -118,8 +170,7 @@ class VideoProfileService:
         self,
         ai_model_id: UUID,
     ) -> VideoModelProfileResponseSchema:
-        ai_model = await self.ai_model_repo.get_one_with_profile(
-            session=self.session,
+        ai_model = await self._get_ai_model_with_profile(
             ai_model_id=ai_model_id,
             model_type=ModelType.VIDEO,
         )
@@ -149,8 +200,7 @@ class VideoProfileService:
         model_id: UUID,
         duration_seconds: int | None,
     ) -> VideoModelPriceResponseSchema:
-        ai_model = await self.ai_model_repo.get_one_with_profile(
-            session=self.session,
+        ai_model = await self._get_ai_model_with_profile(
             ai_model_id=model_id,
             model_type=ModelType.VIDEO,
         )
@@ -172,8 +222,7 @@ class VideoProfileService:
         )
 
         if ai_model.free_requests_limit > 0:
-            generation_count = await self.generation_repo.count_by_user_and_model(
-                session=self.session,
+            generation_count = await self._count_generations_by_user_and_model(
                 user_id=user_id,
                 ai_model_id=ai_model.id,
                 max_count=ai_model.free_requests_limit,
@@ -193,8 +242,7 @@ class VideoProfileService:
         model_id: UUID,
         duration_seconds: int | None,
     ) -> VideoModelRawDataSchema:
-        ai_model = await self.ai_model_repo.get_one_with_profile(
-            session=self.session,
+        ai_model = await self._get_ai_model_with_profile(
             ai_model_id=model_id,
             model_type=ModelType.VIDEO,
         )

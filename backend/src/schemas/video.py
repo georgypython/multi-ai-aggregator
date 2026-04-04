@@ -18,7 +18,6 @@ class VideoRequestDataSchema(GenerationRequestSchema):
 class VideoGenerationCreateRequestSchema(BaseModel):
     prompt: str
     duration_seconds: int | None = None
-    size: str | None = None
     media_file_id: UUID | None = None
 
 

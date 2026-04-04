@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock
 from uuid import uuid4
+from decimal import Decimal
 
 import pytest
 from sqlalchemy import select
@@ -15,10 +16,6 @@ from src.core.models import (
 )
 from src.core.models.enums import GenerationStatus, LLMConfigurationType, ModelType
 from src.core.schemas.ai import GenerationRequestSchema
-from src.repositories.generation import GenerationRepository
-from src.repositories.llm import LLMRepository
-from src.repositories.users import UserRepository
-from src.repositories import TokenPriceRepository
 from src.services.generation_billing import GenerationBillingService
 from src.services.llm_generation import LLMGenerationService
 
@@ -70,17 +67,13 @@ async def test_create_and_validate_request_llm_data_uses_user_llm_configuration(
 
     generation_billing = GenerationBillingService(
         session=db_session,
-        user_repo=UserRepository(),
-        generation_repo=GenerationRepository(),
-        token_price_repo=TokenPriceRepository(),
+        token_scale=Decimal("0.000001"),
     )
 
     llm_service = LLMGenerationService(
         session=db_session,
         llm_client=AsyncMock(),
-        user_repo=UserRepository(),
-        llm_repo=LLMRepository(),
-        chat_memory_repo=AsyncMock(),
+        chat_memory_service=AsyncMock(),
         generation_billing_service=generation_billing,
     )
 
@@ -135,17 +128,13 @@ async def test_prepare_generation_and_freeze_user_tokens_creates_processing_gene
 
     generation_billing = GenerationBillingService(
         session=db_session,
-        user_repo=UserRepository(),
-        generation_repo=GenerationRepository(),
-        token_price_repo=TokenPriceRepository(),
+        token_scale=Decimal("0.000001"),
     )
 
     llm_service = LLMGenerationService(
         session=db_session,
         llm_client=AsyncMock(),
-        user_repo=UserRepository(),
-        llm_repo=LLMRepository(),
-        chat_memory_repo=AsyncMock(),
+        chat_memory_service=AsyncMock(),
         generation_billing_service=generation_billing,
     )
 

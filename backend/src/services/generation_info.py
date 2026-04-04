@@ -5,22 +5,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.exceptions.generation import (
     MediaGenerationNotCompletedError,
 )
+from src.models import AIGeneration
 from src.models.enums import GenerationStatus, GenerationType
 from src.schemas import GenerationResultResponseDataSchema
-from src.repositories import GenerationRepository
+from src.services.db_access import DBAccessService
 
 from .wavespeed import WaveSpeedService
 
 
-class GenerationInfoService:
+class GenerationInfoService(DBAccessService):
     def __init__(
         self,
         session: AsyncSession,
-        generation_repo: GenerationRepository,
         wavespeed_service: WaveSpeedService,
     ) -> None:
         self.session = session
-        self.generation_repo = generation_repo
         self.wavespeed_service = wavespeed_service
 
     async def get_generation_status(
@@ -28,8 +27,8 @@ class GenerationInfoService:
         user_id: UUID,
         generation_id: UUID,
     ) -> GenerationResultResponseDataSchema:
-        generation = await self.generation_repo.get_one(
-            session=self.session,
+        generation = await self.get_one(
+            model=AIGeneration,
             id=generation_id,
             user_id=user_id,
         )
@@ -51,8 +50,8 @@ class GenerationInfoService:
         user_id: UUID,
         generation_id: UUID,
     ) -> bytes:
-        generation = await self.generation_repo.get_one(
-            session=self.session,
+        generation = await self.get_one(
+            model=AIGeneration,
             id=generation_id,
             user_id=user_id,
             status=GenerationStatus.COMPLETED,

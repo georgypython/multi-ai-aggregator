@@ -16,7 +16,7 @@ class WavespeedWebhookUrlsSchema(BaseModel):
     get: str | None = None
 
 
-class WavespeedWebhookDataSchema(BaseModel):
+class WavespeedWebhookPayloadSchema(BaseModel):
     id: str
     status: GenerationStatus
     model: str | None = None
@@ -24,9 +24,5 @@ class WavespeedWebhookDataSchema(BaseModel):
     error: str | None = None
     urls: WavespeedWebhookUrlsSchema | None = None
     outputs: list[str] | None = None
-
-
-class WavespeedWebhookPayloadSchema(BaseModel):
     event: str | None = None
     type: str | None = None
-    data: WavespeedWebhookDataSchema

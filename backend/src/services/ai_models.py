@@ -2,21 +2,18 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.models import AIModel, User
 from src.models.enums import ModelType
 from src.schemas import AIModelListItemResponseSchema
-from src.repositories import AIModelRepository, UserRepository
+from src.services.db_access import DBAccessService
 
 
-class AIModelsService:
+class AIModelsService(DBAccessService):
     def __init__(
         self,
         session: AsyncSession,
-        ai_model_repo: AIModelRepository,
-        user_repo: UserRepository,
     ) -> None:
         self.session = session
-        self.ai_model_repo = ai_model_repo
-        self.user_repo = user_repo
 
     async def get_ai_models_list(
         self,
@@ -25,8 +22,8 @@ class AIModelsService:
         active_only: bool = True,
     ) -> list[AIModelListItemResponseSchema]:
         async with self.session.begin():
-            user = await self.user_repo.get_one(
-                session=self.session,
+            user = await self.get_one(
+                model=User,
                 id=user_id,
                 is_active=True,
             )
@@ -39,9 +36,7 @@ class AIModelsService:
             if active_only:
                 filters["is_active"] = True
 
-            ai_models = await self.ai_model_repo.get_all(
-                session=self.session, **filters
-            )
+            ai_models = await self.get_all(model=AIModel, **filters)
 
         result: list[AIModelListItemResponseSchema] = []
         for ai_model in ai_models:

@@ -5,7 +5,9 @@ from fastapi import UploadFile
 from fastapi.concurrency import run_in_threadpool
 from uuid import UUID, uuid4
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.exceptions.storage import (
@@ -20,15 +22,15 @@ from src.schemas import (
     UpdloadFileDataSchema,
     MediaFileDbDataSchema,
 )
-from src.repositories import MediaFilesRepository
+from src.models import MediaFile
+from src.services.db_access import DBAccessService
 
 
-class StorageService:
+class StorageService(DBAccessService):
     def __init__(
         self,
         client: BaseClient,
         session: AsyncSession,
-        media_files_repo: MediaFilesRepository,
         bucket: str,
         presigned_ttl_seconds: int,
         input_retention_hours: int,
@@ -40,7 +42,6 @@ class StorageService:
     ) -> None:
         self.client = client
         self.session = session
-        self.media_files_repo = media_files_repo
         self.bucket = bucket
         self.presigned_ttl_seconds = presigned_ttl_seconds
         self.input_retention_hours = input_retention_hours
@@ -49,6 +50,30 @@ class StorageService:
         self.allowed_image_content_types = allowed_image_content_types
         self.image_extensions = image_extensions
         self.operation_timeout_seconds = operation_timeout_seconds
+
+    async def _add_uploaded_items(self, items: list[dict[str, Any]]) -> list[MediaFile]:
+        media_files = [MediaFile(**item) for item in items]
+        self.session.add_all(media_files)
+        await self.session.flush()
+        return media_files
+
+    async def _get_active_user_files_by_ids(
+        self,
+        *,
+        user_id: UUID,
+        media_file_ids: list[UUID],
+        now: datetime,
+    ) -> list[MediaFile]:
+        if not media_file_ids:
+            return []
+
+        stmt = select(MediaFile).where(
+            MediaFile.user_id == user_id,
+            MediaFile.id.in_(media_file_ids),
+            MediaFile.expires_at > now,
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
 
     async def _upload_bytes(
         self,
@@ -70,7 +95,9 @@ class StorageService:
         except TimeoutError as exc:
             raise StorageUploadError("Storage upload timed out") from exc
         except (BotoCoreError, ClientError) as exc:
-            raise StorageUploadError("Failed to upload file to storage") from exc
+            raise StorageUploadError(
+                f"Failed to upload file to storage: {exc}"
+            ) from exc
 
     async def _create_presigned_get_url(self, object_key: str) -> str:
         try:
@@ -98,8 +125,7 @@ class StorageService:
         media_file_ids: list[UUID],
     ) -> list[MediaFileDbDataSchema]:
         now = datetime.now(timezone.utc)
-        media_files = await self.media_files_repo.get_active_user_files_by_ids(
-            session=self.session,
+        media_files = await self._get_active_user_files_by_ids(
             user_id=user_id,
             media_file_ids=media_file_ids,
             now=now,
@@ -196,10 +222,7 @@ class StorageService:
         )
 
         async with self.session.begin():
-            await self.media_files_repo.add_uploaded_items(
-                session=self.session,
-                items=[upload_file_data.file.model_dump()],
-            )
+            await self._add_uploaded_items(items=[upload_file_data.file.model_dump()])
 
             await self._upload_bytes(
                 object_key=upload_file_data.file.object_key,

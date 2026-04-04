@@ -29,6 +29,7 @@ class InfrastructureProvider(Provider):
                     "max_attempts": settings.storage.max_retry_attempts,
                     "mode": "standard",
                 },
+                s3={"addressing_style": "path"},
                 tcp_keepalive=True,
             ),
         )

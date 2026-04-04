@@ -7,7 +7,6 @@ from src.core.logger_setup import logger
 from src.models.db_helper import db_helper
 from src.models.enums import GenerationStatus
 from src.schemas import PollWaveSpeedGenerationTaskSchema
-from src.repositories import GenerationRepository, TokenPriceRepository, UserRepository
 from src.services.generation_billing import GenerationBillingService
 from src.services.wavespeed import WaveSpeedService
 from src.schemas import GenerationFinishData
@@ -17,16 +16,9 @@ async def _complete_generation_polling(
     status: GenerationStatus,
     data: PollWaveSpeedGenerationTaskSchema,
 ) -> None:
-    generation_repo = GenerationRepository()
-    user_repo = UserRepository()
-    token_price_repo = TokenPriceRepository()
-
     async with db_helper.session_factory() as session:
         generation_billing_service = GenerationBillingService(
             session=session,
-            user_repo=user_repo,
-            generation_repo=generation_repo,
-            token_price_repo=token_price_repo,
             token_scale=settings.billing.token_scale_decimal,
         )
         if status == GenerationStatus.COMPLETED:
