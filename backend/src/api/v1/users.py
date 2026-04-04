@@ -3,7 +3,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 
-from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
+from src.api.dependencies import (
+    TgRateLimiter,
+    require_api_key,
+    resolve_user_id_by_telegram_id,
+)
 from src.schemas import (
     LLMConfigCreateRequestSchema,
     LLMConfigResponseSchema,
@@ -19,7 +23,17 @@ router = APIRouter(
 )
 
 
-@router.post("/me/llm-config", response_model=LLMConfigResponseSchema)
+@router.post(
+    "/me/llm-config",
+    response_model=LLMConfigResponseSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(
+                limit=10, window_seconds=60, path_name_key="user_llm_config_write"
+            )
+        )
+    ],
+)
 async def create_or_update_llm_config(
     payload: LLMConfigCreateRequestSchema,
     service: FromDishka[LLMConfigurationService],
@@ -38,7 +52,17 @@ async def create_or_update_llm_config(
         )
 
 
-@router.get("/me/llm-config", response_model=LLMConfigResponseSchema)
+@router.get(
+    "/me/llm-config",
+    response_model=LLMConfigResponseSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(
+                limit=20, window_seconds=60, path_name_key="user_llm_config_read"
+            )
+        )
+    ],
+)
 async def get_llm_config(
     service: FromDishka[LLMConfigurationService],
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
@@ -53,14 +77,22 @@ async def get_llm_config(
         )
 
 
-@router.get("/me/balance", response_model=UserBalanceResponseSchema)
+@router.get(
+    "/me/balance",
+    response_model=UserBalanceResponseSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(limit=30, window_seconds=60, path_name_key="user_balance")
+        )
+    ],
+)
 async def get_my_balance(
     service: FromDishka[UsersService],
     user_id: UUID = Depends(resolve_user_id_by_telegram_id),
 ) -> UserBalanceResponseSchema:
     """Возвращает токен-баланс текущего пользователя."""
     try:
-        return await service.get_user_balance(user_id=str(user_id))
+        return await service.get_user_balance(user_id=user_id)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

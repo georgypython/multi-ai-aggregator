@@ -3,7 +3,11 @@ from uuid import UUID
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
+from src.api.dependencies import (
+    TgRateLimiter,
+    require_api_key,
+    resolve_user_id_by_telegram_id,
+)
 from src.exceptions.generation import (
     MediaGenerationNotCompletedError,
     ProviderError,
@@ -19,7 +23,17 @@ router = APIRouter(
 )
 
 
-@router.get("/{generation_id}", response_model=GenerationResultResponseDataSchema)
+@router.get(
+    "/{generation_id}",
+    response_model=GenerationResultResponseDataSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(
+                limit=200, window_seconds=60, path_name_key="generation_status"
+            )
+        )
+    ],
+)
 async def get_generation_status(
     generation_id: UUID,
     service: FromDishka[GenerationInfoService],
@@ -38,7 +52,16 @@ async def get_generation_status(
         )
 
 
-@router.get("/{generation_id}/content")
+@router.get(
+    "/{generation_id}/content",
+    dependencies=[
+        Depends(
+            TgRateLimiter(
+                limit=20, window_seconds=60, path_name_key="generation_content"
+            )
+        )
+    ],
+)
 async def get_generation_content(
     generation_id: UUID,
     service: FromDishka[GenerationInfoService],

@@ -3,7 +3,11 @@ from uuid import UUID
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
-from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
+from src.api.dependencies import (
+    TgRateLimiter,
+    require_api_key,
+    resolve_user_id_by_telegram_id,
+)
 from src.exceptions.storage import (
     EmptyFileError,
     FileTooLargeError,
@@ -21,7 +25,17 @@ router = APIRouter(
 )
 
 
-@router.post("/images", response_model=UploadFileResponseSchema)
+@router.post(
+    "/images",
+    response_model=UploadFileResponseSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(
+                limit=10, window_seconds=60, path_name_key="media_upload_image"
+            )
+        )
+    ],
+)
 async def upload_image(
     storage_service: FromDishka[StorageService],
     file: UploadFile = File(...),

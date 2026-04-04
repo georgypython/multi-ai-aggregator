@@ -4,7 +4,11 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
+from src.api.dependencies import (
+    TgRateLimiter,
+    require_api_key,
+    resolve_user_id_by_telegram_id,
+)
 from src.exceptions.generation import (
     ImageGenerationNotCompletedError,
     InactiveModelError,
@@ -32,7 +36,13 @@ router = APIRouter(
 
 
 @router.post(
-    "/{model_id}/generate/image", response_model=GenerationResultResponseDataSchema
+    "/{model_id}/generate/image",
+    response_model=GenerationResultResponseDataSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(limit=6, window_seconds=60, path_name_key="generate_image")
+        )
+    ],
 )
 async def generate_image(
     model_id: UUID,
@@ -78,7 +88,13 @@ async def generate_image(
 
 
 @router.post(
-    "/{model_id}/generate/llm", response_model=GenerationResultResponseDataSchema
+    "/{model_id}/generate/llm",
+    response_model=GenerationResultResponseDataSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(limit=20, window_seconds=60, path_name_key="generate_llm")
+        )
+    ],
 )
 async def generate_llm(
     model_id: UUID,
@@ -121,7 +137,13 @@ async def generate_llm(
 
 
 @router.post(
-    "/{model_id}/generate/video", response_model=GenerationResultResponseDataSchema
+    "/{model_id}/generate/video",
+    response_model=GenerationResultResponseDataSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(limit=2, window_seconds=60, path_name_key="generate_video")
+        )
+    ],
 )
 async def generate_video(
     model_id: UUID,
@@ -136,7 +158,6 @@ async def generate_video(
             model_id=model_id,
             prompt=payload.prompt,
             duration_seconds=payload.duration_seconds,
-            size=payload.size,
             media_file_id=payload.media_file_id,
         )
     except ModelConfigError as exc:

@@ -3,7 +3,11 @@ from uuid import UUID
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.api.dependencies import require_api_key, resolve_user_id_by_telegram_id
+from src.api.dependencies import (
+    TgRateLimiter,
+    require_api_key,
+    resolve_user_id_by_telegram_id,
+)
 from src.core.logger_setup import logger
 from src.exceptions.generation import ModelConfigError
 from src.models.enums.ai import ModelType
@@ -25,7 +29,15 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=list[AIModelListItemResponseSchema])
+@router.get(
+    "/",
+    response_model=list[AIModelListItemResponseSchema],
+    dependencies=[
+        Depends(
+            TgRateLimiter(limit=40, window_seconds=60, path_name_key="ai_models_list")
+        )
+    ],
+)
 async def get_ai_models_list(
     service: FromDishka[AIModelsService],
     model_type: ModelType | None = None,
@@ -52,7 +64,15 @@ async def get_ai_models_list(
         )
 
 
-@router.get("/{model_id}/profile/image", response_model=ImageModelProfileResponseSchema)
+@router.get(
+    "/{model_id}/profile/image",
+    response_model=ImageModelProfileResponseSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(limit=40, window_seconds=60, path_name_key="ai_profile_image")
+        )
+    ],
+)
 async def get_image_profile(
     model_id: UUID,
     service: FromDishka[ImageProfileService],
@@ -74,7 +94,15 @@ async def get_image_profile(
         )
 
 
-@router.get("/{model_id}/profile/video", response_model=VideoModelProfileResponseSchema)
+@router.get(
+    "/{model_id}/profile/video",
+    response_model=VideoModelProfileResponseSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(limit=40, window_seconds=60, path_name_key="ai_profile_video")
+        )
+    ],
+)
 async def get_video_profile(
     model_id: UUID,
     service: FromDishka[VideoProfileService],
@@ -96,7 +124,15 @@ async def get_video_profile(
         )
 
 
-@router.get("/{model_id}/price/image", response_model=ImageModelPriceResponseSchema)
+@router.get(
+    "/{model_id}/price/image",
+    response_model=ImageModelPriceResponseSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(limit=40, window_seconds=60, path_name_key="ai_price_image")
+        )
+    ],
+)
 async def get_image_price(
     model_id: UUID,
     service: FromDishka[ImageProfileService],
@@ -129,7 +165,15 @@ async def get_image_price(
         )
 
 
-@router.get("/{model_id}/price/video", response_model=VideoModelPriceResponseSchema)
+@router.get(
+    "/{model_id}/price/video",
+    response_model=VideoModelPriceResponseSchema,
+    dependencies=[
+        Depends(
+            TgRateLimiter(limit=40, window_seconds=60, path_name_key="ai_price_video")
+        )
+    ],
+)
 async def get_video_price(
     model_id: UUID,
     service: FromDishka[VideoProfileService],

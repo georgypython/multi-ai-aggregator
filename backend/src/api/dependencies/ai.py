@@ -1,11 +1,15 @@
 from uuid import UUID
+from decimal import Decimal
 
-from fastapi import HTTPException, Query, Security, status
+from fastapi import Depends, HTTPException, Query, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
-from src.models.db_helper import db_helper
-from src.repositories import UserRepository
+from src.models import User, UserBalance
+
+from .session import get_session
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -30,13 +34,30 @@ async def require_api_key(
 
 async def resolve_user_id_by_telegram_id(
     tg_user_id: int = Query(..., ge=1),
+    session: AsyncSession = Depends(get_session),
 ) -> UUID:
-    user_repo = UserRepository()
-    async with db_helper.session_factory() as session:
-        async with session.begin():
-            user = await user_repo.get_or_create_by_telegram_id(
-                session=session,
-                telegram_id=tg_user_id,
-                available_tokens=settings.ai_logic.new_user_free_tokens,
+    async with session.begin():
+        stmt = select(User).where(
+            User.telegram_id == tg_user_id, User.is_active.is_(True)
+        )
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            user = User(telegram_id=tg_user_id, is_active=True)
+            session.add(user)
+            await session.flush()
+
+        balance_stmt = select(UserBalance).where(UserBalance.user_id == user.id)
+        balance_result = await session.execute(balance_stmt)
+        balance = balance_result.scalar_one_or_none()
+        if not balance:
+            session.add(
+                UserBalance(
+                    user_id=user.id,
+                    available_tokens=settings.ai_logic.new_user_free_tokens,
+                    hold_tokens=Decimal("0"),
+                )
             )
-            return user.id
+            await session.flush()
+        return user.id
