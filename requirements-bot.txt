@@ -1,0 +1,6 @@
+aiogram>=3.22.0
+dishka>=1.7.2
+httpx>=0.28.1
+pydantic>=2.12.5
+pydantic-settings>=2.12.0
+redis>=7.2.1
