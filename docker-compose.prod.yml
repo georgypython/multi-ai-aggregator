@@ -84,6 +84,10 @@ services:
       - ai-app-net
     env_file:
       - .env
+    command:
+      - sh
+      - -c
+      - alembic -c /app/backend/alembic.ini upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000
     ports:
       - "${APP_CONFIG__RUN__PORT:-8000}:8000"
     depends_on:
