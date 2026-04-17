@@ -14,7 +14,11 @@ from src.services.image_profile import ImageProfileService
 from src.services.image_generation import ImageGenerationService
 from src.services.llm_configuration import LLMConfigurationService
 from src.services.llm_generation import LLMGenerationService
+from src.services.lava_top import LavaTopService
 from src.services.openrouter import OpenRouterService
+from src.services.payment_lifecycle import PaymentLifecycleService
+from src.services.payment_webhook import PaymentWebhookService
+from src.services.invoice import PaymentInvoiceService
 from src.services.chat_memory import ChatMemoryService
 from src.services.storage import StorageService
 from src.services.video_profile import VideoProfileService
@@ -24,6 +28,43 @@ from src.services.wavespeed import WaveSpeedService
 
 
 class ServicesProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    def get_lava_top_service(
+        self,
+        client: AsyncClient,
+    ) -> LavaTopService:
+        return LavaTopService(client=client)
+
+    @provide(scope=Scope.REQUEST)
+    def get_payment_lifecycle_service(
+        self,
+        session: AsyncSession,
+    ) -> PaymentLifecycleService:
+        return PaymentLifecycleService(session=session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_invoice_service(
+        self,
+        session: AsyncSession,
+        lava_top_service: LavaTopService,
+    ) -> PaymentInvoiceService:
+        return PaymentInvoiceService(
+            session=session,
+            lava_top_service=lava_top_service,
+            order_expire_minutes=settings.payment.order_expire_minutes,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_payment_webhook_service(
+        self,
+        session: AsyncSession,
+        payment_lifecycle_service: PaymentLifecycleService,
+    ) -> PaymentWebhookService:
+        return PaymentWebhookService(
+            session=session,
+            payment_lifecycle_service=payment_lifecycle_service,
+        )
+
     @provide(scope=Scope.REQUEST)
     def get_generation_webhook_service(
         self,

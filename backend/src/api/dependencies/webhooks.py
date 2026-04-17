@@ -7,6 +7,16 @@ from fastapi import HTTPException, Request, status
 from src.core.config import settings
 
 
+def validate_lavatop_webhook_api_key(request: Request) -> None:
+    api_key = request.headers.get("X-Api-Key")
+    expected = settings.payment.webhook_api_key or settings.payment.api_key
+    if not api_key or api_key != expected:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid or missing LavaTop API key",
+        )
+
+
 async def validate_wavespeed_webhook_signature(request: Request) -> None:
     webhook_id = request.headers.get("webhook-id")
     webhook_timestamp = request.headers.get("webhook-timestamp")
