@@ -5,7 +5,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
-from src.core.schemas import AIModelItem
+from src.core.schemas import AIModelItem, PaymentProductItem
 
 MODE_LLM_TEXT = "💬 Чат-нейросети"
 MODE_VIDEO_TEXT = "🎬 Генерация видео"
@@ -173,5 +173,103 @@ def build_balance_keyboard() -> InlineKeyboardMarkup:
                     callback_data="balance:top_up",
                 )
             ]
+        ]
+    )
+
+
+def build_balance_products_keyboard(
+    products: list[PaymentProductItem],
+    current_index: int,
+) -> InlineKeyboardMarkup:
+    total = len(products)
+    prev_index = (current_index - 1) % total
+    next_index = (current_index + 1) % total
+    current = products[current_index]
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"✅ Выбрать тариф {current.name}",
+                    callback_data=f"balance:product:select:{current.plan_id}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️",
+                    callback_data=f"balance:product:nav:{prev_index}",
+                ),
+                InlineKeyboardButton(
+                    text=f"{current_index + 1}/{total}",
+                    callback_data="balance:product:noop",
+                ),
+                InlineKeyboardButton(
+                    text="➡️",
+                    callback_data=f"balance:product:nav:{next_index}",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="Назад к балансу",
+                    callback_data="balance:back",
+                )
+            ],
+        ]
+    )
+
+
+def build_payment_methods_keyboard(
+    methods: list[tuple[str, str]],
+    plan_index: int,
+) -> InlineKeyboardMarkup:
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text=label,
+                callback_data=f"balance:method:pick:{plan_index}:{code}",
+            )
+        ]
+        for code, label in methods
+    ]
+    buttons.append(
+        [
+            InlineKeyboardButton(
+                text="⬅️ К тарифам",
+                callback_data="balance:top_up",
+            )
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def build_balance_checkout_keyboard(plan_index: int, payment_method: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="💳 Оплатить",
+                    callback_data=f"balance:pay:{plan_index}:{payment_method}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️ К способам оплаты",
+                    callback_data=f"balance:method:back:{plan_index}",
+                )
+            ],
+        ]
+    )
+
+
+def build_balance_payment_link_keyboard(payment_url: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🔗 Оплатить по ссылке", url=payment_url)],
+            [
+                InlineKeyboardButton(
+                    text="⬅️ Назад к балансу",
+                    callback_data="balance:back",
+                )
+            ],
         ]
     )

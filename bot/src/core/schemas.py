@@ -95,3 +95,40 @@ class UserBalanceResult(BaseModel):
     telegram_id: int
     available_tokens: float
     hold_tokens: float
+
+
+class PaymentProductItem(BaseModel):
+    plan_id: UUID
+    tariff_code: str
+    name: str
+    display_name: str
+    description: str | None = None
+    billing_interval: str
+    duration_days: int
+    price_rub: float
+    tokens_amount: float
+    is_vpn_bonus_enabled: bool
+
+
+class PaymentProductsResult(BaseModel):
+    products: list[PaymentProductItem]
+
+
+class PaymentMethodOption(BaseModel):
+    code: str
+    enabled: bool
+    is_soon: bool
+
+
+class PaymentMethodsResult(BaseModel):
+    methods: list[PaymentMethodOption]
+
+
+class InvoiceCreateResult(BaseModel):
+    order_id: UUID
+    payment_intent_id: UUID
+    payment_url: str | None = None
+    amount: float
+    currency: str
+    provider: str
+    payment_method: str

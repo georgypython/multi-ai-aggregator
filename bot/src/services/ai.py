@@ -5,7 +5,10 @@ from src.core.schemas import (
     AIModelItem,
     ImageModelConfigResult,
     ImageModelPriceResult,
+    InvoiceCreateResult,
     LLMConfigResult,
+    PaymentMethodsResult,
+    PaymentProductsResult,
     UserBalanceResult,
     VideoModelConfigResult,
     VideoModelPriceResult,
@@ -119,3 +122,46 @@ class AIService(BaseBackendService):
         )
         response.raise_for_status()
         return UserBalanceResult.model_validate(response.json())
+
+    async def get_payment_products(
+        self,
+        tg_user_id: int,
+    ) -> PaymentProductsResult:
+        response = await self._client.get(
+            f"{self._base_url}/api/v1/invoice/products",
+            params={"tg_user_id": tg_user_id},
+            headers=self._base_headers,
+        )
+        response.raise_for_status()
+        return PaymentProductsResult.model_validate(response.json())
+
+    async def get_payment_methods(
+        self,
+        tg_user_id: int,
+    ) -> PaymentMethodsResult:
+        response = await self._client.get(
+            f"{self._base_url}/api/v1/invoice/methods",
+            params={"tg_user_id": tg_user_id},
+            headers=self._base_headers,
+        )
+        response.raise_for_status()
+        return PaymentMethodsResult.model_validate(response.json())
+
+    async def create_invoice(
+        self,
+        *,
+        tg_user_id: int,
+        plan_id: UUID | str,
+        payment_method: str = "card_ru",
+    ) -> InvoiceCreateResult:
+        response = await self._client.post(
+            f"{self._base_url}/api/v1/invoice",
+            params={"tg_user_id": tg_user_id},
+            headers=self._base_headers,
+            json={
+                "plan_id": str(plan_id),
+                "payment_method": payment_method,
+            },
+        )
+        response.raise_for_status()
+        return InvoiceCreateResult.model_validate(response.json())
