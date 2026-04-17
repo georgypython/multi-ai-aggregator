@@ -134,6 +134,12 @@ class BillingConfig(BaseModel):
         return Decimal(self.token_scale)
 
 
+class PaymentConfig(BaseModel):
+    base_url: str = "https://gate.lava.top"
+    api_key: str = "LAVATOP_API_KEY_HERE"
+    webhook_api_key: str | None = None
+    order_expire_minutes: int = 30
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=BASE_PATH / ".env",
@@ -154,6 +160,7 @@ class Settings(BaseSettings):
     storage: StorageConfig = StorageConfig()
     ai_logic: AILogicConfig = AILogicConfig()
     billing: BillingConfig = BillingConfig()
+    payment: PaymentConfig = PaymentConfig()
 
 
 settings = Settings()

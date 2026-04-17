@@ -9,9 +9,13 @@ from .mixins import CreatedAtMixin, UUIDPKMixin
 
 if TYPE_CHECKING:
     from .ai_generations import AIGeneration
+    from .balance_transactions import BalanceTransaction
     from .llm_configurations import LLMConfiguration
     from .user_balances import UserBalance
     from .media_files import MediaFile
+    from .orders import Order
+    from .payment_transactions import PaymentTransaction
+    from .subscriptions import Subscription
 
 
 class User(Base, UUIDPKMixin, CreatedAtMixin):
@@ -29,3 +33,11 @@ class User(Base, UUIDPKMixin, CreatedAtMixin):
     llm_configuration: Mapped["LLMConfiguration"] = relationship(back_populates="user")
     generations: Mapped[list["AIGeneration"]] = relationship(back_populates="user")
     media_files: Mapped[list["MediaFile"]] = relationship(back_populates="user")
+    subscriptions: Mapped[list["Subscription"]] = relationship(back_populates="user")
+    orders: Mapped[list["Order"]] = relationship(back_populates="user")
+    payment_transactions: Mapped[list["PaymentTransaction"]] = relationship(
+        back_populates="user"
+    )
+    balance_transactions: Mapped[list["BalanceTransaction"]] = relationship(
+        back_populates="user"
+    )
