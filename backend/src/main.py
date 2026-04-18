@@ -8,6 +8,7 @@ from src.api import router as api_router
 from src.core.config import settings
 from src.models.db_helper import db_helper
 from src.dependencies.container import container
+from src.tasks.broker import broker
 
 # from src.tasks.broker import broker
 
@@ -15,12 +16,12 @@ from src.dependencies.container import container
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    # await broker.startup()
+    await broker.startup()
 
     yield
 
     # Shutdown
-    # await broker.shutdown()
+    await broker.shutdown()
     await db_helper.dispose()
 
 

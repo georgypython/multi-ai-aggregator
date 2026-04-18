@@ -23,7 +23,7 @@ class GenerationWebhookService(DBAccessService):
         webhook_generation_status: GenerationStatus,
         generation: AIGeneration,
     ) -> None:
-        if webhook_generation_status == GenerationStatus.COMPLETED:
+        try:
             await self.generation_billing_service.finish_generation(
                 data=GenerationFinishData(
                     ai_model_id=generation.ai_model_id,
@@ -32,7 +32,7 @@ class GenerationWebhookService(DBAccessService):
                     generation_type=generation.generation_type,
                     hold_amount=generation.hold_tokens_amount,
                     final_tokens_cost=generation.hold_tokens_amount,
-                    provider_status=GenerationStatus.COMPLETED,
+                    provider_status=webhook_generation_status,
                     result_url=result_url,
                 )
             )
@@ -41,19 +41,14 @@ class GenerationWebhookService(DBAccessService):
                 generation.id,
                 generation.task_id,
             )
-            return None
-
-        await self.generation_billing_service.rollback_failed_generation(
-            user_id=generation.user_id,
-            hold_amount=generation.hold_tokens_amount,
-            generation_id=generation.id,
-        )
-        logger.warning(
-            "wavespeed_webhook_generation_failed generation_id=%s status=%s task_id=%s",
-            generation.id,
-            webhook_generation_status,
-            generation.task_id,
-        )
+        except RuntimeError as e:
+            logger.warning(
+                "wavespeed_webhook_generation_failed generation_id=%s status=%s task_id=%s error_text=%s",
+                generation.id,
+                webhook_generation_status,
+                generation.task_id,
+                e,
+            )
         return None
 
     async def handle_wavespeed_webhook(

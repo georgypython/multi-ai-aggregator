@@ -51,40 +51,14 @@ async def generate_image(
     user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
 ):
     """Запускает генерацию изображения для выбранной модели."""
-    try:
-        return await service.generate_image(
-            user_id=user_id,
-            model_id=model_id,
-            prompt=payload.prompt,
-            size=payload.size,
-            quality=payload.quality,
-            media_file_ids=payload.media_file_ids,
-        )
-    except ModelConfigError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        )
-    except ImageGenerationNotCompletedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc),
-        )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        )
-    except ProviderTimeoutError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail=str(exc),
-        )
-    except ProviderError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc),
-        )
+    return await service.generate_image(
+        user_id=user_id,
+        model_id=model_id,
+        prompt=payload.prompt,
+        size=payload.size,
+        quality=payload.quality,
+        media_file_ids=payload.media_file_ids,
+    )
 
 
 @router.post(

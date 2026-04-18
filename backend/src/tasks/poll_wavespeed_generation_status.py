@@ -5,7 +5,7 @@ from .broker import broker
 from src.core.config import settings
 from src.core.logger_setup import logger
 from src.models.db_helper import db_helper
-from src.models.enums import GenerationStatus
+from src.models.enums import GenerationStatus, GenerationType
 from src.schemas import PollWaveSpeedGenerationTaskSchema
 from src.services.generation_billing import GenerationBillingService
 from src.services.wavespeed import WaveSpeedService
@@ -47,6 +47,8 @@ async def _complete_generation_polling(
             result_url=result_url,
             wavespeed=wavespeed,
             user_telegram_id=data.user_tg_id,
+            generation_id=data.generation_id,
+            generation_type=data.generation_type,
         )
     return None
 
@@ -73,13 +75,14 @@ async def poll_wavespeed_generation_status(
     base_url: str,
 ) -> None:
     generation = None
-    try:
-        async with AsyncClient(timeout=data.timeout) as client:
-            wavespeed = WaveSpeedService(
-                client=client,
-                api_key=api_key,
-                base_url=base_url,
-            )
+    async with AsyncClient(timeout=data.timeout) as client:
+        wavespeed = WaveSpeedService(
+            client=client,
+            api_key=api_key,
+            base_url=base_url,
+            webhook_url=settings.wavespeed.wavespeed_webhook_url,
+        )
+        try:
             generation = await wavespeed.get_generation_status(
                 task_id=data.wavespeed_task_id
             )
@@ -92,20 +95,43 @@ async def poll_wavespeed_generation_status(
 
             data.result_url = generation.result_url
 
-    except Exception as exc:
-        logger.exception(
-            "poll_generation_status_error generation_id=%s task_id=%s attempt=%s error=%s",
-            data.generation_id,
-            data.wavespeed_task_id,
-            data.current_attempt,
-            exc,
-        )
+        except Exception as exc:
+            logger.exception(
+                "poll_generation_status_error generation_id=%s task_id=%s attempt=%s error=%s",
+                data.generation_id,
+                data.wavespeed_task_id,
+                data.current_attempt,
+                exc,
+            )
+            if data.current_attempt >= data.max_attempts:
+                await _complete_generation_polling(
+                    status=GenerationStatus.FAILED,
+                    data=data,
+                    wavespeed=wavespeed,
+                    result_url=data.result_url,
+                )
+                return None
+
+            await _continue_generation_polling(
+                data=data, api_key=api_key, base_url=base_url
+            )
+            return None
+
+        current_status = GenerationStatus.PROCESSING
+        if generation.status == GenerationStatus.COMPLETED:
+            current_status = GenerationStatus.COMPLETED
+        elif generation.status in (GenerationStatus.FAILED, GenerationStatus.CANCELED):
+            current_status = GenerationStatus.FAILED
+
         if data.current_attempt >= data.max_attempts:
+            current_status = GenerationStatus.FAILED
+
+        if current_status != GenerationStatus.PROCESSING:
             await _complete_generation_polling(
-                status=GenerationStatus.FAILED,
+                status=current_status,
                 data=data,
-                wavespeed=wavespeed,
                 result_url=data.result_url,
+                wavespeed=wavespeed,
             )
             return None
 
@@ -113,24 +139,3 @@ async def poll_wavespeed_generation_status(
             data=data, api_key=api_key, base_url=base_url
         )
         return None
-
-    current_status = GenerationStatus.PROCESSING
-    if generation.status == GenerationStatus.COMPLETED:
-        current_status = GenerationStatus.COMPLETED
-    elif generation.status in (GenerationStatus.FAILED, GenerationStatus.CANCELED):
-        current_status = GenerationStatus.FAILED
-
-    if data.current_attempt >= data.max_attempts:
-        current_status = GenerationStatus.FAILED
-
-    if current_status != GenerationStatus.PROCESSING:
-        await _complete_generation_polling(
-            status=current_status,
-            data=data,
-            result_url=data.result_url,
-            wavespeed=wavespeed,
-        )
-        return None
-
-    await _continue_generation_polling(data=data, api_key=api_key, base_url=base_url)
-    return None

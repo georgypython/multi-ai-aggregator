@@ -27,33 +27,12 @@ from src.tasks.poll_wavespeed_generation_status import poll_wavespeed_generation
 async def _complete_generation_polling(
     generation: AIGeneration,
     data: PollWaveSpeedGenerationTaskSchema,
-    generation_billing_service: GenerationBillingService,
     api_key: str,
     base_url: str,
 ) -> None:
     current_status = generation.status
-    try:
-        await generation_billing_service.finish_generation(
-            data=GenerationFinishData(
-                provider_status=current_status, **data.model_dump()
-            )
-        )
-        logger.info(
-            "generation_polling_completed generation_id=%s status=%s final_tokens_cost=%s",
-            data.generation_id,
-            current_status,
-            data.final_tokens_cost,
-        )
-    except RuntimeError as e:
-        logger.warning(
-            "generation_polling_failed generation_id=%s status=%s hold_amount=%s error_text=%s",
-            data.generation_id,
-            current_status,
-            data.hold_amount,
-            e,
-        )
     if not generation.result_url:
-        logger.warning(
+        logger.error(
             "poll_db_generation_missing_result_url generation_id=%s status=%s",
             data.generation_id,
             current_status,
@@ -81,13 +60,19 @@ async def _continue_generation_polling(
     api_key: str,
     base_url: str,
     generation_task_id: str,
+    result_url: str,
 ) -> None:
     await asyncio.sleep(data.poll_interval_seconds)
     if data.current_attempt >= data.max_attempts and generation_task_id is not None:
+        wavespeed_task_data = PollWaveSpeedGenerationTaskSchema(
+            **data.model_dump(),
+            wavespeed_task_id=generation_task_id,
+            timeout=30,
+            result_url=result_url,
+        )
+        wavespeed_task_data.current_attempt = 1
         await poll_wavespeed_generation_status.kiq(
-            data=PollWaveSpeedGenerationTaskSchema(
-                **data.model_dump(), wavespeed_task_id=generation_task_id, timeout=30
-            ),
+            data=wavespeed_task_data,
             api_key=api_key,
             base_url=base_url,
         )
@@ -108,32 +93,36 @@ async def poll_db_generation_status(
     base_url: str,
 ):
     async with db_helper.session_factory() as session:
-        stmt = select(AIGeneration).where(AIGeneration.id == data.generation_id)
-        res = await session.execute(stmt)
-        generation = res.scalar_one_or_none()
-        if (
-            not generation
-            or not generation.task_id
-            or not generation.result_url
-            or generation.generation_type == GenerationType.LLM
-        ):
-            logger.error(
-                "poll db generation failed for generation_id=%s",
-                data.generation_id,
-            )
+        try:
+            stmt = select(AIGeneration).where(AIGeneration.id == data.generation_id)
+            res = await session.execute(stmt)
+            generation = res.scalar_one_or_none()
+            if not generation:
+                logger.error(
+                    "generation not found for generation_id=%s",
+                    data.generation_id,
+                )
+                raise ValueError
+            elif not generation.task_id:
+                logger.error(
+                    "generation task_id not found for generation_id=%s",
+                    data.generation_id,
+                )
+                raise ValueError
+            elif generation.generation_type == GenerationType.LLM:
+                logger.error(
+                    "generation_type is LLM generation_id=%s",
+                    data.generation_id,
+                )
+                raise ValueError
+        except ValueError:
             return None
-
-        generation_billing_service = GenerationBillingService(
-            session=session,
-            token_scale=settings.billing.token_scale_decimal,
-        )
 
         current_status = generation.status
         if current_status in (GenerationStatus.COMPLETED, GenerationStatus.FAILED):
             await _complete_generation_polling(
                 generation=generation,
                 data=data,
-                generation_billing_service=generation_billing_service,
                 api_key=api_key,
                 base_url=base_url,
             )
@@ -149,5 +138,6 @@ async def poll_db_generation_status(
                 api_key=api_key,
                 base_url=base_url,
                 generation_task_id=generation.task_id,
+                result_url=generation.result_url,
             )
             return None

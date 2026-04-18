@@ -213,84 +213,11 @@ async def _run_image_generation(
         )
         return
 
-    await message.answer("Генерация запущена ⏳ Обычно это занимает до минуты.")
-
-    try:
-        final_status = await image_generation_service.wait_for_image_generation_status(
-            tg_user_id=message.from_user.id,
-            generation_id=result.generation_id,
-        )
-    except httpx.HTTPStatusError as exc:
-        logger.exception("Backend failed while polling image generation status")
-        await message.answer(
-            "Не удалось проверить прогресс генерации. Попробуй немного позже."
-        )
-        return
-    except TimeoutError:
-        await message.answer(
-            "Генерация заняла слишком много времени. Попробуй еще раз чуть позже."
-        )
-        return
-    except Exception:
-        logger.exception("Failed while polling image generation status")
-        await message.answer("Не удалось проверить прогресс генерации. Попробуй позже.")
-        return
-
-    if final_status.status == GenerationStatus.FAILED:
-        await message.answer(
-            "Не удалось завершить генерацию изображения ❌ Попробуй другой запрос."
-        )
-        return
-
-    if final_status.status == GenerationStatus.CANCELED:
-        await message.answer("Генерация была отменена ❌")
-        return
-
-    if final_status.status != GenerationStatus.COMPLETED:
-        await message.answer("Изображение еще готовится. Проверь чуть позже ⏳")
-        return
-
     await message.answer(
-        "<b>Готово ✅</b>\n"
-        f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>\n"
-        "Отправляю изображение..."
+        "<b>Генерация запущена ✅</b>\n"
+        f"Списано: <b>{result.tokens_cost:.4f} токенов</b>\n"
+        "⏳ Обычно это занимает до минуты..."
     )
-
-    try:
-        image_bytes = await image_generation_service.get_image_generation_content(
-            tg_user_id=message.from_user.id,
-            generation_id=result.generation_id,
-        )
-
-        await message.answer_photo(
-            photo=BufferedInputFile(
-                file=image_bytes,
-                filename=f"image_{result.generation_id}.jpg",
-            ),
-            caption=(
-                "<b>Изображение готово ✅</b>\n"
-                f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>"
-            ),
-        )
-    except TelegramBadRequest:
-        logger.exception("Telegram failed to process image as photo")
-        await message.answer_document(
-            document=BufferedInputFile(
-                file=image_bytes,
-                filename=f"image_{result.generation_id}.jpg",
-            ),
-            caption=(
-                "<b>Изображение готово ✅</b>\n"
-                f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>"
-            ),
-        )
-    except httpx.HTTPStatusError as exc:
-        logger.exception("Backend failed to return generated image content")
-        await message.answer("Не удалось получить готовое изображение. Попробуй позже.")
-    except Exception:
-        logger.exception("Failed to download/send generated image")
-        await message.answer("Не удалось отправить изображение. Попробуй позже.")
-
     await state.set_state(AIFlow.choosing_model)
 
 

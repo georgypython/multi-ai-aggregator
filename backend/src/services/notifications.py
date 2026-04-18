@@ -18,15 +18,16 @@ class NotificationsService:
         generation_type: GenerationType,
     ) -> None:
         if generation_type == GenerationType.VIDEO:
-            ext = "mp4"
+            await self.bot.send_video(
+                chat_id=telegram_user_id,
+                video=BufferedInputFile(file=media, filename=f"{generation_id}.mp4"),
+            )
         else:
-            ext = "png"
-
-        await self.bot.send_document(
-            chat_id=telegram_user_id,
-            document=BufferedInputFile(file=media, filename=f"{generation_id}.{ext}"),
-            caption="Генерация завершена ✅",
-        )
+            await self.bot.send_photo(
+                chat_id=telegram_user_id,
+                photo=BufferedInputFile(file=media, filename=f"{generation_id}.jpg"),
+                caption="Генерация завершена ✅",
+            )
 
     async def send_generation_failed_message(self, telegram_user_id: int) -> None:
         await self.bot.send_message(

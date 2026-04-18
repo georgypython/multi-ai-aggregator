@@ -68,9 +68,11 @@ class ImageGenerationService(DBAccessService):
         async with self.session.begin():
             user = await self._get_user_with_balance(user_id=user_id)
             if not user:
+                logger.error(f"Active user not found for user_id={user_id}")
                 raise ValueError(f"Active user not found for user_id={user_id}")
 
             if not user.balance:
+                logger.error(f"User balance is not configured for user_id={user_id}")
                 raise ValueError(
                     f"User balance is not configured for user_id={user_id}"
                 )
@@ -81,12 +83,15 @@ class ImageGenerationService(DBAccessService):
                 is_active=True,
             )
             if not ai_model:
+                logger.error(f"Active AIModel not found for model_id={model_id}")
                 raise ValueError(f"Active AIModel not found for model_id={model_id}")
 
             if ai_model.model_type != ModelType.IMAGE:
+                logger.error(f"AIModel is not image type for model_id={model_id}")
                 raise ValueError(f"AIModel is not image type for model_id={model_id}")
 
             if not ai_model.is_active:
+                logger.error(f"AIModel inactive for model_id={model_id}")
                 raise ValueError(f"AIModel inactive for model_id={model_id}")
 
             media_file_urls: list[str] | None = None
@@ -194,11 +199,13 @@ class ImageGenerationService(DBAccessService):
                 "Unexpected image polling error"
             ) from e
         from src.tasks.poll_db_generation_status import poll_db_generation_status
+
         await poll_db_generation_status.kiq(
             data=PollDbGenerationTaskSchema(
                 poll_interval_seconds=self.poll_interval_seconds,
                 max_attempts=self.poll_max_attempts,
                 current_attempt=1,
+                user_id=user_id,
                 user_tg_id=request_data.user_tg_id,
                 ai_model_id=request_data.ai_model_id,
                 generation_id=generation.id,

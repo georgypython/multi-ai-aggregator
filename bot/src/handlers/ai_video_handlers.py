@@ -217,92 +217,11 @@ async def _run_video_generation(
         await message.answer("Ошибка генерации видео. Попробуй позже.")
         return
 
-    await message.answer("Генерация запущена ⏳ Обычно это занимает до пары минут.")
-
-    try:
-        final_status = await video_generation_service.wait_for_video_generation_status(
-            tg_user_id=message.from_user.id,
-            generation_id=result.generation_id,
-        )
-    except httpx.HTTPStatusError as exc:
-        logger.exception("Backend failed while polling video generation status")
-        await message.answer(
-            "Не удалось проверить прогресс генерации. Попробуй немного позже."
-        )
-        return
-    except TimeoutError:
-        await message.answer(
-            "Генерация заняла слишком много времени. Попробуй еще раз чуть позже ⏱️"
-        )
-        return
-    except Exception:
-        logger.exception("Failed while polling video generation status")
-        await message.answer("Не удалось проверить прогресс генерации. Попробуй позже.")
-        return
-
-    if final_status.status == GenerationStatus.FAILED:
-        await message.answer(
-            "Не удалось завершить генерацию видео ❌ Попробуй другой запрос."
-        )
-        return
-
-    if final_status.status == GenerationStatus.CANCELED:
-        await message.answer("Генерация была отменена ❌")
-        return
-
-    if final_status.status != GenerationStatus.COMPLETED:
-        await message.answer("Видео еще готовится. Проверь чуть позже ⏳")
-        return
-
     await message.answer(
-        "<b>Готово ✅</b>\n"
-        f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>\n"
-        "Отправляю видео..."
+        "<b>енерация запущена ✅</b>\n"
+        f"Списано: <b>{result.tokens_cost:.4f} токенов</b>\n"
+        "⏳ Обычно это занимает до пары минут..."
     )
-
-    video_bytes: bytes | None = None
-    try:
-        video_bytes = await video_generation_service.get_video_generation_content(
-            tg_user_id=message.from_user.id,
-            generation_id=result.generation_id,
-        )
-
-        await message.answer_video(
-            video=BufferedInputFile(
-                file=video_bytes,
-                filename=f"video_{result.generation_id}.mp4",
-            ),
-            caption=(
-                "<b>Видео готово ✅</b>\n"
-                f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>"
-            ),
-        )
-    except TelegramBadRequest:
-        if video_bytes is None:
-            logger.exception(
-                "Telegram failed to process video and no bytes available for fallback"
-            )
-            await message.answer("Не удалось отправить видео. Попробуй позже.")
-            await state.set_state(AIFlow.choosing_model)
-            return
-
-        logger.exception("Telegram failed to process video as video")
-        await message.answer_document(
-            document=BufferedInputFile(
-                file=video_bytes,
-                filename=f"video_{result.generation_id}.mp4",
-            ),
-            caption=(
-                "<b>Видео готово ✅</b>\n"
-                f"Списано: <b>{final_status.tokens_cost:.4f} токенов</b>"
-            ),
-        )
-    except httpx.HTTPStatusError as exc:
-        logger.exception("Backend failed to return generated video content")
-        await message.answer("Не удалось получить готовое видео. Попробуй позже.")
-    except Exception:
-        logger.exception("Failed to download/send generated video")
-        await message.answer("Не удалось отправить видео. Попробуй позже.")
 
     await state.set_state(AIFlow.choosing_model)
 

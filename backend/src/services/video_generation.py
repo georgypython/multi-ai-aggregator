@@ -190,6 +190,7 @@ class VideoGenerationService(DBAccessService):
             raise AIGenerationError("Unexpected video polling error") from e
 
         from src.tasks.poll_db_generation_status import poll_db_generation_status
+
         await poll_db_generation_status.kiq(
             data=PollDbGenerationTaskSchema(
                 poll_interval_seconds=self.poll_interval_seconds,

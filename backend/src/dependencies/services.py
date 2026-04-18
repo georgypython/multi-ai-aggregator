@@ -29,6 +29,7 @@ from src.services import (
     NotificationsService,
 )
 
+
 class ServicesProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def get_lava_top_service(
