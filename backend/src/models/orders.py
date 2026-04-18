@@ -53,10 +53,16 @@ class Order(Base, UUIDPKMixin, CreatedAtMixin):
         default=OrderStatus.PENDING,
         index=True,
     )
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    paid_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
-    meta_data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    meta_data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="orders")
     plan: Mapped["Plan"] = relationship("Plan", back_populates="orders")

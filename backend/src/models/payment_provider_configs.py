@@ -13,7 +13,9 @@ if TYPE_CHECKING:
 class PaymentProviderConfig(Base, UUIDPKMixin, CreatedAtMixin):
     __tablename__ = "payment_provider_configs"
 
-    code: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
+    code: Mapped[str] = mapped_column(
+        String(50), nullable=False, unique=True, index=True
+    )
     display_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 

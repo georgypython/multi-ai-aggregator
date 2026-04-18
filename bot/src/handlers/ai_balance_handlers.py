@@ -31,12 +31,18 @@ PAYMENT_METHOD_LABELS: dict[str, str] = {
 }
 
 
-def _build_product_card_text(item: PaymentProductItem, current_index: int, total: int) -> str:
+def _build_product_card_text(
+    item: PaymentProductItem, current_index: int, total: int
+) -> str:
     llm_generations = int(item.tokens_amount / LLM_TOKENS_PER_GEN)
     image_generations = int(item.tokens_amount / IMAGE_TOKENS_PER_GEN)
     video_generations = int(item.tokens_amount / VIDEO_TOKENS_PER_GEN)
 
-    bonus_line = "\n🎁 <b>Бонус:</b> VPN на 30 дней (при первом подключении)" if item.is_vpn_bonus_enabled else ""
+    bonus_line = (
+        "\n🎁 <b>Бонус:</b> VPN на 30 дней (при первом подключении)"
+        if item.is_vpn_bonus_enabled
+        else ""
+    )
     description_line = f"\n📝 {item.description}" if item.description else ""
 
     return (
@@ -114,7 +120,9 @@ async def _render_payment_methods_step(
     selected = products[plan_index]
 
     try:
-        methods_result = await ai_service.get_payment_methods(tg_user_id=callback.from_user.id)
+        methods_result = await ai_service.get_payment_methods(
+            tg_user_id=callback.from_user.id
+        )
     except httpx.HTTPStatusError:
         await callback.answer("Не удалось загрузить способы оплаты", show_alert=True)
         return
@@ -320,7 +328,9 @@ async def pay_selected_plan(
         if status_code in (401, 403):
             await callback.answer("Нет доступа к оплате", show_alert=True)
         elif status_code == 400:
-            await callback.answer("Не удалось создать инвойс для этого тарифа", show_alert=True)
+            await callback.answer(
+                "Не удалось создать инвойс для этого тарифа", show_alert=True
+            )
         else:
             await callback.answer("Ошибка при создании инвойса", show_alert=True)
         return

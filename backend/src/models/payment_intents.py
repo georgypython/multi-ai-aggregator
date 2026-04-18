@@ -28,7 +28,9 @@ class PaymentIntent(Base, UUIDPKMixin, CreatedAtMixin):
         index=True,
     )
 
-    provider_invoice_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    provider_invoice_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
     provider_contract_id: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
@@ -44,7 +46,9 @@ class PaymentIntent(Base, UUIDPKMixin, CreatedAtMixin):
     )
 
     invoice_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
-    provider_data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    provider_data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
 
     order: Mapped["Order"] = relationship("Order", back_populates="payment_intents")
     transactions: Mapped[list["PaymentTransaction"]] = relationship(

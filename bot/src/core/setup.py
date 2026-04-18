@@ -10,7 +10,6 @@ from src.handlers import router
 from src.middlewares.whitelist_guard import WhitelistGuardMiddleware
 from src.services.ai import AIService
 
-
 whitelist_guard_ai_service = AIService(
     base_url=settings.ai.ai_api_url,
     api_key=settings.ai.api_key,

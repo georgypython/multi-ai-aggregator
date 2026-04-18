@@ -14,8 +14,9 @@ from src.models.enums import (
     PaymentMethod,
     ProductPaymentType,
     LavaTopPaymentMethod,
-    LavaTopPeriodicity
+    LavaTopPeriodicity,
 )
+
 
 class LavaTopService:
     def __init__(self, client: AsyncClient) -> None:
@@ -51,7 +52,10 @@ class LavaTopService:
             raise PaymentValidationError("email is required for LavaTop")
 
         lava_periodicity = LavaTopPeriodicity.ONE_TIME
-        if payment_type == ProductPaymentType.RECURRING and periodicity == BillingInterval.MONTHLY:
+        if (
+            payment_type == ProductPaymentType.RECURRING
+            and periodicity == BillingInterval.MONTHLY
+        ):
             lava_periodicity = LavaTopPeriodicity.MONTHLY
 
         body = {

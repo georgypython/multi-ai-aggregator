@@ -43,11 +43,11 @@ class PaymentLifecycleService:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def _get_or_create_user_balance_for_update(self, user_id: UUID) -> UserBalance:
+    async def _get_or_create_user_balance_for_update(
+        self, user_id: UUID
+    ) -> UserBalance:
         stmt = (
-            select(UserBalance)
-            .where(UserBalance.user_id == user_id)
-            .with_for_update()
+            select(UserBalance).where(UserBalance.user_id == user_id).with_for_update()
         )
         result = await self.session.execute(stmt)
         balance = result.scalar_one_or_none()
@@ -139,7 +139,9 @@ class PaymentLifecycleService:
 
         subscription.status = SubscriptionStatus.ACTIVE
         subscription.current_period_start = base_start
-        subscription.current_period_end = base_start + timedelta(days=plan.duration_days)
+        subscription.current_period_end = base_start + timedelta(
+            days=plan.duration_days
+        )
         subscription.payment_count += 1
         subscription.last_payment_at = now
         subscription.cancel_at_period_end = False
@@ -209,7 +211,9 @@ class PaymentLifecycleService:
             order.status = OrderStatus.PAID
             order.paid_at = datetime.now(timezone.utc)
 
-        existing_subscription = await self._get_active_subscription_for_update(order.user_id)
+        existing_subscription = await self._get_active_subscription_for_update(
+            order.user_id
+        )
         if existing_subscription:
             subscription = await self._extend_subscription(
                 subscription=existing_subscription,
@@ -269,7 +273,9 @@ class PaymentLifecycleService:
         if existing_tx:
             sub = await self.session.get(Subscription, existing_tx.subscription_id)
             if not sub:
-                raise PaymentConflictError("Duplicate recurrent tx without subscription")
+                raise PaymentConflictError(
+                    "Duplicate recurrent tx without subscription"
+                )
             return existing_tx, sub
 
         intent = await self._get_payment_intent_with_order_plan(payment_intent.id)
@@ -285,7 +291,9 @@ class PaymentLifecycleService:
         intent.status = PaymentIntentStatus.COMPLETED
         intent.provider_data = {**(intent.provider_data or {}), **provider_data}
 
-        active_subscription = await self._get_active_subscription_for_update(order.user_id)
+        active_subscription = await self._get_active_subscription_for_update(
+            order.user_id
+        )
         if active_subscription:
             subscription = await self._extend_subscription(
                 subscription=active_subscription,
@@ -378,7 +386,9 @@ class PaymentLifecycleService:
 
         intent.provider_data = {**(intent.provider_data or {}), **provider_data}
 
-        subscription = await self._get_active_subscription_for_update(intent.order.user_id)
+        subscription = await self._get_active_subscription_for_update(
+            intent.order.user_id
+        )
         if not subscription:
             return None
 

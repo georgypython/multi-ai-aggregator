@@ -29,8 +29,12 @@ class PaymentWebhookService:
             "status": payload.status.value if payload.status else None,
             "timestamp": payload.timestamp.isoformat() if payload.timestamp else None,
             "error_message": payload.errorMessage,
-            "cancelled_at": payload.cancelledAt.isoformat() if payload.cancelledAt else None,
-            "will_expire_at": payload.willExpireAt.isoformat() if payload.willExpireAt else None,
+            "cancelled_at": (
+                payload.cancelledAt.isoformat() if payload.cancelledAt else None
+            ),
+            "will_expire_at": (
+                payload.willExpireAt.isoformat() if payload.willExpireAt else None
+            ),
         }
 
     async def process_lava_top_regular_webhook(
@@ -51,20 +55,33 @@ class PaymentWebhookService:
                     provider_contract_id=None,
                 )
                 if not payment_intent:
-                    logger.warning("PaymentIntent not found for regular webhook contract=%s", payload.contractId)
+                    logger.warning(
+                        "PaymentIntent not found for regular webhook contract=%s",
+                        payload.contractId,
+                    )
                     return {"status": "ignored", "reason": "payment_intent_not_found"}
 
                 provider_data = self._build_provider_data(payload)
 
                 if payload.is_successful():
-                    tx, sub = await self.payment_lifecycle_service.handle_payment_success(
-                        payment_intent=payment_intent,
-                        provider_transaction_id=str(payload.contractId),
-                        provider_contract_id=str(payload.contractId),
-                        amount=Decimal(str(payload.amount)) if payload.amount is not None else None,
-                        provider_data=provider_data,
+                    tx, sub = (
+                        await self.payment_lifecycle_service.handle_payment_success(
+                            payment_intent=payment_intent,
+                            provider_transaction_id=str(payload.contractId),
+                            provider_contract_id=str(payload.contractId),
+                            amount=(
+                                Decimal(str(payload.amount))
+                                if payload.amount is not None
+                                else None
+                            ),
+                            provider_data=provider_data,
+                        )
                     )
-                    return {"status": "ok", "transaction_id": str(tx.id), "subscription_id": str(sub.id)}
+                    return {
+                        "status": "ok",
+                        "transaction_id": str(tx.id),
+                        "subscription_id": str(sub.id),
+                    }
 
                 if payload.is_failed():
                     tx = await self.payment_lifecycle_service.handle_payment_failed(
@@ -91,7 +108,11 @@ class PaymentWebhookService:
 
                 payment_intent = await self.payment_lifecycle_service.find_payment_intent_for_webhook(
                     provider_invoice_id=None,
-                    provider_contract_id=str(payload.parentContractId) if payload.parentContractId else None,
+                    provider_contract_id=(
+                        str(payload.parentContractId)
+                        if payload.parentContractId
+                        else None
+                    ),
                 )
 
                 if not payment_intent and payload.buyer and payload.buyer.email:
@@ -110,14 +131,28 @@ class PaymentWebhookService:
                 provider_data = self._build_provider_data(payload)
 
                 if payload.is_successful():
-                    tx, sub = await self.payment_lifecycle_service.handle_recurrent_payment_success(
-                        payment_intent=payment_intent,
-                        provider_transaction_id=str(payload.contractId),
-                        parent_contract_id=str(payload.parentContractId) if payload.parentContractId else None,
-                        amount=Decimal(str(payload.amount)) if payload.amount is not None else None,
-                        provider_data=provider_data,
+                    tx, sub = (
+                        await self.payment_lifecycle_service.handle_recurrent_payment_success(
+                            payment_intent=payment_intent,
+                            provider_transaction_id=str(payload.contractId),
+                            parent_contract_id=(
+                                str(payload.parentContractId)
+                                if payload.parentContractId
+                                else None
+                            ),
+                            amount=(
+                                Decimal(str(payload.amount))
+                                if payload.amount is not None
+                                else None
+                            ),
+                            provider_data=provider_data,
+                        )
                     )
-                    return {"status": "ok", "transaction_id": str(tx.id), "subscription_id": str(sub.id)}
+                    return {
+                        "status": "ok",
+                        "transaction_id": str(tx.id),
+                        "subscription_id": str(sub.id),
+                    }
 
                 if payload.is_failed():
                     tx = await self.payment_lifecycle_service.handle_payment_failed(
@@ -132,17 +167,23 @@ class PaymentWebhookService:
 
         return {"status": "ignored", "reason": "unsupported_event"}
 
-    async def _process_subscription_cancelled(self, payload: LavaTopWebhookRequestData) -> dict:
+    async def _process_subscription_cancelled(
+        self, payload: LavaTopWebhookRequestData
+    ) -> dict:
         if not payload.contractId:
             return {"status": "ignored", "reason": "missing_contract_id"}
 
-        payment_intent = await self.payment_lifecycle_service.find_payment_intent_for_webhook(
-            provider_invoice_id=None,
-            provider_contract_id=str(payload.contractId),
+        payment_intent = (
+            await self.payment_lifecycle_service.find_payment_intent_for_webhook(
+                provider_invoice_id=None,
+                provider_contract_id=str(payload.contractId),
+            )
         )
         if not payment_intent and payload.buyer and payload.buyer.email:
-            payment_intent = await self.payment_lifecycle_service.find_payment_intent_by_email(
-                email=payload.buyer.email
+            payment_intent = (
+                await self.payment_lifecycle_service.find_payment_intent_by_email(
+                    email=payload.buyer.email
+                )
             )
 
         if not payment_intent:

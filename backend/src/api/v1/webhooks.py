@@ -46,9 +46,9 @@ async def lavatop_regular_webhook(
     except IntegrityError:
         return {"status": "ok", "duplicate": True}
     except (
-        PaymentValidationError, 
+        PaymentValidationError,
         PaymentProviderRequestError,
-        PaymentProcessingError
+        PaymentProcessingError,
     ) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except PaymentNotFoundError as exc:
@@ -73,9 +73,9 @@ async def lavatop_recurrent_webhook(
     except IntegrityError:
         return {"status": "ok", "duplicate": True}
     except (
-        PaymentValidationError, 
+        PaymentValidationError,
         PaymentProviderRequestError,
-        PaymentProcessingError
+        PaymentProcessingError,
     ) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except PaymentNotFoundError as exc:

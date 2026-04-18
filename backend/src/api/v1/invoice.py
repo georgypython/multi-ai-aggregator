@@ -37,7 +37,9 @@ router = APIRouter(
     "",
     response_model=InvoiceCreateResponseSchema,
     dependencies=[
-        Depends(TgRateLimiter(limit=10, window_seconds=60, path_name_key="invoice_create"))
+        Depends(
+            TgRateLimiter(limit=10, window_seconds=60, path_name_key="invoice_create")
+        )
     ],
 )
 async def create_invoice(
@@ -60,11 +62,14 @@ async def create_invoice(
     except PaymentProviderUnavailableError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
+
 @router.get(
     "/methods",
     response_model=PaymentMethodsResponseSchema,
     dependencies=[
-        Depends(TgRateLimiter(limit=20, window_seconds=60, path_name_key="invoice_methods"))
+        Depends(
+            TgRateLimiter(limit=20, window_seconds=60, path_name_key="invoice_methods")
+        )
     ],
 )
 async def list_payment_methods(
@@ -88,7 +93,9 @@ async def list_payment_methods(
     "/products",
     response_model=PaymentProductsResponseSchema,
     dependencies=[
-        Depends(TgRateLimiter(limit=20, window_seconds=60, path_name_key="invoice_products"))
+        Depends(
+            TgRateLimiter(limit=20, window_seconds=60, path_name_key="invoice_products")
+        )
     ],
 )
 async def list_payment_products(

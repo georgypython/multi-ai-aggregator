@@ -242,7 +242,9 @@ def build_payment_methods_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def build_balance_checkout_keyboard(plan_index: int, payment_method: str) -> InlineKeyboardMarkup:
+def build_balance_checkout_keyboard(
+    plan_index: int, payment_method: str
+) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [

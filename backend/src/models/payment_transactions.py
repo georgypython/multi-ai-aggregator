@@ -59,7 +59,9 @@ class PaymentTransaction(Base, UUIDPKMixin, CreatedAtMixin):
         unique=True,
         index=True,
     )
-    provider_data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    provider_data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
 
     parent_transaction_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("payment_transactions.id", ondelete="SET NULL"),
@@ -69,7 +71,9 @@ class PaymentTransaction(Base, UUIDPKMixin, CreatedAtMixin):
 
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     error_message: Mapped[str | None] = mapped_column(String(1000), nullable=True)
-    meta_data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    meta_data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="payment_transactions")
     payment_intent: Mapped["PaymentIntent"] = relationship(

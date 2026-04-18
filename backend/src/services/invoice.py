@@ -124,7 +124,11 @@ class PaymentInvoiceService:
         stmt = (
             select(Plan)
             .join(Product, Product.id == Plan.product_id)
-            .where(Plan.id == plan_id, Plan.is_active.is_(True), Product.is_active.is_(True))
+            .where(
+                Plan.id == plan_id,
+                Plan.is_active.is_(True),
+                Product.is_active.is_(True),
+            )
         )
         result = await self.session.execute(stmt)
         plan = result.scalar_one_or_none()
@@ -158,7 +162,9 @@ class PaymentInvoiceService:
                 (PaymentProviderMethod.enabled.is_(True))
                 | (PaymentProviderMethod.is_soon.is_(True))
             )
-            .order_by(PaymentProviderMethod.sort_order, PaymentProviderMethod.method_code)
+            .order_by(
+                PaymentProviderMethod.sort_order, PaymentProviderMethod.method_code
+            )
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
@@ -212,7 +218,10 @@ class PaymentInvoiceService:
 
             await self._validate_payment_method(payload.payment_method)
 
-            if plan.available_payment_methods and payload.payment_method.name not in plan.available_payment_methods:
+            if (
+                plan.available_payment_methods
+                and payload.payment_method.name not in plan.available_payment_methods
+            ):
                 raise PaymentValidationError(
                     f"Payment method {payload.payment_method.value} is not available for this plan"
                 )

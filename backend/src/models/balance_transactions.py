@@ -42,11 +42,15 @@ class BalanceTransaction(Base, UUIDPKMixin, CreatedAtMixin):
     )
     amount_tokens: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    meta_data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    meta_data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="balance_transactions")
     payment_transaction: Mapped["PaymentTransaction | None"] = relationship(
         "PaymentTransaction",
         back_populates="balance_transactions",
     )
-    plan: Mapped["Plan | None"] = relationship("Plan", back_populates="balance_transactions")
+    plan: Mapped["Plan | None"] = relationship(
+        "Plan", back_populates="balance_transactions"
+    )

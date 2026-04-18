@@ -140,6 +140,11 @@ class PaymentConfig(BaseModel):
     webhook_api_key: str | None = None
     order_expire_minutes: int = 30
 
+
+class TgConfig(BaseModel):
+    bot_token: str = "YOUR_BOT_TOKEN"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=BASE_PATH / ".env",
@@ -161,6 +166,7 @@ class Settings(BaseSettings):
     ai_logic: AILogicConfig = AILogicConfig()
     billing: BillingConfig = BillingConfig()
     payment: PaymentConfig = PaymentConfig()
+    tg: TgConfig = TgConfig()
 
 
 settings = Settings()

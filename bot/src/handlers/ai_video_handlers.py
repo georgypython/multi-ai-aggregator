@@ -60,7 +60,11 @@ async def choose_video_duration(
     selected_model_id = fsm_data.get("selected_model_id")
     selected_model_type = fsm_data.get("selected_model_type")
 
-    if callback.from_user is None or selected_model_type != "video" or not selected_model_id:
+    if (
+        callback.from_user is None
+        or selected_model_type != "video"
+        or not selected_model_id
+    ):
         await callback.answer("Сначала выбери видеомодель", show_alert=False)
         return
 
@@ -166,13 +170,19 @@ async def _run_video_generation(
         except httpx.HTTPStatusError as exc:
             status_code = exc.response.status_code
             if status_code == 413:
-                await message.answer("Файл слишком большой. Попробуй изображение меньшего размера.")
+                await message.answer(
+                    "Файл слишком большой. Попробуй изображение меньшего размера."
+                )
             elif status_code == 400:
                 await message.answer("Неподдерживаемый формат изображения.")
             elif status_code == 401:
-                await message.answer("Сервис сейчас временно недоступен. Попробуй чуть позже.")
+                await message.answer(
+                    "Сервис сейчас временно недоступен. Попробуй чуть позже."
+                )
             else:
-                await message.answer("Не удалось загрузить изображение. Попробуй позже.")
+                await message.answer(
+                    "Не удалось загрузить изображение. Попробуй позже."
+                )
             return
         except Exception:
             logger.exception("Failed to upload image before video generation")
@@ -194,9 +204,13 @@ async def _run_video_generation(
         if status_code == 402:
             await message.answer("Недостаточно токенов для этой генерации 💸")
         elif status_code == 401:
-            await message.answer("Сервис сейчас временно недоступен. Попробуй чуть позже.")
+            await message.answer(
+                "Сервис сейчас временно недоступен. Попробуй чуть позже."
+            )
         else:
-            await message.answer("Не удалось запустить генерацию видео. Попробуй чуть позже.")
+            await message.answer(
+                "Не удалось запустить генерацию видео. Попробуй чуть позже."
+            )
         return
     except Exception:
         logger.exception("Failed to generate video")
@@ -227,7 +241,9 @@ async def _run_video_generation(
         return
 
     if final_status.status == GenerationStatus.FAILED:
-        await message.answer("Не удалось завершить генерацию видео ❌ Попробуй другой запрос.")
+        await message.answer(
+            "Не удалось завершить генерацию видео ❌ Попробуй другой запрос."
+        )
         return
 
     if final_status.status == GenerationStatus.CANCELED:

@@ -1,6 +1,7 @@
 from typing import AsyncGenerator
 import httpx
 import boto3
+from aiogram import Bot
 from botocore.client import BaseClient, Config
 from redis.asyncio import Redis
 
@@ -12,6 +13,14 @@ from src.models.db_helper import db_helper
 
 
 class InfrastructureProvider(Provider):
+
+    @provide(scope=Scope.APP)
+    async def get_telegram_bot(self) -> AsyncGenerator[Bot, None]:
+        bot = Bot(token=settings.tg.bot_token)
+        try:
+            yield bot
+        finally:
+            await bot.session.close()
 
     @provide(scope=Scope.APP)
     def get_s3_client(self) -> BaseClient:
