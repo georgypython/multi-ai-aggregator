@@ -12,7 +12,7 @@ class LLMGenerationService(BaseBackendService):
         prompt: str,
     ) -> LLMGenerationResult:
         response = await self._client.post(
-            f"{self._base_url}/api/v1/ai/{model_id}/generate/llm",
+            f"{self.base_url}/api/v1/ai/{model_id}/generate/llm",
             params={"tg_user_id": tg_user_id},
             json={"prompt": prompt},
             headers=self._base_headers,
@@ -33,7 +33,7 @@ class LLMGenerationService(BaseBackendService):
             payload["instructions"] = instructions
 
         response = await self._client.post(
-            f"{self._base_url}/api/v1/users/me/llm-config",
+            f"{self.base_url}/api/v1/users/me/llm-config",
             params={"tg_user_id": tg_user_id},
             json=payload,
             headers=self._base_headers,

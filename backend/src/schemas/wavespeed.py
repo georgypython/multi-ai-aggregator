@@ -7,7 +7,7 @@ class WavespeedGenerationResponseSchema(BaseModel):
     task_id: str
     model_key: str | None = None
     status: GenerationStatus
-    result_url: str | None = None
+    result_url: str
     created_at: str | None = None
     error: str | None = None
 

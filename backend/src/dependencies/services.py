@@ -1,31 +1,33 @@
+from dishka import Provider, Scope, provide
 from httpx import AsyncClient
 from botocore.client import BaseClient
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from dishka import Provider, Scope, provide
+from aiogram import Bot
 
 from src.core.config import settings
-from src.services.ai_models import AIModelsService
-from src.services.generation_billing import GenerationBillingService
-from src.services.generation_info import GenerationInfoService
-from src.services.generation_webhook import GenerationWebhookService
-from src.services.image_profile import ImageProfileService
-from src.services.image_generation import ImageGenerationService
-from src.services.llm_configuration import LLMConfigurationService
-from src.services.llm_generation import LLMGenerationService
-from src.services.lava_top import LavaTopService
-from src.services.openrouter import OpenRouterService
-from src.services.payment_lifecycle import PaymentLifecycleService
-from src.services.payment_webhook import PaymentWebhookService
-from src.services.invoice import PaymentInvoiceService
-from src.services.chat_memory import ChatMemoryService
-from src.services.storage import StorageService
-from src.services.video_profile import VideoProfileService
-from src.services.video_generation import VideoGenerationService
-from src.services.users import UsersService
-from src.services.wavespeed import WaveSpeedService
-
+from src.services import (
+    AIModelsService,
+    ChatMemoryService,
+    GenerationBillingService,
+    GenerationInfoService,
+    GenerationWebhookService,
+    ImageGenerationService,
+    ImageProfileService,
+    LavaTopService,
+    LLMConfigurationService,
+    LLMGenerationService,
+    OpenRouterService,
+    PaymentInvoiceService,
+    PaymentLifecycleService,
+    PaymentWebhookService,
+    StorageService,
+    UsersService,
+    VideoGenerationService,
+    VideoProfileService,
+    WaveSpeedService,
+    NotificationsService,
+)
 
 class ServicesProvider(Provider):
     @provide(scope=Scope.REQUEST)
@@ -194,6 +196,8 @@ class ServicesProvider(Provider):
             image_profile_service=image_configuration_service,
             wavespeed_service=wavespeed_service,
             storage_service=storage_service,
+            poll_max_attempts=settings.wavespeed.poll_max_attempts,
+            poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -211,6 +215,8 @@ class ServicesProvider(Provider):
             video_profile_service=video_configuration_service,
             wavespeed_service=wavespeed_service,
             storage_service=storage_service,
+            poll_max_attempts=settings.wavespeed.poll_max_attempts,
+            poll_interval_seconds=settings.wavespeed.poll_interval_seconds,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -243,3 +249,10 @@ class ServicesProvider(Provider):
         return LLMConfigurationService(
             session=session,
         )
+
+    @provide(scope=Scope.REQUEST)
+    def get_notifications_service(
+        self,
+        bot: Bot,
+    ) -> NotificationsService:
+        return NotificationsService(bot=bot)

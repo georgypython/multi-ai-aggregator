@@ -15,6 +15,7 @@ class ImageRequestDataSchema(GenerationRequestSchema):
     provider: ModelProvider
     media_file_urls: list[str] | None = None
     provider_model_key: str
+    user_tg_id: int
 
 
 class ImageGenerationCreateRequestSchema(BaseModel):

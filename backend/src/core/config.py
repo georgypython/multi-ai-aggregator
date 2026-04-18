@@ -63,8 +63,8 @@ class WaveSpeedConfig(BaseModel):
     api_key: str = "API_KEY_HERE"
     webhook_secret: str = "whsec_YOUR_WEBHOOK_SECRET"
     wavespeed_webhook_url: str = "https://your-webhook-url"
-    poll_interval_seconds: int = 5
-    poll_max_attempts: int = 120
+    poll_interval_seconds: int = 3
+    poll_max_attempts: int = 30
 
 
 class RedisConfig(BaseModel):

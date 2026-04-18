@@ -13,6 +13,7 @@ class VideoRequestDataSchema(GenerationRequestSchema):
     provider: ModelProvider
     media_file_url: str | None = None
     provider_model_key: str
+    user_tg_id: int
 
 
 class VideoGenerationCreateRequestSchema(BaseModel):

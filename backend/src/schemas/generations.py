@@ -56,7 +56,11 @@ class GenerationResultResponseDataSchema(BaseModel):
     text: str | None = None
 
 
-class PollWaveSpeedGenerationTaskSchema(BaseModel):
+class PollDbGenerationTaskSchema(BaseModel):
+    poll_interval_seconds: int = 3
+    max_attempts: int = 30
+    current_attempt: int = 1
+    user_tg_id: int
     ai_model_id: UUID
     user_id: UUID
     generation_id: UUID
@@ -64,10 +68,10 @@ class PollWaveSpeedGenerationTaskSchema(BaseModel):
     model_token_price_id: UUID
     hold_amount: Decimal
     provider_cost: Decimal
-    wavespeed_task_id: str
-    poll_interval_seconds: int = 5
-    max_attempts: int = 120
-    current_attempt: int = 1
-    timeout: int = 30
     final_tokens_cost: Decimal
+
+
+class PollWaveSpeedGenerationTaskSchema(PollDbGenerationTaskSchema):
+    wavespeed_task_id: str
+    timeout: int = 30
     result_url: str | None

@@ -69,6 +69,6 @@ class GenerationInfoService(DBAccessService):
                 "Media generation content is unavailable: result_url is empty"
             )
 
-        return await self.wavespeed_service.download_video_bytes(
+        return await self.wavespeed_service.download_generation_bytes(
             url=generation.result_url
         )

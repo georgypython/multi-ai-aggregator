@@ -10,18 +10,21 @@ from src.schemas import PollWaveSpeedGenerationTaskSchema
 from src.services.generation_billing import GenerationBillingService
 from src.services.wavespeed import WaveSpeedService
 from src.schemas import GenerationFinishData
+from .utils import delivery_generation_result
 
 
 async def _complete_generation_polling(
     status: GenerationStatus,
     data: PollWaveSpeedGenerationTaskSchema,
+    wavespeed: WaveSpeedService,
+    result_url: str,
 ) -> None:
     async with db_helper.session_factory() as session:
         generation_billing_service = GenerationBillingService(
             session=session,
             token_scale=settings.billing.token_scale_decimal,
         )
-        if status == GenerationStatus.COMPLETED:
+        try:
             await generation_billing_service.finish_generation(
                 data=GenerationFinishData(provider_status=status, **data.model_dump())
             )
@@ -31,18 +34,20 @@ async def _complete_generation_polling(
                 status,
                 data.final_tokens_cost,
             )
-        else:
-            await generation_billing_service.rollback_failed_generation(
-                user_id=data.user_id,
-                hold_amount=data.hold_amount,
-                generation_id=data.generation_id,
-            )
+        except RuntimeError as e:
             logger.warning(
-                "generation_polling_failed generation_id=%s status=%s hold_amount=%s",
+                "generation_polling_failed generation_id=%s status=%s hold_amount=%s error_text=%s",
                 data.generation_id,
                 status,
                 data.hold_amount,
+                e,
             )
+        await delivery_generation_result(
+            status=status,
+            result_url=result_url,
+            wavespeed=wavespeed,
+            user_telegram_id=data.user_tg_id,
+        )
     return None
 
 
@@ -53,7 +58,7 @@ async def _continue_generation_polling(
 ) -> None:
     await asyncio.sleep(data.poll_interval_seconds)
     data.current_attempt += 1
-    await poll_generation_status.kiq(
+    await poll_wavespeed_generation_status.kiq(
         data=data,
         api_key=api_key,
         base_url=base_url,
@@ -62,7 +67,7 @@ async def _continue_generation_polling(
 
 
 @broker.task(task_name="generation.poll_wavespeed_status.v1")
-async def poll_generation_status(
+async def poll_wavespeed_generation_status(
     data: PollWaveSpeedGenerationTaskSchema,
     api_key: str,
     base_url: str,
@@ -78,6 +83,15 @@ async def poll_generation_status(
             generation = await wavespeed.get_generation_status(
                 task_id=data.wavespeed_task_id
             )
+            if not generation:
+                logger.error(
+                    "poll_db_generation_not_found generation_id=%s",
+                    data.generation_id,
+                )
+                return None
+
+            data.result_url = generation.result_url
+
     except Exception as exc:
         logger.exception(
             "poll_generation_status_error generation_id=%s task_id=%s attempt=%s error=%s",
@@ -86,10 +100,12 @@ async def poll_generation_status(
             data.current_attempt,
             exc,
         )
-
         if data.current_attempt >= data.max_attempts:
             await _complete_generation_polling(
-                status=GenerationStatus.FAILED, data=data
+                status=GenerationStatus.FAILED,
+                data=data,
+                wavespeed=wavespeed,
+                result_url=data.result_url,
             )
             return None
 
@@ -108,8 +124,12 @@ async def poll_generation_status(
         current_status = GenerationStatus.FAILED
 
     if current_status != GenerationStatus.PROCESSING:
-        data.result_url = generation.result_url or data.result_url
-        await _complete_generation_polling(status=current_status, data=data)
+        await _complete_generation_polling(
+            status=current_status,
+            data=data,
+            result_url=data.result_url,
+            wavespeed=wavespeed,
+        )
         return None
 
     await _continue_generation_polling(data=data, api_key=api_key, base_url=base_url)

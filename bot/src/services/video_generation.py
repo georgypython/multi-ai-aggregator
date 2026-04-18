@@ -28,7 +28,7 @@ class VideoGenerationService(BaseBackendService):
             payload["media_file_id"] = str(media_file_id)
 
         response = await self._client.post(
-            f"{self._base_url}/api/v1/ai/{model_id}/generate/video",
+            f"{self.base_url}/api/v1/ai/{model_id}/generate/video",
             params={"tg_user_id": tg_user_id},
             json=payload,
             headers=self._base_headers,
@@ -43,7 +43,7 @@ class VideoGenerationService(BaseBackendService):
     ) -> UploadMediaImagesResult:
         filename, file_bytes, content_type = file
         response = await self._client.post(
-            f"{self._base_url}/api/v1/media/images",
+            f"{self.base_url}/api/v1/media/images",
             params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
             files={"file": (filename, file_bytes, content_type)},
@@ -57,7 +57,7 @@ class VideoGenerationService(BaseBackendService):
         generation_id: UUID,
     ) -> VideoGenerationResult:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/generations/{generation_id}",
+            f"{self.base_url}/api/v1/generations/{generation_id}",
             params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )
@@ -101,7 +101,7 @@ class VideoGenerationService(BaseBackendService):
         generation_id: UUID,
     ) -> bytes:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/generations/{generation_id}/content",
+            f"{self.base_url}/api/v1/generations/{generation_id}/content",
             params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )

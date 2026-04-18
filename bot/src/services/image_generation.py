@@ -32,7 +32,7 @@ class ImageGenerationService(BaseBackendService):
             ]
 
         response = await self._client.post(
-            f"{self._base_url}/api/v1/ai/{model_id}/generate/image",
+            f"{self.base_url}/api/v1/ai/{model_id}/generate/image",
             params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
             json=payload,
@@ -47,7 +47,7 @@ class ImageGenerationService(BaseBackendService):
     ) -> UploadMediaImagesResult:
         filename, file_bytes, content_type = file
         response = await self._client.post(
-            f"{self._base_url}/api/v1/media/images",
+            f"{self.base_url}/api/v1/media/images",
             params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
             files={"file": (filename, file_bytes, content_type)},
@@ -61,7 +61,7 @@ class ImageGenerationService(BaseBackendService):
         generation_id: UUID,
     ) -> bytes:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/generations/{generation_id}/content",
+            f"{self.base_url}/api/v1/generations/{generation_id}/content",
             params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )
@@ -78,7 +78,7 @@ class ImageGenerationService(BaseBackendService):
         generation_id: UUID,
     ) -> ImageGenerationResult:
         response = await self._client.get(
-            f"{self._base_url}/api/v1/generations/{generation_id}",
+            f"{self.base_url}/api/v1/generations/{generation_id}",
             params={"tg_user_id": tg_user_id},
             headers=self._base_headers,
         )

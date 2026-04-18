@@ -25,11 +25,11 @@ class WaveSpeedService:
         webhook_url: str,
     ) -> None:
         self.client = client
-        self._api_key = api_key
-        self._base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        self.base_url = base_url.rstrip("/")
         self._webhook_url = webhook_url
         self._base_headers = {
-            "Authorization": f"Bearer {self._api_key}",
+            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
 
@@ -79,7 +79,7 @@ class WaveSpeedService:
 
         return None
 
-    async def download_image_bytes(self, url: str) -> bytes:
+    async def download_generation_bytes(self, url: str) -> bytes:
         response = await self._request("GET", url, headers=self._base_headers)
         payload = response.json()
 
@@ -94,9 +94,6 @@ class WaveSpeedService:
             raise ProviderResponseFormatError("WaveSpeed output image body is empty")
 
         return response.content
-
-    async def download_video_bytes(self, url: str) -> bytes:
-        return await self.download_image_bytes(url=url)
 
     async def create_image_generation(
         self,
@@ -154,7 +151,7 @@ class WaveSpeedService:
     ) -> WavespeedGenerationResponseSchema:
         response = await self._request(
             "POST",
-            f"{self._base_url}/api/v3/{provider_model_key}",
+            f"{self.base_url}/api/v3/{provider_model_key}",
             headers=self._base_headers,
             params={"webhook": self._webhook_url},
             json=payload,
@@ -184,7 +181,7 @@ class WaveSpeedService:
     ) -> WavespeedGenerationResponseSchema:
         response = await self._request(
             "GET",
-            f"{self._base_url}/api/v3/predictions/{task_id}/result",
+            f"{self.base_url}/api/v3/predictions/{task_id}/result",
             headers=self._base_headers,
         )
         response_data = response.json()

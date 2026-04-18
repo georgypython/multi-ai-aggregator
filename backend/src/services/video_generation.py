@@ -17,6 +17,7 @@ from src.schemas import (
     GenerationResultResponseDataSchema,
     VideoRequestDataSchema,
 )
+from src.schemas.generations import PollDbGenerationTaskSchema
 from src.services.db_access import DBAccessService
 from .generation_billing import GenerationBillingService
 from .storage import StorageService
@@ -32,12 +33,16 @@ class VideoGenerationService(DBAccessService):
         video_profile_service: VideoProfileService,
         wavespeed_service: WaveSpeedService,
         storage_service: StorageService,
+        poll_interval_seconds: int,
+        poll_max_attempts: int,
     ):
         self.session = session
         self.generation_billing_service = generation_billing_service
         self.video_profile_service = video_profile_service
         self.wavespeed_service = wavespeed_service
         self.storage_service = storage_service
+        self.poll_interval_seconds = poll_interval_seconds
+        self.poll_max_attempts = poll_max_attempts
 
     async def _get_user_with_balance(self, *, user_id: UUID) -> User | None:
         stmt = (
@@ -129,7 +134,7 @@ class VideoGenerationService(DBAccessService):
                 duration_seconds=raw_profile_price.duration_seconds,
                 provider_cost=raw_profile_price.provider_cost,
                 provider=raw_profile_price.provider,
-                image_edit_model_name=raw_profile_price.image_edit_model_name,
+                user_tg_id=user.telegram_id,
             )
 
     async def generate_video(
@@ -183,6 +188,25 @@ class VideoGenerationService(DBAccessService):
                 generation_id=generation.id,
             )
             raise AIGenerationError("Unexpected video polling error") from e
+
+        from src.tasks.poll_db_generation_status import poll_db_generation_status
+        await poll_db_generation_status.kiq(
+            data=PollDbGenerationTaskSchema(
+                poll_interval_seconds=self.poll_interval_seconds,
+                max_attempts=self.poll_max_attempts,
+                current_attempt=1,
+                user_tg_id=request_data.user_tg_id,
+                ai_model_id=request_data.ai_model_id,
+                generation_id=generation.id,
+                generation_type=generation.generation_type,
+                model_token_price_id=request_data.model_token_price_id,
+                hold_amount=final_tokens_cost,
+                provider_cost=request_data.provider_cost,
+                final_tokens_cost=final_tokens_cost,
+            ),
+            api_key=self.wavespeed_service.api_key,
+            base_url=self.wavespeed_service.base_url,
+        )
 
         return GenerationResultResponseDataSchema(
             ai_model_id=request_data.ai_model_id,
