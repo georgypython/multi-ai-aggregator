@@ -43,6 +43,7 @@ async def _complete_generation_polling(
             client=client,
             api_key=api_key,
             base_url=base_url,
+            webhook_url=settings.wavespeed.wavespeed_webhook_url,
         )
         await delivery_generation_result(
             status=current_status,
