@@ -99,6 +99,8 @@ services:
         condition: service_started
       minio-init:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
 
   bot:
@@ -113,6 +115,43 @@ services:
     depends_on:
       backend:
         condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: app-rabbitmq
+    ports:
+      - "${APP_CONFIG__RABBITMQ__PORT:-5672}:5672"
+      - "${APP_CONFIG__RABBITMQ__MGMT_PORT:-15672}:15672"
+    networks:
+      - ai-app-net
+    environment:
+      RABBITMQ_DEFAULT_USER: "${APP_CONFIG__RABBITMQ__USER:-guest}"
+      RABBITMQ_DEFAULT_PASS: "${APP_CONFIG__RABBITMQ__PASS:-guest}"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  taskiq-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.taskiq-worker
+    container_name: app-taskiq-worker
+    networks:
+      - ai-app-net
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped

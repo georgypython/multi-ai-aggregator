@@ -82,12 +82,6 @@ services:
     container_name: app-taskiq-worker
     env_file:
       - .env
-    environment:
-      APP_CONFIG__DB__HOST: postgres
-      APP_CONFIG__DB__PORT: 5432
-      APP_CONFIG__RABBITMQ__HOST: rabbitmq
-      APP_CONFIG__REDIS__HOST: redis
-      APP_CONFIG__STORAGE__ENDPOINT_URL: http://minio:9000
     depends_on:
       postgres:
         condition: service_healthy
