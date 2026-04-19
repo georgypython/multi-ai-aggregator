@@ -129,7 +129,7 @@ services:
       - ai-app-net
     environment:
       RABBITMQ_DEFAULT_USER: "${APP_CONFIG__RABBITMQ__USER:-guest}"
-      RABBITMQ_DEFAULT_PASS: "${APP_CONFIG__RABBITMQ__PASS:-guest}"
+      RABBITMQ_DEFAULT_PASS: "${APP_CONFIG__RABBITMQ__PASSWORD:-guest}"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s

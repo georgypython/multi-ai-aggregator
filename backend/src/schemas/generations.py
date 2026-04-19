@@ -69,9 +69,9 @@ class PollDbGenerationTaskSchema(BaseModel):
     hold_amount: Decimal
     provider_cost: Decimal
     final_tokens_cost: Decimal
+    timeout: int = 30
 
 
 class PollWaveSpeedGenerationTaskSchema(PollDbGenerationTaskSchema):
     wavespeed_task_id: str
-    timeout: int = 30
     result_url: str | None

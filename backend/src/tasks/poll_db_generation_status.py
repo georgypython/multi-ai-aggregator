@@ -26,7 +26,7 @@ from src.tasks.poll_wavespeed_generation_status import poll_wavespeed_generation
 
 async def _complete_generation_polling(
     generation: AIGeneration,
-    data: PollWaveSpeedGenerationTaskSchema,
+    data: PollDbGenerationTaskSchema,
     api_key: str,
     base_url: str,
 ) -> None:
@@ -67,7 +67,6 @@ async def _continue_generation_polling(
         wavespeed_task_data = PollWaveSpeedGenerationTaskSchema(
             **data.model_dump(),
             wavespeed_task_id=generation_task_id,
-            timeout=30,
             result_url=result_url,
         )
         wavespeed_task_data.current_attempt = 1
