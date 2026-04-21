@@ -5,8 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.api.dependencies import (
     TgRateLimiter,
-    require_api_key,
-    resolve_whitelisted_user_id_by_telegram_id,
+    resolve_user_id_session,
 )
 from src.exceptions.payment import (
     PaymentConflictError,
@@ -29,7 +28,6 @@ from src.services.invoice import PaymentInvoiceService
 router = APIRouter(
     prefix="/invoice",
     route_class=DishkaRoute,
-    dependencies=[Depends(require_api_key)],
 )
 
 
@@ -45,7 +43,7 @@ router = APIRouter(
 async def create_invoice(
     payload: InvoiceCreateRequestSchema,
     service: FromDishka[PaymentInvoiceService],
-    user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
+    user_id: UUID = Depends(resolve_user_id_session),
 ) -> InvoiceCreateResponseSchema:
     try:
         return await service.create_invoice(user_id=user_id, payload=payload)
@@ -74,7 +72,7 @@ async def create_invoice(
 )
 async def list_payment_methods(
     service: FromDishka[PaymentInvoiceService],
-    _user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
+    _user_id: UUID = Depends(resolve_user_id_session),
 ) -> PaymentMethodsResponseSchema:
     methods = await service.list_payment_methods()
     return PaymentMethodsResponseSchema(
@@ -100,7 +98,7 @@ async def list_payment_methods(
 )
 async def list_payment_products(
     service: FromDishka[PaymentInvoiceService],
-    _user_id: UUID = Depends(resolve_whitelisted_user_id_by_telegram_id),
+    _user_id: UUID = Depends(resolve_user_id_session),
 ) -> PaymentProductsResponseSchema:
     products = await service.list_payment_products()
     return PaymentProductsResponseSchema(

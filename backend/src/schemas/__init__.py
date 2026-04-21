@@ -36,6 +36,7 @@ from src.schemas.media import (
     UpdloadFileDataSchema,
     UploadFileResponseSchema,
 )
+from src.schemas.telegram_account import TelegramUser
 from src.schemas.user import UserBalanceResponseSchema
 from src.schemas.video import (
     VideoGenerationCreateRequestSchema,
@@ -82,6 +83,7 @@ __all__ = [
     "MediaFileDbDataSchema",
     "UpdloadFileDataSchema",
     "UploadFileResponseSchema",
+    "TelegramUser",
     "UserBalanceResponseSchema",
     "VideoGenerationCreateRequestSchema",
     "VideoModelDetailResponseSchema",

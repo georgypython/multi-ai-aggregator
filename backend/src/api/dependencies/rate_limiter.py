@@ -1,5 +1,8 @@
-from fastapi import Depends, HTTPException, Query, Response, status
+import hashlib
+
+from fastapi import Depends, HTTPException, Query, Request, Response, status
 from redis.asyncio import Redis
+from src.exceptions.http import Unauthorized
 
 from .redis_client import get_redis
 
@@ -17,11 +20,22 @@ class TgRateLimiter:
 
     async def __call__(
         self,
+        request: Request,
         response: Response,
-        tg_user_id: int = Query(..., ge=1),
+        tg_user_id: int | None = Query(None, ge=1),
         redis: Redis = Depends(get_redis),
     ) -> None:
-        key = f"rl:{self.path_name_key}:tg:{tg_user_id}"
+        if tg_user_id is not None:
+            scope_key = f"tg:{tg_user_id}"
+        else:
+            access_token = request.cookies.get("access_token")
+            if access_token:
+                token_hash = hashlib.sha256(access_token.encode()).hexdigest()[:16]
+                scope_key = f"session:{token_hash}"
+            else:
+                raise Unauthorized()
+
+        key = f"rl:{self.path_name_key}:{scope_key}"
 
         current = await redis.incr(key)
         if current == 1:

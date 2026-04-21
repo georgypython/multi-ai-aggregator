@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -123,7 +124,7 @@ class StorageConfig(BaseModel):
 
 
 class AILogicConfig(BaseModel):
-    new_user_free_tokens: Decimal = Decimal("300")
+    new_user_free_tokens: int = 300
 
 
 class BillingConfig(BaseModel):
@@ -143,6 +144,18 @@ class PaymentConfig(BaseModel):
 
 class TgConfig(BaseModel):
     bot_token: str = "YOUR_BOT_TOKEN"
+
+
+class AuthConfig(BaseModel):
+    access_secret: str = "change-me-access-secret"
+    refresh_secret: str = "change-me-refresh-secret"
+    algorithm: str = "HS256"
+    access_ttl_minutes: int = 60
+    refresh_ttl_days: int = 7
+    cookie_secure: bool = False
+    cookie_httponly: bool = True
+    cookie_samesite: Literal["lax", "strict", "none"] = "lax"
+    cookie_domain: str | None = None
 
 
 class Settings(BaseSettings):
@@ -167,6 +180,7 @@ class Settings(BaseSettings):
     billing: BillingConfig = BillingConfig()
     payment: PaymentConfig = PaymentConfig()
     tg: TgConfig = TgConfig()
+    auth: AuthConfig = AuthConfig()
 
 
 settings = Settings()
