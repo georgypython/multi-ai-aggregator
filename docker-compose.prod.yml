@@ -130,8 +130,6 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: "${APP_CONFIG__RABBITMQ__USER:-guest}"
       RABBITMQ_DEFAULT_PASS: "${APP_CONFIG__RABBITMQ__PASSWORD:-guest}"
-      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: absolute
-      RABBITMQ_VM_MEMORY_HIGH_WATERMARK_VALUE: 512MB
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -140,6 +138,7 @@ services:
       start_period: 10s
     volumes:
     - rabbitmq_data:/var/lib/rabbitmq
+    - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     restart: unless-stopped
 
   taskiq-worker:
