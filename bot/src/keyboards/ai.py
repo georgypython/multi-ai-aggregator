@@ -3,6 +3,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
+    WebAppInfo,
 )
 
 from src.core.schemas import AIModelItem, PaymentProductItem
@@ -266,7 +267,12 @@ def build_balance_checkout_keyboard(
 def build_balance_payment_link_keyboard(payment_url: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="🔗 Оплатить по ссылке", url=payment_url)],
+            [
+                InlineKeyboardButton(
+                    text="� Открыть Mini App",
+                    web_app=WebAppInfo(url=payment_url),
+                )
+            ],
             [
                 InlineKeyboardButton(
                     text="⬅️ Назад к балансу",
