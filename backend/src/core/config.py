@@ -31,6 +31,7 @@ class ApiV1Prefix(BaseModel):
 class ApiConfig(BaseModel):
     api_key: str = "YOUR_API_KEY"
     prefix: str = "/api"
+    frontend_origin: str = "http://localhost:5173"
     v1: ApiV1Prefix = ApiV1Prefix()
 
 
