@@ -114,6 +114,9 @@ async def list_payment_products(
                 price_rub=item.price_rub,
                 tokens_amount=item.tokens_amount,
                 is_vpn_bonus_enabled=item.is_vpn_bonus_enabled,
+                llm_max_limit=item.llm_max_limit,
+                image_max_limit=item.image_max_limit,
+                video_max_limit=item.video_max_limit,
             )
             for item in products
         ]
