@@ -103,6 +103,26 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  frontend:
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_STAND: ${VITE_STAND}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_INIT_DATA: ${VITE_INIT_DATA}
+    container_name: app-frontend
+    networks:
+      - ai-app-net
+    ports:
+      - "${APP_CONFIG__FRONTEND__PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
   bot:
     build:
       context: .

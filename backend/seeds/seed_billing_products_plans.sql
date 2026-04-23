@@ -49,8 +49,8 @@ VALUES
         '10000000-0000-0000-0000-000000000014',
         '10000000-0000-0000-0000-000000000001',
         'PAYPAL',
-        FALSE,
         TRUE,
+        FALSE,
         40
     )
 ON CONFLICT (provider_id, method_code) DO UPDATE SET
@@ -104,7 +104,10 @@ INSERT INTO plans (
     is_vpn_bonus_enabled,
     display_name,
     description,
-    is_active
+    is_active,
+    llm_max_limit,
+    image_max_limit,
+    video_max_limit
 )
 VALUES
     (
@@ -122,7 +125,10 @@ VALUES
         FALSE,
         'Базовый',
         '480 ₽ / 290 токенов / 30 дней',
-        TRUE
+        TRUE,
+        2685,
+        268,
+        6
     ),
     (
         '30000000-0000-0000-0000-000000000002',
@@ -139,7 +145,10 @@ VALUES
         FALSE,
         'Оптимальный',
         '990 ₽ / 620 токенов / 30 дней',
-        TRUE
+        TRUE,
+        5740,
+        574,
+        12
     ),
     (
         '30000000-0000-0000-0000-000000000003',
@@ -156,7 +165,10 @@ VALUES
         TRUE,
         'Премиум',
         '1990 ₽ / 1300 токенов / 30 дней',
-        TRUE
+        TRUE,
+        12037,
+        1203,
+        27
     )
 ON CONFLICT (id) DO UPDATE SET
     billing_interval = EXCLUDED.billing_interval,
@@ -171,6 +183,9 @@ ON CONFLICT (id) DO UPDATE SET
     is_vpn_bonus_enabled = EXCLUDED.is_vpn_bonus_enabled,
     display_name = EXCLUDED.display_name,
     description = EXCLUDED.description,
-    is_active = EXCLUDED.is_active;
+    is_active = EXCLUDED.is_active,
+    llm_max_limit = EXCLUDED.llm_max_limit,
+    image_max_limit = EXCLUDED.image_max_limit,
+    video_max_limit = EXCLUDED.video_max_limit;
 
 COMMIT;

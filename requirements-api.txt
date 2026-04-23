@@ -9,6 +9,7 @@ orjson>=3.11.5
 psycopg2-binary>=2.9.11
 pydantic>=2.12.5
 pydantic-settings>=2.12.0
+PyJWT>=2.10.1
 redis>=7.2.1
 sqlalchemy[asyncio]>=2.0.45
 taskiq>=0.12.1

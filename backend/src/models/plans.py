@@ -53,6 +53,9 @@ class Plan(Base, UUIDPKMixin, CreatedAtMixin):
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    llm_max_limit: Mapped[int] = mapped_column(nullable=False, default=0)
+    image_max_limit: Mapped[int] = mapped_column(nullable=False, default=0)
+    video_max_limit: Mapped[int] = mapped_column(nullable=False, default=0)
 
     product: Mapped["Product"] = relationship("Product", back_populates="plans")
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="plan")

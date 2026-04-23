@@ -2,7 +2,6 @@ import hashlib
 
 from fastapi import Depends, HTTPException, Query, Request, Response, status
 from redis.asyncio import Redis
-from src.exceptions.http import Unauthorized
 
 from .redis_client import get_redis
 
@@ -33,7 +32,8 @@ class TgRateLimiter:
                 token_hash = hashlib.sha256(access_token.encode()).hexdigest()[:16]
                 scope_key = f"session:{token_hash}"
             else:
-                raise Unauthorized()
+                client_host = request.client.host if request.client else "unknown"
+                scope_key = f"ip:{client_host}"
 
         key = f"rl:{self.path_name_key}:{scope_key}"
 

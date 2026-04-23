@@ -21,6 +21,10 @@ class AIConfig(BaseModel):
     request_timeout_seconds: float = 120.0
 
 
+class AppConfig(BaseModel):
+    miniapp_url: str = ""
+
+
 class RedisConfig(BaseModel):
     host: str = "localhost"
     port: int = 6379
@@ -43,6 +47,7 @@ class Settings(BaseSettings):
     )
 
     ai: AIConfig
+    app: AppConfig = AppConfig()
     redis: RedisConfig = RedisConfig()
     logger: LoggerConfig = LoggerConfig()
     tg: TgConfig

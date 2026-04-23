@@ -192,6 +192,9 @@ class PaymentInvoiceService:
                     price_rub=Decimal(plan.price_rub),
                     tokens_amount=Decimal(plan.tokens_amount),
                     is_vpn_bonus_enabled=plan.is_vpn_bonus_enabled,
+                    llm_max_limit=plan.llm_max_limit,
+                    image_max_limit=plan.image_max_limit,
+                    video_max_limit=plan.video_max_limit,
                 )
             )
 

@@ -42,6 +42,9 @@ class PaymentProductItemSchema(BaseModel):
     price_rub: Decimal
     tokens_amount: Decimal
     is_vpn_bonus_enabled: bool
+    llm_max_limit: int
+    image_max_limit: int
+    video_max_limit: int
 
 
 class PaymentProductsResponseSchema(BaseModel):

@@ -9,7 +9,7 @@ class BaseBackendService:
         timeout_seconds: float = 15.0,
     ) -> None:
         self.base_url = base_url.rstrip("/")
-        self._base_headers = {"Authorization": f"Bearer {api_key}"}
+        self._base_headers = {"X-API-Key": api_key}
         self._client = httpx.AsyncClient(timeout=timeout_seconds)
 
     async def aclose(self) -> None:
