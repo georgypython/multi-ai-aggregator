@@ -180,6 +180,7 @@ class ServicesProvider(Provider):
     ) -> UsersService:
         return UsersService(
             session=session,
+            new_user_free_tokens=settings.ai_logic.new_user_free_tokens,
         )
 
     @provide(scope=Scope.REQUEST)
