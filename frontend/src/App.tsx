@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import './App.css'
 import tg from './shared/telegram'
 import {
@@ -10,6 +10,21 @@ import {
   type PaymentMethod,
   type PaymentProduct,
 } from './shared/api'
+import chatgptLogo from './assets/chatgpt-icon.svg'
+import claudeLogo from './assets/claude-ai-icon.svg'
+import geminiLogo from './assets/google-gemini-icon.svg'
+import deepseekLogo from './assets/deepseek-color.svg'
+import grokLogo from './assets/grok-icon.svg'
+import perplexityLogo from './assets/perplexity-ai-icon.svg'
+
+const AI_MODEL_LOGOS: { src: string; title: string }[] = [
+  { src: chatgptLogo, title: 'ChatGPT' },
+  { src: claudeLogo, title: 'Claude' },
+  { src: geminiLogo, title: 'Gemini' },
+  { src: deepseekLogo, title: 'DeepSeek' },
+  { src: grokLogo, title: 'Grok' },
+  { src: perplexityLogo, title: 'Perplexity' },
+]
 
 type MethodBadge = {
   logo: ReactNode
@@ -167,28 +182,72 @@ function isProductionLikeStand(): boolean {
   return String(import.meta.env.VITE_STAND || '').trim() === 'production'
 }
 
-function getPlanInfoItems(plan: PaymentProduct, planType: PlanType): string[] {
-  const llmLimit = plan.llm_max_limit ?? 0
-  const imageLimit = plan.image_max_limit ?? 0
-  const videoLimit = plan.video_max_limit ?? 0
+type PlanFeature = { icon: ReactNode; title: string; value: string }
 
-  const items = [
-    `${new Intl.NumberFormat('ru-RU').format(parseNumeric(plan.tokens_amount))} токенов`,
-    'Доступ ко всем моделям AI',
-    `Лимит LLM: ${new Intl.NumberFormat('ru-RU').format(llmLimit)} запросов`,
-    `Лимит изображений: ${new Intl.NumberFormat('ru-RU').format(imageLimit)} запросов`,
-    `Лимит видео: ${new Intl.NumberFormat('ru-RU').format(videoLimit)} запросов`,
+const IconChat = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+const IconImage = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8" />
+    <circle cx="9" cy="9" r="1.8" stroke="currentColor" strokeWidth="1.8" />
+    <path d="M21 15l-4.5-4.5L8 19" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+const IconVideo = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="6" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+    <path d="M22 7l-6 5 6 5V7z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+const IconBolt = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+  </svg>
+)
+const IconSupport = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
+  </svg>
+)
+const IconShield = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+  </svg>
+)
+const IconModels = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+    <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+)
+
+function getPlanFeatures(plan: PaymentProduct, planType: PlanType): PlanFeature[] {
+  const fmt = (n: number) => new Intl.NumberFormat('ru-RU').format(n)
+  const items: PlanFeature[] = [
+    { icon: <IconChat />, title: 'Лимит LLM', value: `${fmt(plan.llm_max_limit ?? 0)} запросов` },
+    { icon: <IconImage />, title: 'Изображения', value: `${fmt(plan.image_max_limit ?? 0)} запросов` },
+    { icon: <IconVideo />, title: 'Видео', value: `${fmt(plan.video_max_limit ?? 0)} запросов` },
   ]
 
+  items.push({
+    icon: <IconBolt />,
+    title: 'Скорость генераций',
+    value: planType === 'base' ? 'Быстрая' : 'Максимальная',
+  })
+
   if (planType === 'premium') {
-    items.push('VPN-бонус за первую покупку')
+    items.push({ icon: <IconSupport />, title: 'Поддержка', value: 'Приоритетная · выделенный менеджер' })
+    items.push({ icon: <IconShield />, title: 'VPN-бонус', value: 'За первую покупку' })
   }
 
   return items
 }
 
 function App() {
-  const carouselRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -214,12 +273,6 @@ function App() {
 
   const handlePlanSelect = (planId: string) => {
     setSelectedPlanId(planId)
-
-    const carousel = carouselRef.current
-    if (!carousel) return
-
-    const selectedButton = carousel.querySelector(`[data-plan-id="${planId}"]`) as HTMLElement | null
-    selectedButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
   }
 
   useEffect(() => {
@@ -227,7 +280,7 @@ function App() {
     tg.expand()
     tg.disableVerticalSwipes()
     tg.setHeaderColor('#000000')
-    tg.setBackgroundColor('#0a0c0d')
+    tg.setBackgroundColor('#000000')
 
     const isProdStand = isProductionLikeStand()
     const liveInitData = String(tg.initData || '').trim()
@@ -263,39 +316,6 @@ function App() {
     void bootstrap()
   }, [])
 
-  // Auto-select plan based on carousel scroll position
-  useEffect(() => {
-    const carousel = carouselRef.current
-    if (!carousel || !products.length) return
-
-    const handleCarouselScroll = () => {
-      let closestPlanId: string | null = null
-      let closestDistance = Infinity
-
-      products.forEach((product) => {
-        const button = carousel.querySelector(`[data-plan-id="${product.plan_id}"]`) as HTMLElement
-        if (!button) return
-
-        const rect = button.getBoundingClientRect()
-        const carouselRect = carousel.getBoundingClientRect()
-        const buttonCenterX = rect.left - carouselRect.left + rect.width / 2
-        const distance = Math.abs(buttonCenterX - carousel.clientWidth / 2)
-
-        if (distance < closestDistance) {
-          closestDistance = distance
-          closestPlanId = product.plan_id
-        }
-      })
-
-      if (closestPlanId) {
-        setSelectedPlanId(closestPlanId)
-      }
-    }
-
-    carousel.addEventListener('scroll', handleCarouselScroll)
-    return () => carousel.removeEventListener('scroll', handleCarouselScroll)
-  }, [products])
-
   const handlePay = async () => {
     if (!selectedPlanId || !selectedMethod) {
       setError('Выберите тариф и способ оплаты.')
@@ -322,61 +342,82 @@ function App() {
     <main className={`payment-page payment-page--${selectedPlanType}`}>
       {isLoading && <div className="placeholder">Loading plans...</div>}
 
-      {!isLoading && (
+      {!isLoading && selectedPlan && (
         <>
-          {/* ЗАГОЛОВОК */}
-          <div className="payment-header">
-            <h1 className="payment-title">Выберите тариф</h1>
-            <p className="payment-subtitle">Пополняйте баланс токенов и получайте доступ к самым лучшим моделям</p>
-          </div>
-
-          {/* БОЛЬШИЕ КАРТОЧКИ ПЛАНОВ - КАРУСЕЛЬ/GRID */}
-          <div className="plans-carousel" ref={carouselRef}>
+          {/* ПЕРЕКЛЮЧАТЕЛЬ ПЛАНОВ */}
+          <div className="plans-switcher" role="tablist">
             {products.map((plan) => {
               const isSelected = selectedPlanId === plan.plan_id
               const planType = getPlanType(plan.display_name)
-              const planInfoItems = getPlanInfoItems(plan, planType)
               return (
                 <button
                   key={plan.plan_id}
                   type="button"
-                  data-plan-id={plan.plan_id}
-                  className={`plan-large plan-large--${planType} ${isSelected ? 'plan-large--active' : ''}`}
+                  role="tab"
+                  aria-selected={isSelected}
+                  className={`plans-switcher-btn ${isSelected ? `plans-switcher-btn--active plans-switcher-btn--${planType}` : ''}`}
                   onClick={() => handlePlanSelect(plan.plan_id)}
                 >
-                  <div className="plan-large-header">
-                    <div className="plan-large-heading-wrap">
-                      <span className={`plan-large-accent plan-large-accent--${planType}`}>{getPlanAccentLabel(planType)}</span>
-                      <h2 className="plan-large-name">{plan.display_name}</h2>
-                    </div>
-                    {isSelected && (
-                      <div className="plan-large-check">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                          <path fillRule="evenodd" clipRule="evenodd" d="M12 0C5.37258 0 0 5.37258 0 12C0 18.6274 5.37258 24 12 24C18.6274 24 24 18.6274 24 12C24 5.37258 18.6274 0 12 0ZM11.1107 17.4719L18.4 8.1L16.9 6.93333L10.8873 14.664L6.8966 10.9393L5.6 12.3286L11.1107 17.4719Z" fill="white" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="plan-large-price">
-                    <span className="plan-large-price-value">{formatRub(parseNumeric(plan.price_rub))}</span>
-                    <span className="plan-large-price-currency">RUB</span>
-                  </div>
-
-                  <ul className="plan-info-list" aria-label="Информация о тарифе">
-                    {planInfoItems.map((item) => (
-                      <li key={item} className="plan-info-item">
-                        <svg className="plan-info-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none">
-                          <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <span>{plan.display_name}</span>
                 </button>
               )
             })}
           </div>
+
+          {/* КАРТОЧКА ВЫБРАННОГО ПЛАНА */}
+          {(() => {
+            const plan = selectedPlan
+            const planType = selectedPlanType
+            const features = getPlanFeatures(plan, planType)
+            const tokensText = `${new Intl.NumberFormat('ru-RU').format(parseNumeric(plan.tokens_amount))} токенов`
+            return (
+              <div className={`plan-large plan-large--${planType} plan-large--active`}>
+                <span className="plan-large-glow" aria-hidden="true" />
+                <div className="plan-large-header">
+                  <div className="plan-large-heading-wrap">
+                    <span className={`plan-large-accent plan-large-accent--${planType}`}>{getPlanAccentLabel(planType)}</span>
+                    <h2 className="plan-large-name">{plan.display_name}</h2>
+                  </div>
+                </div>
+
+                <div className="plan-large-price">
+                  <span className="plan-large-price-value">{formatRub(parseNumeric(plan.price_rub))}</span>
+                  <span className="plan-large-price-currency">RUB</span>
+                  <span className="plan-large-price-tokens">{tokensText}</span>
+                </div>
+
+                <div className="plan-specs">
+                  <div className="plan-spec-row plan-spec-row--models">
+                    <div className="plan-spec-left">
+                      <span className="plan-spec-icon"><IconModels /></span>
+                      <div className="plan-spec-text">
+                        <span className="plan-spec-title">Модели AI</span>
+                        <span className="plan-spec-value">Доступ ко всем</span>
+                      </div>
+                    </div>
+                    <div className="plan-models-stack">
+                      {AI_MODEL_LOGOS.map((model) => (
+                        <span key={model.title} className="plan-models-icon" title={model.title}>
+                          <img src={model.src} alt={model.title} />
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {features.map((f) => (
+                    <div key={f.title} className="plan-spec-row">
+                      <div className="plan-spec-left">
+                        <span className="plan-spec-icon">{f.icon}</span>
+                        <div className="plan-spec-text">
+                          <span className="plan-spec-title">{f.title}</span>
+                          <span className="plan-spec-value">{f.value}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* МЕТОДЫ ОПЛАТЫ - РАСКРЫВАЮЩИЙСЯ СПИСОК */}
           <div className="payment-methods-section">
