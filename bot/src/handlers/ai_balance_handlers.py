@@ -69,7 +69,10 @@ async def show_balance(
         "Чтобы продолжить генерации без пауз, держи небольшой запас токенов."
     )
 
-    await message.answer(text, reply_markup=build_balance_keyboard())
+    await message.answer(
+        text,
+        reply_markup=build_balance_keyboard(settings.app.miniapp_url),
+    )
 
 
 @router.callback_query(F.data == "balance:top_up")
@@ -124,7 +127,7 @@ async def back_to_balance(callback: CallbackQuery) -> None:
     if callback.message is not None:
         await callback.message.answer(
             "<b>Баланс аккаунта 💰</b>\nВыбери действие:",
-            reply_markup=build_balance_keyboard(),
+            reply_markup=build_balance_keyboard(settings.app.miniapp_url),
         )
     await callback.answer()
 

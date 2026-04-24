@@ -392,7 +392,7 @@ function App() {
                       <span className="plan-spec-icon"><IconModels /></span>
                       <div className="plan-spec-text">
                         <span className="plan-spec-title">Модели AI</span>
-                        <span className="plan-spec-value">Доступ ко всем</span>
+                        <span className="plan-spec-value">Доступ к лучшим ИИ мира в одном месте</span>
                       </div>
                     </div>
                     <div className="plan-models-stack">

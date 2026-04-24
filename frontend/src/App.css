@@ -1,3 +1,35 @@
+@font-face {
+  font-family: 'VK Sans Display';
+  src: local('VK Sans Display'), url('./fonts/VKSansDisplay-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'VK Sans Display';
+  src: local('VK Sans Display'), url('./fonts/VKSansDisplay-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'VK Sans Display';
+  src: local('VK Sans Display'), url('./fonts/VKSansDisplay-DemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'VK Sans Display';
+  src: local('VK Sans Display'), url('./fonts/VKSansDisplay-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+html, body, input, textarea, select, button {
+  font-family: "VK Sans Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 :root {
   --tma-v2-font: "VK Sans Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --bg-main: #000000;
@@ -7,9 +39,9 @@
   --text-main: #ffffff;
   --text-muted: rgba(255, 255, 255, 0.55);
   --border-soft: rgba(255, 255, 255, 0.08);
-  --accent-base: #3c7dff;
-  --accent-optimal: #22c55e;
-  --accent-premium: #a855f7;
+  --accent-base: #2563ff;
+  --accent-optimal: #10d866;
+  --accent-premium: #b833ff;
   --accent-current: var(--accent-base);
 }
 
@@ -88,14 +120,14 @@
 .plans-switcher-btn {
   flex: 1 1 0;
   min-width: 0;
-  height: 40px;
+  height: 36px;
   padding: 6px 10px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: rgba(255, 255, 255, 0.55);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
@@ -147,14 +179,14 @@
   position: absolute;
   z-index: 0;
   pointer-events: none;
-  width: 260px;
-  height: 260px;
-  top: -90px;
-  left: -90px;
+  width: 240px;
+  height: 240px;
+  top: -80px;
+  left: -80px;
   border-radius: 50%;
   background: var(--plan-accent);
-  filter: blur(70px);
-  opacity: 0.7;
+  filter: blur(60px);
+  opacity: 0.85;
   transition: opacity 0.3s ease;
 }
 
@@ -163,14 +195,14 @@
   position: absolute;
   z-index: 0;
   pointer-events: none;
-  width: 260px;
-  height: 260px;
-  bottom: -90px;
-  right: -90px;
+  width: 240px;
+  height: 240px;
+  bottom: -80px;
+  right: -80px;
   border-radius: 50%;
   background: var(--plan-accent);
-  filter: blur(70px);
-  opacity: 0.55;
+  filter: blur(60px);
+  opacity: 0.7;
   transition: opacity 0.3s ease;
 }
 
@@ -256,23 +288,23 @@
 }
 
 .plan-large-price-value {
-  font-size: clamp(36px, 7.5vw, 46px);
+  font-size: clamp(28px, 6.5vw, 38px);
   font-weight: 780;
   line-height: 1;
   letter-spacing: -0.03em;
 }
 
 .plan-large-price-currency {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 650;
   color: color-mix(in srgb, var(--plan-accent) 65%, var(--text-muted));
 }
 
 .plan-large-price-tokens {
   margin-left: auto;
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: 999px;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: #ffffff;
   background: color-mix(in srgb, var(--plan-accent) 26%, rgba(255, 255, 255, 0.06));
@@ -344,32 +376,28 @@
 }
 
 .plan-models-stack {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  grid-auto-rows: auto;
+  gap: 4px;
   flex-shrink: 0;
+  justify-items: center;
 }
 
 .plan-models-stack .plan-models-icon {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--bg-card);
-  border: 2px solid var(--bg-card);
+  background: transparent;
   flex-shrink: 0;
-  margin-left: -2px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-}
-
-.plan-models-stack .plan-models-icon:first-child {
-  margin-left: 0;
 }
 
 .plan-models-stack .plan-models-icon img {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: block;
   object-fit: contain;
 }
@@ -554,9 +582,9 @@
 .active_payment_item {
   border-color: color-mix(in srgb, var(--accent-current) 55%, rgba(255, 255, 255, 0.12));
   background:
-    linear-gradient(120deg, color-mix(in srgb, var(--accent-current) 14%, transparent), transparent 80%),
-    var(--bg-card);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-current) 30%, transparent);
+    linear-gradient(120deg, color-mix(in srgb, var(--accent-current) 10%, transparent), transparent 80%),
+    #050607;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-current) 25%, transparent);
 }
 
 .payment_item_soon {
@@ -636,25 +664,12 @@
     color-mix(in srgb, var(--btn-accent) 75%, #000000) 100%
   );
   box-shadow:
-    0 10px 28px color-mix(in srgb, var(--btn-accent) 55%, transparent),
-    0 4px 10px color-mix(in srgb, var(--btn-accent) 35%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    0 6px 20px color-mix(in srgb, var(--btn-accent) 40%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .pay-button::before {
-  content: '';
-  position: absolute;
-  inset: auto 8% -24px 8%;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--btn-accent);
-  filter: blur(22px);
-  opacity: 0.7;
-  z-index: -1;
-  pointer-events: none;
-}
-
-.pay-button:disabled::before {
   display: none;
 }
 

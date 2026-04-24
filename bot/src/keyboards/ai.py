@@ -165,17 +165,19 @@ def build_video_sizes_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def build_balance_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="Пополнить",
-                    callback_data="balance:top_up",
-                )
-            ]
-        ]
-    )
+def build_balance_keyboard(miniapp_url: str | None = None) -> InlineKeyboardMarkup:
+    url = (miniapp_url or "").strip()
+    if url:
+        button = InlineKeyboardButton(
+            text="💳 Пополнить",
+            web_app=WebAppInfo(url=url),
+        )
+    else:
+        button = InlineKeyboardButton(
+            text="💳 Пополнить",
+            callback_data="balance:top_up",
+        )
+    return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
 
 def build_balance_products_keyboard(
