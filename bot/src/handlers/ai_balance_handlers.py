@@ -19,15 +19,12 @@ router = Router()
 async def _show_miniapp_top_up(callback: CallbackQuery) -> None:
     miniapp_url = settings.app.miniapp_url.strip()
     if not miniapp_url:
-        await callback.answer(
-            "Ссылка Mini App не настроена", show_alert=True
-        )
+        await callback.answer("Ссылка Mini App не настроена", show_alert=True)
         return
 
     if callback.message is not None:
         await callback.message.answer(
-            "<b>Пополнение баланса 💳</b>\n"
-            "Открой Mini App и заверши оплату там.",
+            "<b>Пополнение баланса 💳</b>\nОткрой Mini App и заверши оплату там.",
             reply_markup=build_balance_payment_link_keyboard(miniapp_url),
         )
     await callback.answer()

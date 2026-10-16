@@ -64,18 +64,19 @@ class PaymentWebhookService:
                 provider_data = self._build_provider_data(payload)
 
                 if payload.is_successful():
-                    tx, sub = (
-                        await self.payment_lifecycle_service.handle_payment_success(
-                            payment_intent=payment_intent,
-                            provider_transaction_id=str(payload.contractId),
-                            provider_contract_id=str(payload.contractId),
-                            amount=(
-                                Decimal(str(payload.amount))
-                                if payload.amount is not None
-                                else None
-                            ),
-                            provider_data=provider_data,
-                        )
+                    (
+                        tx,
+                        sub,
+                    ) = await self.payment_lifecycle_service.handle_payment_success(
+                        payment_intent=payment_intent,
+                        provider_transaction_id=str(payload.contractId),
+                        provider_contract_id=str(payload.contractId),
+                        amount=(
+                            Decimal(str(payload.amount))
+                            if payload.amount is not None
+                            else None
+                        ),
+                        provider_data=provider_data,
                     )
                     return {
                         "status": "ok",
@@ -131,22 +132,23 @@ class PaymentWebhookService:
                 provider_data = self._build_provider_data(payload)
 
                 if payload.is_successful():
-                    tx, sub = (
-                        await self.payment_lifecycle_service.handle_recurrent_payment_success(
-                            payment_intent=payment_intent,
-                            provider_transaction_id=str(payload.contractId),
-                            parent_contract_id=(
-                                str(payload.parentContractId)
-                                if payload.parentContractId
-                                else None
-                            ),
-                            amount=(
-                                Decimal(str(payload.amount))
-                                if payload.amount is not None
-                                else None
-                            ),
-                            provider_data=provider_data,
-                        )
+                    (
+                        tx,
+                        sub,
+                    ) = await self.payment_lifecycle_service.handle_recurrent_payment_success(
+                        payment_intent=payment_intent,
+                        provider_transaction_id=str(payload.contractId),
+                        parent_contract_id=(
+                            str(payload.parentContractId)
+                            if payload.parentContractId
+                            else None
+                        ),
+                        amount=(
+                            Decimal(str(payload.amount))
+                            if payload.amount is not None
+                            else None
+                        ),
+                        provider_data=provider_data,
                     )
                     return {
                         "status": "ok",

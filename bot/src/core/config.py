@@ -43,7 +43,6 @@ class Settings(BaseSettings):
         extra="ignore",
         case_sensitive=False,
         env_nested_delimiter="__",
-        env_prefix="BOT__CONFIG__",
     )
 
     ai: AIConfig

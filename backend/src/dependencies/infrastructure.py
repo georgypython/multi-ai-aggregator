@@ -13,7 +13,6 @@ from src.models.db_helper import db_helper
 
 
 class InfrastructureProvider(Provider):
-
     @provide(scope=Scope.APP)
     async def get_telegram_bot(self) -> AsyncGenerator[Bot, None]:
         bot = Bot(token=settings.tg.bot_token)

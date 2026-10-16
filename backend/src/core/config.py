@@ -37,7 +37,7 @@ class ApiConfig(BaseModel):
 
 class DbConfig(BaseModel):
     host: str = "localhost"
-    passwd: str | None = None
+    passwd: str | None = ""
     user: str = "postgres"
     name: str = "postgres"
     port: int = 5432
@@ -53,6 +53,10 @@ class DbConfig(BaseModel):
     @property
     def url_async(self):
         return f"postgresql+asyncpg://{self.user}:{self.passwd}@{self.host}:{self.port}/{self.name}"
+
+    @property
+    def url_sync(self):
+        return f"postgresql://{self.user}:{self.passwd}@{self.host}:{self.port}/{self.name}"
 
 
 class OpenRouterConfig(BaseModel):
@@ -92,10 +96,7 @@ class RabbitMQConfig(BaseModel):
 
     @property
     def url(self) -> str:
-        return (
-            f"amqp://{self.user}:{self.password}"
-            f"@{self.host}:{self.port}{self.vhost}"
-        )
+        return f"amqp://{self.user}:{self.password}@{self.host}:{self.port}{self.vhost}"
 
 
 class StorageConfig(BaseModel):
@@ -165,7 +166,6 @@ class Settings(BaseSettings):
         extra="ignore",
         case_sensitive=False,
         env_nested_delimiter="__",
-        env_prefix="APP_CONFIG__",
     )
 
     logger: LoggerConfig = LoggerConfig()

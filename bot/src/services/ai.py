@@ -16,7 +16,6 @@ from src.core.schemas import (
 
 
 class AIService(BaseBackendService):
-
     async def get_models(
         self,
         tg_user_id: int,

@@ -12,7 +12,6 @@ from src.dependencies.container import container
 from src.tasks.broker import broker
 
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
