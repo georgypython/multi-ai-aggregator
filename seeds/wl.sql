@@ -9,7 +9,7 @@ INSERT INTO users (
 )
 VALUES (
     '55555555-5555-5555-5555-555555550002',
-    5854450847,
+    1111111111,
     TRUE,
     TRUE
 )
@@ -26,7 +26,7 @@ INSERT INTO users (
 )
 VALUES (
     '55555555-5555-5555-5555-555555550003',
-    8309544627,
+    2222222222,
     TRUE,
     TRUE
 )
@@ -47,7 +47,7 @@ SELECT
     1000,
     0
 FROM users u
-WHERE u.telegram_id = 5854450847
+WHERE u.telegram_id = 1111111111
 ON CONFLICT (user_id) DO NOTHING;
 
 -- Ensure second user has a balance row (do not overwrite existing values)
@@ -63,7 +63,7 @@ SELECT
     1000,
     0
 FROM users u
-WHERE u.telegram_id = 8309544627
+WHERE u.telegram_id = 2222222222
 ON CONFLICT (user_id) DO NOTHING;
 
 COMMIT;

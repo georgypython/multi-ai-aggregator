@@ -6,7 +6,7 @@ BEGIN;
 -- Providers config
 INSERT INTO payment_provider_configs (id, code, display_name, enabled)
 VALUES
-    ('10000000-0000-0000-0000-000000000001', 'LAVA_TOP', 'LavaTop', TRUE)
+    ('10000000-0000-0000-0000-000000000001', 'TEST_PROVIDER', 'TestProvider', TRUE)
 ON CONFLICT (code) DO UPDATE SET
     display_name = EXCLUDED.display_name,
     enabled = EXCLUDED.enabled;
